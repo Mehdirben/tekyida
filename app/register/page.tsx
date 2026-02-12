@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Mail, Lock, Eye, EyeOff, User, Loader2 } from "lucide-react";
@@ -10,10 +10,12 @@ import { useTranslation } from "@/i18n/LanguageContext";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageToggle from "@/components/ui/LanguageToggle";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth } from "convex/react";
 
 export default function RegisterPage() {
     const { t } = useTranslation();
     const { signIn } = useAuthActions();
+    const { isAuthenticated } = useConvexAuth();
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
@@ -23,6 +25,13 @@ export default function RegisterPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    // Redirect once Convex auth state confirms authentication
+    useEffect(() => {
+        if (isAuthenticated) {
+            router.push("/app");
+        }
+    }, [isAuthenticated, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -42,10 +51,9 @@ export default function RegisterPage() {
 
         try {
             await signIn("password", { email, password, name, flow: "signUp" });
-            router.push("/");
+            // Redirect handled by useEffect when isAuthenticated becomes true
         } catch {
             setError(t("register.error") || "Registration failed. Please try again.");
-        } finally {
             setLoading(false);
         }
     };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
@@ -10,16 +10,25 @@ import { useTranslation } from "@/i18n/LanguageContext";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageToggle from "@/components/ui/LanguageToggle";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth } from "convex/react";
 
 export default function LoginPage() {
     const { t } = useTranslation();
     const { signIn } = useAuthActions();
+    const { isAuthenticated } = useConvexAuth();
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    // Redirect once Convex auth state confirms authentication
+    useEffect(() => {
+        if (isAuthenticated) {
+            router.push("/app");
+        }
+    }, [isAuthenticated, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,10 +37,9 @@ export default function LoginPage() {
 
         try {
             await signIn("password", { email, password, flow: "signIn" });
-            router.push("/app");
+            // Redirect handled by useEffect when isAuthenticated becomes true
         } catch {
             setError(t("login.error") || "Invalid email or password.");
-        } finally {
             setLoading(false);
         }
     };
