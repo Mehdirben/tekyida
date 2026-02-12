@@ -63,6 +63,27 @@ const fr: Record<TranslationKey, string> = {
     "footer.madeWith": "Fait avec",
     "footer.inMorocco": "au Maroc",
     "footer.rights": "Tous droits réservés.",
+
+    // Login
+    "login.title": "Bon Retour",
+    "login.subtitle": "Connectez-vous à votre compte Tekyida pour gérer vos dettes.",
+    "login.email": "Adresse email",
+    "login.password": "Mot de passe",
+    "login.submit": "Se Connecter",
+    "login.noAccount": "Pas encore de compte ?",
+    "login.register": "Créer un compte",
+    "login.forgotPassword": "Mot de passe oublié ?",
+
+    // Register
+    "register.title": "Créer un Compte",
+    "register.subtitle": "Rejoignez Tekyida et commencez à suivre vos dettes facilement.",
+    "register.name": "Nom complet",
+    "register.email": "Adresse email",
+    "register.password": "Mot de passe",
+    "register.confirmPassword": "Confirmer le mot de passe",
+    "register.submit": "Créer le Compte",
+    "register.hasAccount": "Déjà un compte ?",
+    "register.login": "Se connecter",
 };
 
 export default fr;

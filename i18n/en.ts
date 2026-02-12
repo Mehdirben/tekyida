@@ -61,6 +61,27 @@ const en = {
     "footer.madeWith": "Made with",
     "footer.inMorocco": "in Morocco",
     "footer.rights": "All rights reserved.",
+
+    // Login
+    "login.title": "Welcome Back",
+    "login.subtitle": "Sign in to your Tekyida account to manage your IOUs.",
+    "login.email": "Email address",
+    "login.password": "Password",
+    "login.submit": "Sign In",
+    "login.noAccount": "Don't have an account?",
+    "login.register": "Create one",
+    "login.forgotPassword": "Forgot password?",
+
+    // Register
+    "register.title": "Create Account",
+    "register.subtitle": "Join Tekyida and start tracking your IOUs effortlessly.",
+    "register.name": "Full name",
+    "register.email": "Email address",
+    "register.password": "Password",
+    "register.confirmPassword": "Confirm password",
+    "register.submit": "Create Account",
+    "register.hasAccount": "Already have an account?",
+    "register.login": "Sign in",
 } as const;
 
 export type TranslationKey = keyof typeof en;
