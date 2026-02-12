@@ -10,13 +10,11 @@ import { useTranslation } from "@/i18n/LanguageContext";
 
 export default function Header() {
     const { t } = useTranslation();
-    const [scrolled, setScrolled] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        const handler = () => setScrolled(window.scrollY > 10);
-        window.addEventListener("scroll", handler, { passive: true });
-        return () => window.removeEventListener("scroll", handler);
+        setMounted(true);
     }, []);
 
     const navLinks = [
@@ -25,30 +23,28 @@ export default function Header() {
     ];
 
     return (
-        <header
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? "liquid-glass-heavy" : ""
-                }`}
-        >
-            <div className="max-w-6xl mx-auto px-5 sm:px-8">
-                <div className="flex items-center justify-between h-16">
+        <header className="fixed top-0 left-0 right-0 z-50 pt-4 px-5 sm:px-8">
+            <div
+                className={`max-w-6xl mx-auto liquid-glass-card rounded-2xl px-5 py-3 transition-all duration-500 ${mounted ? "animate-slide-up" : "opacity-0"
+                    }`}
+            >
+                <div className="flex items-center justify-between">
                     <Logo size="md" />
 
-                    {/* Center nav */}
-                    <nav className="hidden md:flex items-center">
-                        <div className="flex items-center gap-1 liquid-glass rounded-full px-1.5 py-1">
-                            {navLinks.map((link) => (
-                                <a
-                                    key={link.href}
-                                    href={link.href}
-                                    className="text-sm text-(--text-secondary) hover:text-(--text-primary) transition-colors duration-200 font-medium px-4 py-1.5 rounded-full hover:bg-white/20 dark:hover:bg-white/5"
-                                >
-                                    {link.label}
-                                </a>
-                            ))}
-                        </div>
+                    {/* Center nav — desktop */}
+                    <nav className="hidden md:flex items-center gap-1">
+                        {navLinks.map((link) => (
+                            <a
+                                key={link.href}
+                                href={link.href}
+                                className="text-sm text-(--text-secondary) hover:text-(--text-primary) transition-colors duration-200 font-medium px-4 py-1.5 rounded-full hover:bg-white/20 dark:hover:bg-white/5"
+                            >
+                                {link.label}
+                            </a>
+                        ))}
                     </nav>
 
-                    {/* Right actions */}
+                    {/* Right actions — desktop */}
                     <div className="hidden md:flex items-center gap-2">
                         <LanguageToggle />
                         <ThemeToggle />
@@ -57,7 +53,7 @@ export default function Header() {
                         </Button>
                     </div>
 
-                    {/* Mobile */}
+                    {/* Mobile hamburger */}
                     <button
                         className="md:hidden p-2 text-(--text-secondary) hover:text-(--text-primary) cursor-pointer transition-colors"
                         onClick={() => setMobileOpen(!mobileOpen)}
@@ -67,16 +63,16 @@ export default function Header() {
                     </button>
                 </div>
 
-                {/* Mobile menu */}
+                {/* Mobile dropdown */}
                 {mobileOpen && (
-                    <div className="md:hidden liquid-glass-card p-4 mt-1 animate-scale-in">
-                        <nav className="flex flex-col gap-1 mb-4">
+                    <div className="md:hidden pt-3 mt-3 border-t border-(--border) animate-scale-in">
+                        <nav className="flex flex-col gap-1 mb-3">
                             {navLinks.map((link) => (
                                 <a
                                     key={link.href}
                                     href={link.href}
                                     onClick={() => setMobileOpen(false)}
-                                    className="text-sm text-(--text-secondary) hover:text-(--text-primary) transition-colors font-medium py-2.5 px-3 rounded-xl hover:bg-white/15 dark:hover:bg-white/5"
+                                    className="text-sm text-(--text-secondary) hover:text-(--text-primary) transition-colors font-medium py-2 px-3 rounded-xl hover:bg-white/15 dark:hover:bg-white/5"
                                 >
                                     {link.label}
                                 </a>
