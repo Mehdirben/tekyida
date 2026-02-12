@@ -36,7 +36,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return (
         <>
             <div className="mesh-gradient" />
-            <div className="relative z-10 min-h-screen flex flex-col pb-24">
+            <div className="relative z-[60] min-h-screen flex flex-col pb-24">
                 {children}
             </div>
             <BottomNav />

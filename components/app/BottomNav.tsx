@@ -25,24 +25,53 @@ export default function BottomNav() {
     ];
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]">
-            <div className="mx-4 mb-3 sm:mx-auto sm:max-w-sm">
-                <div className="liquid-glass-heavy rounded-2xl px-2 py-2 flex items-center justify-around">
+        <nav className="fixed bottom-0 left-0 right-0 z-70 pb-[env(safe-area-inset-bottom)]">
+            <div className="flex justify-center px-4 mb-5">
+                <div
+                    className="inline-flex items-center gap-2 p-1.5 rounded-full"
+                    style={{
+                        background: "var(--glass-bg-heavy)",
+                        backdropFilter: "blur(48px) saturate(2.4)",
+                        WebkitBackdropFilter: "blur(48px) saturate(2.4)",
+                        border: "1px solid var(--glass-border)",
+                        boxShadow:
+                            "0 8px 40px var(--glass-shadow), 0 2px 6px var(--glass-shadow), inset 0 1px 0 var(--glass-highlight)",
+                    }}
+                >
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         return (
                             <Link
                                 key={tab.href}
                                 href={tab.href}
-                                className={`flex flex-col items-center gap-0.5 px-6 py-1.5 rounded-xl transition-all duration-200 ${tab.active
-                                    ? "bg-primary-800/80 dark:bg-primary-500/70 text-white shadow-sm"
-                                    : "text-(--text-tertiary) hover:text-(--text-primary)"
-                                    }`}
+                                className="relative flex items-center gap-2 rounded-full transition-all duration-300 ease-out"
+                                style={
+                                    tab.active
+                                        ? {
+                                            padding: "0.5rem 1.25rem",
+                                            background:
+                                                "linear-gradient(135deg, var(--color-primary-600), var(--color-primary-800))",
+                                            boxShadow:
+                                                "0 4px 16px rgba(90, 107, 170, 0.4), inset 0 1px 0 rgba(255,255,255,0.12)",
+                                            color: "#fff",
+                                        }
+                                        : {
+                                            padding: "0.5rem 1rem",
+                                            color: "var(--text-tertiary)",
+                                        }
+                                }
                             >
-                                <Icon size={20} strokeWidth={tab.active ? 2.4 : 1.8} />
-                                <span className="text-[10px] font-semibold tracking-wide">
-                                    {tab.label}
-                                </span>
+                                <Icon
+                                    size={20}
+                                    strokeWidth={tab.active ? 2.2 : 1.8}
+                                    className={`transition-all duration-300 ${!tab.active ? "hover:text-[var(--text-primary)]" : ""
+                                        }`}
+                                />
+                                {tab.active && (
+                                    <span className="text-xs font-semibold tracking-wide whitespace-nowrap">
+                                        {tab.label}
+                                    </span>
+                                )}
                             </Link>
                         );
                     })}
