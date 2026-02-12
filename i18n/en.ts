@@ -89,6 +89,7 @@ const en = {
 
     // App Navigation
     "nav.dashboard": "Dashboard",
+    "nav.contacts": "Contacts",
     "nav.settings": "Settings",
 
     // Dashboard
@@ -106,6 +107,34 @@ const en = {
     "notebook.add": "Add Notebook",
     "notebook.contacts": "contacts",
     "notebook.balance": "Balance",
+    "notebook.delete": "Delete Notebook",
+    "notebook.deleteConfirm": "Delete this notebook and all its contacts and transactions? This cannot be undone.",
+    "notebook.namePlaceholder": "Notebook name…",
+
+    // Contact
+    "contact.add": "Add Contact",
+    "contact.name": "Contact name",
+    "contact.phone": "Phone (optional)",
+    "contact.empty": "No contacts yet",
+    "contact.emptySubtitle": "Add your first contact to start tracking transactions.",
+    "contact.delete": "Delete Contact",
+    "contact.deleteConfirm": "Delete this contact and all their transactions?",
+
+    // Transaction
+    "transaction.add": "Add Transaction",
+    "transaction.amount": "Amount (MAD)",
+    "transaction.description": "Description (optional)",
+    "transaction.empty": "No transactions yet",
+    "transaction.theyOweYou": "They owe you",
+    "transaction.youOweThem": "You owe them",
+    "transaction.delete": "Delete",
+
+    // Common
+    "common.cancel": "Cancel",
+    "common.confirm": "Confirm",
+    "common.delete": "Delete",
+    "common.save": "Save",
+    "common.close": "Close",
 
     // Settings
     "settings.title": "Settings",

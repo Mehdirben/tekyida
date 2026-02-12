@@ -3,20 +3,61 @@
     "short_name": "Tekyida",
     "description": "Track IOUs and debts with ease. Multiple notebooks, bilingual, mobile-optimized.",
     "start_url": "/app",
+    "scope": "/",
+    "id": "/app",
     "display": "standalone",
+    "display_override": [
+        "standalone",
+        "minimal-ui"
+    ],
     "background_color": "#0e1120",
     "theme_color": "#1B1B4B",
     "orientation": "portrait",
+    "categories": [
+        "finance",
+        "productivity",
+        "utilities"
+    ],
     "icons": [
         {
             "src": "/icons/icon-192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "/icons/icon-512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Dashboard",
+            "url": "/app",
+            "icons": [
+                {
+                    "src": "/icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Settings",
+            "url": "/app/settings",
+            "icons": [
+                {
+                    "src": "/icons/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
         }
     ]
 }

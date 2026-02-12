@@ -35,8 +35,8 @@ export default function BottomNav() {
                                 key={tab.href}
                                 href={tab.href}
                                 className={`flex flex-col items-center gap-0.5 px-6 py-1.5 rounded-xl transition-all duration-200 ${tab.active
-                                        ? "bg-primary-800/80 dark:bg-primary-500/70 text-white shadow-sm"
-                                        : "text-(--text-tertiary) hover:text-(--text-primary)"
+                                    ? "bg-primary-800/80 dark:bg-primary-500/70 text-white shadow-sm"
+                                    : "text-(--text-tertiary) hover:text-(--text-primary)"
                                     }`}
                             >
                                 <Icon size={20} strokeWidth={tab.active ? 2.4 : 1.8} />

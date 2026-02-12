@@ -91,6 +91,7 @@ const fr: Record<TranslationKey, string> = {
 
     // App Navigation
     "nav.dashboard": "Tableau de bord",
+    "nav.contacts": "Contacts",
     "nav.settings": "Paramètres",
 
     // Dashboard
@@ -108,6 +109,34 @@ const fr: Record<TranslationKey, string> = {
     "notebook.add": "Ajouter un Carnet",
     "notebook.contacts": "contacts",
     "notebook.balance": "Solde",
+    "notebook.delete": "Supprimer le Carnet",
+    "notebook.deleteConfirm": "Supprimer ce carnet ainsi que tous ses contacts et transactions ? Cette action est irréversible.",
+    "notebook.namePlaceholder": "Nom du carnet…",
+
+    // Contact
+    "contact.add": "Ajouter un Contact",
+    "contact.name": "Nom du contact",
+    "contact.phone": "Téléphone (optionnel)",
+    "contact.empty": "Aucun contact",
+    "contact.emptySubtitle": "Ajoutez votre premier contact pour commencer à suivre les transactions.",
+    "contact.delete": "Supprimer le Contact",
+    "contact.deleteConfirm": "Supprimer ce contact et toutes ses transactions ?",
+
+    // Transaction
+    "transaction.add": "Ajouter une Transaction",
+    "transaction.amount": "Montant (MAD)",
+    "transaction.description": "Description (optionnel)",
+    "transaction.empty": "Aucune transaction",
+    "transaction.theyOweYou": "Vous doit",
+    "transaction.youOweThem": "Vous devez",
+    "transaction.delete": "Supprimer",
+
+    // Common
+    "common.cancel": "Annuler",
+    "common.confirm": "Confirmer",
+    "common.delete": "Supprimer",
+    "common.save": "Enregistrer",
+    "common.close": "Fermer",
 
     // Settings
     "settings.title": "Paramètres",
