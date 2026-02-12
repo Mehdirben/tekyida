@@ -15,7 +15,7 @@ import { useConvexAuth } from "convex/react";
 export default function LoginPage() {
     const { t } = useTranslation();
     const { signIn } = useAuthActions();
-    const { isAuthenticated } = useConvexAuth();
+    const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
@@ -23,12 +23,15 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // Redirect once Convex auth state confirms authentication
+    // Redirect if already authenticated
     useEffect(() => {
-        if (isAuthenticated) {
+        if (!authLoading && isAuthenticated) {
             router.push("/app");
         }
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, authLoading, router]);
+
+    // Don't render form while checking auth or if already authenticated
+    if (authLoading || isAuthenticated) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
