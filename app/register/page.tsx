@@ -39,8 +39,8 @@ export default function RegisterPage() {
                         <div key={item.step} className="flex items-center gap-2">
                             <div
                                 className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[8px] font-bold ${item.done
-                                        ? "bg-accent-500/30 text-accent-500"
-                                        : "bg-white/15 dark:bg-white/5 text-(--text-tertiary)"
+                                    ? "bg-accent-500/30 text-accent-500"
+                                    : "bg-white/15 dark:bg-white/5 text-(--text-tertiary)"
                                     }`}
                             >
                                 {item.done ? "✓" : item.step}
@@ -95,9 +95,9 @@ export default function RegisterPage() {
             </div>
 
             {/* Page content */}
-            <div className="relative z-20 min-h-screen flex flex-col items-center justify-center px-5 py-12">
+            <div className="relative z-20 min-h-screen flex flex-col items-center justify-start sm:justify-center px-5 pt-24 pb-12">
                 {/* Top-right controls */}
-                <div className="fixed top-5 right-5 flex items-center gap-2 z-50">
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-50">
                     <LanguageToggle />
                     <ThemeToggle />
                 </div>
