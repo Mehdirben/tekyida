@@ -52,13 +52,10 @@ export default function RegisterPage() {
 
         setLoading(true);
 
-        try {
-            await signIn("password", { email, password, name, flow: "signUp" });
-            // Redirect handled by useEffect when isAuthenticated becomes true
-        } catch {
+        signIn("password", { email, password, name, flow: "signUp" }).catch(() => {
             setError(t("register.error") || "Registration failed. Please try again.");
             setLoading(false);
-        }
+        });
     };
 
     return (

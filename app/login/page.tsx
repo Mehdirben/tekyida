@@ -38,13 +38,10 @@ export default function LoginPage() {
         setError("");
         setLoading(true);
 
-        try {
-            await signIn("password", { email, password, flow: "signIn" });
-            // Redirect handled by useEffect when isAuthenticated becomes true
-        } catch {
+        signIn("password", { email, password, flow: "signIn" }).catch(() => {
             setError(t("login.error") || "Invalid email or password.");
             setLoading(false);
-        }
+        });
     };
 
     return (
