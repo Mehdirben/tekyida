@@ -1,36 +1,191 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tekyida — IOU Tracker 📒💰
 
-## Getting Started
+A modern, mobile-first IOU (I Owe You) tracker built for tracking debts between friends, family, and colleagues. Manage multiple notebooks, log transactions in Moroccan Dirhams (MAD), and stay synced across devices.
 
-First, run the development server:
+> **Live:** Installable as a PWA on any device.
+
+---
+
+## ✨ Features
+
+- **Multiple Notebooks** — Organize debts by context (personal, business, trips)
+- **Contact Management** — Add contacts with optional phone numbers per notebook
+- **Transaction Tracking** — Log who owes whom, how much, and why
+- **Real-time Sync** — All data syncs instantly via Convex
+- **Bilingual** — Full French / English support with one-click toggle
+- **Dark / Light Mode** — Automatic system detection + manual toggle
+- **PWA Ready** — Install on mobile for native-like experience with offline support
+- **Secure Auth** — Email & password authentication via Convex Auth
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Framework** | [Next.js 16](https://nextjs.org/) (App Router) |
+| **UI** | [React 19](https://react.dev/) + [Tailwind CSS v4](https://tailwindcss.com/) |
+| **Backend** | [Convex](https://convex.dev/) (real-time database + serverless functions) |
+| **Auth** | [@convex-dev/auth](https://labs.convex.dev/auth) (email/password) |
+| **Icons** | [Lucide React](https://lucide.dev/) |
+| **PWA** | Service Worker + Web App Manifest |
+| **Design** | Liquid Glass aesthetic with mesh gradients and glassmorphism |
+
+---
+
+## 📁 Project Structure
+
+```
+tekyida/
+├── app/                    # Next.js App Router pages
+│   ├── layout.tsx          # Root layout (fonts, meta, PWA, providers)
+│   ├── page.tsx            # Landing page (redirects to /app in PWA mode)
+│   ├── providers.tsx       # ConvexAuthNextjsProvider wrapper
+│   ├── globals.css         # Design system (themes, glass effects, animations)
+│   ├── login/page.tsx      # Login page
+│   ├── register/page.tsx   # Registration page
+│   └── app/                # Authenticated app section
+│       ├── layout.tsx      # Auth guard + bottom nav layout
+│       ├── page.tsx        # Dashboard (notebooks, stats, contacts, transactions)
+│       └── settings/       # Settings page (account, theme, language, PWA install)
+├── components/
+│   ├── ui/                 # Reusable UI primitives (Button, Logo, Card, Badge, Toggles)
+│   ├── app/                # App feature components
+│   │   ├── BottomNav.tsx       # Floating pill navigation bar
+│   │   ├── NotebookSwitcher.tsx# Notebook dropdown picker
+│   │   ├── QuickStats.tsx      # Balance summary cards
+│   │   ├── ContactList.tsx     # Contact list with add/delete
+│   │   └── TransactionList.tsx # Transaction sheet with add/delete
+│   └── landing/            # Landing page sections
+│       ├── Header.tsx      # Navigation header
+│       ├── HeroSection.tsx # Hero with floating cards
+│       ├── FeaturesSection.tsx
+│       ├── HowItWorksSection.tsx
+│       ├── CTASection.tsx
+│       └── Footer.tsx
+├── convex/                 # Convex backend
+│   ├── schema.ts           # Database schema (notebooks, contacts, transactions)
+│   ├── auth.ts             # Auth setup (email/password provider)
+│   ├── auth.config.ts      # Auth configuration
+│   ├── notebooks.ts        # Notebook CRUD mutations & queries
+│   ├── contacts.ts         # Contact CRUD mutations & queries
+│   ├── transactions.ts     # Transaction CRUD mutations & queries
+│   └── http.ts             # HTTP router for auth endpoints
+├── i18n/                   # Internationalization
+│   ├── en.ts               # English translations
+│   ├── fr.ts               # French translations
+│   └── LanguageContext.tsx  # React context + useTranslation hook
+├── public/
+│   ├── manifest.json       # PWA manifest
+│   ├── sw.js               # Service worker
+│   └── icons/              # PWA icons (192px, 512px)
+└── package.json
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 18+
+- A free [Convex](https://convex.dev/) account
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/your-username/tekyida.git
+cd tekyida
+npm install
+```
+
+### 2. Set Up Convex
+
+```bash
+npx convex dev
+```
+
+This will:
+
+- Prompt you to log in to Convex (creates an account if needed)
+- Create a new project and development deployment
+- Auto-generate a `.env.local` file with your Convex credentials
+- Start watching for backend changes
+
+### 3. Start Development Server
+
+In a separate terminal:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy the example and fill in your values:
 
-## Learn More
+```bash
+cp .env.example .env.local
+```
 
-To learn more about Next.js, take a look at the following resources:
+| Variable | Description |
+|---|---|
+| `CONVEX_DEPLOYMENT` | Your Convex deployment identifier (set by `npx convex dev`) |
+| `NEXT_PUBLIC_CONVEX_URL` | Your Convex cloud endpoint URL |
+| `NEXT_PUBLIC_CONVEX_SITE_URL` | Your Convex site endpoint (for auth callbacks) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> These are automatically configured when you run `npx convex dev` for the first time.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🏗 Production Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Deploy Convex Backend
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npx convex deploy
+```
+
+### Deploy Frontend (Vercel)
+
+```bash
+npx vercel --prod
+```
+
+Or connect your GitHub repo to [Vercel](https://vercel.com/) for automatic deployments. Set the same environment variables in Vercel's dashboard, pointing to your **production** Convex URL.
+
+---
+
+## 📱 PWA Installation
+
+Tekyida is a Progressive Web App. Users can install it from:
+
+- **Chrome/Edge**: Click the install icon in the address bar, or use the install button in Settings
+- **Safari/iOS**: Share → Add to Home Screen
+- **Settings page**: An "Install App" button appears when the browser supports installation
+
+---
+
+## 🌐 Internationalization
+
+The app supports **English** and **French** with full coverage across all pages. Translations are defined in `i18n/en.ts` and `i18n/fr.ts`. The language toggle persists via `localStorage`.
+
+---
+
+## 🎨 Design System
+
+Tekyida uses a custom **Liquid Glass** design system built with Tailwind CSS v4:
+
+- **Mesh gradient backgrounds** with GPU-optimized animations
+- **Glassmorphic cards and inputs** (`liquid-glass`, `liquid-glass-card`, `glass-input`)
+- **Gradient text** accents
+- **Smooth micro-animations** (slide-up, fade-in, scale-in)
+- **CSS custom properties** for seamless dark/light mode theming
+
+---
+
+<p align="center">
+  Made with ❤️ in Morocco 🇲🇦
+</p>
