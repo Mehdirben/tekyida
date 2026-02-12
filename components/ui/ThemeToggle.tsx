@@ -13,18 +13,18 @@ export default function ThemeToggle() {
     ];
 
     return (
-        <div className="flex items-center bg-[var(--bg-card)] border border-[var(--border)] rounded-full p-0.5">
+        <div className="flex items-center liquid-glass rounded-full p-0.5">
             {options.map(({ value, icon: Icon, label }) => (
                 <button
                     key={value}
                     onClick={() => setTheme(value)}
                     aria-label={label}
                     className={`p-1.5 rounded-full transition-all duration-200 cursor-pointer ${theme === value
-                            ? "bg-primary-500 text-white shadow-md shadow-primary-500/25"
-                            : "text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                            ? "bg-primary-800/80 dark:bg-primary-500/70 text-white shadow-sm backdrop-blur-sm"
+                            : "text-(--text-tertiary) hover:text-(--text-primary)"
                         }`}
                 >
-                    <Icon size={14} strokeWidth={2.2} />
+                    <Icon size={13} strokeWidth={2.2} />
                 </button>
             ))}
         </div>

@@ -4,8 +4,8 @@
     "description": "Track IOUs and debts with ease. Multiple notebooks, bilingual, mobile-optimized.",
     "start_url": "/app",
     "display": "standalone",
-    "background_color": "#0f0f14",
-    "theme_color": "#6366f1",
+    "background_color": "#0e1120",
+    "theme_color": "#1B1B4B",
     "orientation": "portrait",
     "icons": [
         {

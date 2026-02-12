@@ -9,40 +9,22 @@ export default function CTASection() {
 
     return (
         <section className="relative py-24 sm:py-32">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6">
-                <div className="relative overflow-hidden rounded-3xl">
-                    {/* Background gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900" />
-
-                    {/* Decorative orbs */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary-400/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary-300/15 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
-
-                    {/* Grid overlay */}
-                    <div
-                        className="absolute inset-0 opacity-[0.05]"
-                        style={{
-                            backgroundImage:
-                                "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
-                            backgroundSize: "40px 40px",
-                        }}
-                    />
+            <div className="max-w-3xl mx-auto px-5 sm:px-8">
+                <div className="liquid-glass-card p-10 sm:p-14 text-center relative overflow-hidden">
+                    {/* Shimmer */}
+                    <div className="absolute inset-0 glass-shimmer rounded-[1.25rem]" />
 
                     {/* Content */}
-                    <div className="relative z-10 py-16 px-8 sm:px-16 text-center">
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4">
+                    <div className="relative z-10">
+                        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">
                             {t("cta.title")}
                         </h2>
-                        <p className="text-primary-100/80 text-lg max-w-xl mx-auto mb-8">
+                        <p className="text-(--text-secondary) text-base sm:text-lg max-w-lg mx-auto mb-8">
                             {t("cta.subtitle")}
                         </p>
-                        <Button
-                            size="lg"
-                            className="!bg-white !text-primary-700 hover:!bg-primary-50 !shadow-xl hover:!shadow-2xl"
-                            onClick={() => (window.location.href = "/app")}
-                        >
+                        <Button size="lg" onClick={() => (window.location.href = "/app")}>
                             {t("cta.button")}
-                            <ArrowRight size={18} />
+                            <ArrowRight size={16} />
                         </Button>
                     </div>
                 </div>

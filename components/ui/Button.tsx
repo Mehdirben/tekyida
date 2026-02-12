@@ -2,7 +2,7 @@
 
 import { type ButtonHTMLAttributes, forwardRef } from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "glass" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -13,19 +13,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<Variant, string> = {
     primary:
-        "gradient-btn text-white shadow-lg hover:shadow-xl",
-    secondary:
-        "bg-[var(--bg-card)] text-[var(--text-primary)] border border-[var(--border)] hover:border-[var(--border-hover)] hover:bg-[var(--bg-card-hover)] transition-all duration-200",
+        "bg-primary-800/90 dark:bg-primary-500/80 text-white backdrop-blur-md border border-primary-700/50 dark:border-primary-400/30 hover:bg-primary-700/90 dark:hover:bg-primary-400/80 shadow-lg shadow-primary-900/15 dark:shadow-primary-500/15 hover:shadow-xl transition-all duration-200",
+    glass:
+        "glass-btn text-(--text-primary) transition-all duration-200",
     ghost:
-        "bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] transition-all duration-200",
+        "bg-transparent text-(--text-secondary) hover:text-(--text-primary) hover:bg-white/15 dark:hover:bg-white/5 transition-all duration-200",
     danger:
-        "bg-danger-500 text-white hover:bg-danger-600 transition-all duration-200 shadow-lg",
+        "bg-danger-500/85 text-white backdrop-blur-md border border-danger-500/40 hover:bg-danger-500/95 transition-all duration-200",
 };
 
 const sizeClasses: Record<Size, string> = {
-    sm: "px-3 py-1.5 text-sm rounded-lg",
-    md: "px-5 py-2.5 text-sm rounded-xl",
-    lg: "px-7 py-3.5 text-base rounded-xl",
+    sm: "px-4 py-2 text-sm rounded-full",
+    md: "px-6 py-2.5 text-sm rounded-full",
+    lg: "px-8 py-3.5 text-base rounded-full",
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(

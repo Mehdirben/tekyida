@@ -9,8 +9,6 @@ import {
     ShieldCheck,
     type LucideIcon,
 } from "lucide-react";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
 import { useTranslation } from "@/i18n/LanguageContext";
 import type { TranslationKey } from "@/i18n/en";
 
@@ -18,8 +16,8 @@ interface Feature {
     icon: LucideIcon;
     titleKey: TranslationKey;
     descKey: TranslationKey;
-    color: string;
-    bgColor: string;
+    iconBg: string;
+    iconColor: string;
 }
 
 const features: Feature[] = [
@@ -27,43 +25,43 @@ const features: Feature[] = [
         icon: BookOpen,
         titleKey: "features.notebooks.title",
         descKey: "features.notebooks.desc",
-        color: "text-primary-400",
-        bgColor: "bg-primary-500/10",
+        iconBg: "bg-primary-500/15",
+        iconColor: "text-primary-600 dark:text-primary-300",
     },
     {
         icon: Coins,
         titleKey: "features.currency.title",
         descKey: "features.currency.desc",
-        color: "text-accent-400",
-        bgColor: "bg-accent-500/10",
+        iconBg: "bg-gold-500/15",
+        iconColor: "text-gold-600 dark:text-gold-400",
     },
     {
         icon: Languages,
         titleKey: "features.bilingual.title",
         descKey: "features.bilingual.desc",
-        color: "text-primary-300",
-        bgColor: "bg-primary-400/10",
+        iconBg: "bg-primary-400/15",
+        iconColor: "text-primary-500 dark:text-primary-300",
     },
     {
         icon: Cloud,
         titleKey: "features.cloud.title",
         descKey: "features.cloud.desc",
-        color: "text-primary-400",
-        bgColor: "bg-primary-500/10",
+        iconBg: "bg-accent-500/15",
+        iconColor: "text-accent-600 dark:text-accent-400",
     },
     {
         icon: Wifi,
         titleKey: "features.pwa.title",
         descKey: "features.pwa.desc",
-        color: "text-accent-400",
-        bgColor: "bg-accent-500/10",
+        iconBg: "bg-gold-500/15",
+        iconColor: "text-gold-600 dark:text-gold-400",
     },
     {
         icon: ShieldCheck,
         titleKey: "features.secure.title",
         descKey: "features.secure.desc",
-        color: "text-primary-300",
-        bgColor: "bg-primary-400/10",
+        iconBg: "bg-primary-500/15",
+        iconColor: "text-primary-600 dark:text-primary-300",
     },
 ];
 
@@ -72,47 +70,41 @@ export default function FeaturesSection() {
 
     return (
         <section id="features" className="relative py-24 sm:py-32">
-            {/* Background accent */}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary-500/5 rounded-full blur-3xl" />
-            </div>
-
-            <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="max-w-6xl mx-auto px-5 sm:px-8">
                 {/* Section header */}
-                <div className="text-center mb-16">
-                    <Badge variant="primary" className="mb-4">
+                <div className="text-center mb-14">
+                    <span className="inline-flex items-center px-4 py-1.5 rounded-full liquid-glass text-xs font-semibold text-primary-600 dark:text-primary-300 mb-4">
                         {t("features.sectionTag")}
-                    </Badge>
-                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+                    </span>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">
                         {t("features.title")}
                     </h2>
-                    <p className="text-[var(--text-secondary)] text-lg max-w-xl mx-auto">
+                    <p className="text-(--text-secondary) text-base max-w-lg mx-auto">
                         {t("features.subtitle")}
                     </p>
                 </div>
 
                 {/* Feature grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {features.map((feature, i) => {
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {features.map((feature) => {
                         const Icon = feature.icon;
                         return (
-                            <Card
+                            <div
                                 key={feature.titleKey}
-                                hover
-                                className={`p-6 animate-slide-up delay-${(i + 1) * 100}`}
+                                className="liquid-glass-card p-6 glass-shimmer"
                             >
                                 <div
-                                    className={`w-12 h-12 ${feature.bgColor} rounded-xl flex items-center justify-center mb-4`}
+                                    className={`w-11 h-11 ${feature.iconBg} rounded-xl flex items-center justify-center mb-4`}
                                 >
-                                    <Icon size={24} className={feature.color} strokeWidth={2} />
+                                    <Icon size={22} className={feature.iconColor} strokeWidth={1.8} />
                                 </div>
-                                <h3 className="text-lg font-bold mb-2">
+                                <h3 className="text-base font-bold mb-1.5">
                                     {t(feature.titleKey)}
                                 </h3>
-                                <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
+                                <p className="text-(--text-secondary) text-sm leading-relaxed">
                                     {t(feature.descKey)}
                                 </p>
-                            </Card>
+                            </div>
                         );
                     })}
                 </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
+import Logo from "@/components/ui/Logo";
 import { useTranslation } from "@/i18n/LanguageContext";
 
 export default function HeroSection() {
@@ -10,133 +10,133 @@ export default function HeroSection() {
 
     return (
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
-            {/* Background decorations */}
-            <div className="absolute inset-0 pointer-events-none">
-                {/* Gradient bg */}
-                <div className="absolute inset-0 bg-gradient-to-b from-[var(--hero-gradient-from)] to-[var(--hero-gradient-to)]" />
 
-                {/* Floating orbs */}
-                <div className="absolute top-1/4 left-1/6 w-72 h-72 bg-primary-500/10 rounded-full blur-3xl animate-float" />
-                <div className="absolute bottom-1/4 right-1/6 w-96 h-96 bg-primary-400/8 rounded-full blur-3xl animate-float-slow" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-600/5 rounded-full blur-3xl animate-pulse-glow" />
+            {/* ── Floating Glass Product Cards ── */}
 
-                {/* Grid pattern */}
-                <div
-                    className="absolute inset-0 opacity-[0.03]"
-                    style={{
-                        backgroundImage:
-                            "linear-gradient(var(--text-primary) 1px, transparent 1px), linear-gradient(90deg, var(--text-primary) 1px, transparent 1px)",
-                        backgroundSize: "60px 60px",
-                    }}
-                />
+            {/* Top-left — Notebooks card */}
+            <div
+                className="hidden lg:block absolute top-32 left-6 xl:left-16 liquid-glass-card p-4 w-56 animate-float z-10"
+                style={{ "--float-rotate": "-3deg" } as React.CSSProperties}
+            >
+                <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg bg-gold-500/20 flex items-center justify-center">
+                        <span className="text-sm">📒</span>
+                    </div>
+                    <span className="text-xs font-semibold">Carnets</span>
+                </div>
+                <div className="space-y-2.5">
+                    <div>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-(--text-secondary)">Personnel</span>
+                            <span className="text-accent-500 font-bold">+1,250 MAD</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-white/20 dark:bg-white/5 overflow-hidden">
+                            <div className="h-full w-[72%] bg-accent-500/80 rounded-full" />
+                        </div>
+                    </div>
+                    <div>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-(--text-secondary)">Business</span>
+                            <span className="text-danger-500 font-bold">-340 MAD</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-white/20 dark:bg-white/5 overflow-hidden">
+                            <div className="h-full w-[38%] bg-danger-500/80 rounded-full" />
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Content */}
-            <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
-                {/* Tag */}
-                <div className="animate-fade-in">
-                    <Badge variant="primary" className="mb-6 text-sm px-4 py-1.5">
-                        <Sparkles size={14} />
-                        {t("hero.tagline")}
-                    </Badge>
+            {/* Top-right — Person balance */}
+            <div
+                className="hidden lg:block absolute top-36 right-6 xl:right-16 liquid-glass-card p-4 w-52 animate-float-alt z-10"
+                style={{ "--float-rotate": "2deg" } as React.CSSProperties}
+            >
+                <div className="flex items-center gap-2.5 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-primary-500/15 flex items-center justify-center text-xs font-bold text-primary-600 dark:text-primary-300">
+                        A
+                    </div>
+                    <div>
+                        <p className="text-xs font-semibold">Ahmed K.</p>
+                        <p className="text-[10px] text-(--text-tertiary)">2 transactions</p>
+                    </div>
+                </div>
+                <div className="liquid-glass rounded-xl px-3 py-2 flex items-center justify-between">
+                    <span className="text-[10px] text-(--text-tertiary) uppercase tracking-wider font-medium">Solde</span>
+                    <span className="text-sm font-bold text-accent-500">+500 MAD</span>
+                </div>
+            </div>
+
+            {/* Bottom-left — Transactions */}
+            <div
+                className="hidden lg:block absolute bottom-32 left-6 xl:left-12 liquid-glass-card p-4 w-64 animate-float-alt z-10"
+                style={{ "--float-rotate": "2deg" } as React.CSSProperties}
+            >
+                <p className="text-xs font-semibold mb-3">Transactions récentes</p>
+                <div className="space-y-2">
+                    {[
+                        { name: "Sara M.", amount: "-200", positive: false, date: "Fév 10" },
+                        { name: "Youssef B.", amount: "+950", positive: true, date: "Fév 8" },
+                    ].map((tx) => (
+                        <div key={tx.name} className="flex items-center justify-between liquid-glass rounded-xl px-3 py-2">
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-primary-500/10 flex items-center justify-center text-[9px] font-bold text-primary-600 dark:text-primary-300">
+                                    {tx.name[0]}
+                                </div>
+                                <div>
+                                    <p className="text-[11px] font-medium">{tx.name}</p>
+                                    <p className="text-[9px] text-(--text-tertiary)">{tx.date}</p>
+                                </div>
+                            </div>
+                            <span className={`text-xs font-bold ${tx.positive ? "text-accent-500" : "text-danger-500"}`}>
+                                {tx.amount} MAD
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Bottom-right — Features pills */}
+            <div
+                className="hidden lg:block absolute bottom-36 right-6 xl:right-12 liquid-glass-card p-4 w-52 animate-float z-10"
+                style={{ "--float-rotate": "-2deg" } as React.CSSProperties}
+            >
+                <p className="text-xs font-semibold mb-3">Fonctionnalités</p>
+                <div className="flex flex-wrap gap-1.5">
+                    {["🇫🇷 FR/EN", "☁️ Cloud", "📱 PWA", "🔒 Auth", "💰 MAD"].map((feat) => (
+                        <span
+                            key={feat}
+                            className="text-[10px] font-medium px-2.5 py-1 rounded-full liquid-glass text-(--text-secondary)"
+                        >
+                            {feat}
+                        </span>
+                    ))}
+                </div>
+            </div>
+
+            {/* ── Center Hero Content ── */}
+            <div className="relative z-20 max-w-3xl mx-auto px-5 text-center">
+                {/* Logo icon */}
+                <div className="flex justify-center mb-8 animate-fade-in">
+                    <Logo size="lg" showText={false} />
                 </div>
 
-                {/* Title */}
-                <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6 animate-slide-up">
+                {/* Headline */}
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4.25rem] font-extrabold tracking-tight leading-[1.08] mb-6 animate-slide-up">
                     <span className="block">{t("hero.title.line1")}</span>
                     <span className="block gradient-text">{t("hero.title.line2")}</span>
                 </h1>
 
                 {/* Subtitle */}
-                <p className="text-lg sm:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 animate-slide-up delay-200 leading-relaxed">
+                <p className="text-base sm:text-lg text-(--text-secondary) max-w-xl mx-auto mb-10 animate-slide-up delay-200 leading-relaxed">
                     {t("hero.subtitle")}
                 </p>
 
-                {/* CTAs */}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-up delay-400">
+                {/* CTA */}
+                <div className="animate-slide-up delay-400">
                     <Button size="lg" onClick={() => (window.location.href = "/app")}>
                         {t("hero.cta.primary")}
-                        <ArrowRight size={18} />
+                        <ArrowRight size={16} />
                     </Button>
-                    <Button
-                        variant="secondary"
-                        size="lg"
-                        onClick={() =>
-                            document
-                                .getElementById("how-it-works")
-                                ?.scrollIntoView({ behavior: "smooth" })
-                        }
-                    >
-                        {t("hero.cta.secondary")}
-                    </Button>
-                </div>
-
-                {/* Mockup preview */}
-                <div className="mt-16 animate-slide-up delay-600">
-                    <div className="relative max-w-sm mx-auto">
-                        {/* Glow behind mockup */}
-                        <div className="absolute -inset-4 bg-gradient-to-r from-primary-500/20 via-primary-400/10 to-primary-600/20 rounded-3xl blur-2xl" />
-
-                        {/* Phone mockup */}
-                        <div className="relative bg-[var(--bg-card)] rounded-3xl border border-[var(--border)] shadow-2xl shadow-[var(--shadow-color)] overflow-hidden">
-                            {/* Status bar */}
-                            <div className="flex items-center justify-between px-6 py-3 border-b border-[var(--border)]">
-                                <span className="text-xs text-[var(--text-tertiary)]">9:41</span>
-                                <div className="flex gap-1">
-                                    <div className="w-3.5 h-2 bg-[var(--text-tertiary)] rounded-sm" />
-                                    <div className="w-1.5 h-2 bg-[var(--text-tertiary)] rounded-sm" />
-                                </div>
-                            </div>
-
-                            {/* App header */}
-                            <div className="px-6 py-4 border-b border-[var(--border)]">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-xs text-[var(--text-tertiary)] mb-0.5">
-                                            📒 Personnel
-                                        </p>
-                                        <h3 className="text-lg font-bold">Mes Dettes</h3>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-xs text-[var(--text-tertiary)]">Solde</p>
-                                        <p className="text-lg font-bold text-accent-500">
-                                            +1,250 MAD
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Mock entries */}
-                            <div className="divide-y divide-[var(--border)]">
-                                {[
-                                    { name: "Ahmed K.", amount: "+500", positive: true },
-                                    { name: "Sara M.", amount: "-200", positive: false },
-                                    { name: "Youssef B.", amount: "+950", positive: true },
-                                ].map((entry) => (
-                                    <div
-                                        key={entry.name}
-                                        className="flex items-center justify-between px-6 py-4"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-primary-500/15 flex items-center justify-center text-sm font-bold text-primary-400">
-                                                {entry.name[0]}
-                                            </div>
-                                            <span className="text-sm font-medium">{entry.name}</span>
-                                        </div>
-                                        <span
-                                            className={`text-sm font-bold ${entry.positive ? "text-accent-500" : "text-danger-500"
-                                                }`}
-                                        >
-                                            {entry.amount} MAD
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Bottom padding */}
-                            <div className="h-6" />
-                        </div>
-                    </div>
                 </div>
             </div>
         </section>

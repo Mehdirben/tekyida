@@ -8,33 +8,22 @@ export default function Footer() {
     const { t } = useTranslation();
 
     return (
-        <footer className="border-t border-[var(--border)] py-12">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-                    {/* Logo + tagline */}
-                    <div className="flex flex-col items-center sm:items-start gap-2">
+        <footer className="relative py-8">
+            <div className="max-w-6xl mx-auto px-5 sm:px-8">
+                <div className="liquid-glass-card rounded-2xl px-6 py-5">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <Logo size="sm" />
-                        <p className="text-sm text-[var(--text-tertiary)]">
-                            {t("footer.tagline")}
+
+                        <div className="flex items-center gap-1.5 text-sm text-(--text-tertiary)">
+                            <span>{t("footer.madeWith")}</span>
+                            <Heart size={13} className="text-danger-500 fill-danger-500" />
+                            <span>{t("footer.inMorocco")} 🇲🇦</span>
+                        </div>
+
+                        <p className="text-xs text-(--text-tertiary)">
+                            © {new Date().getFullYear()} Tekyida
                         </p>
                     </div>
-
-                    {/* Made with love */}
-                    <div className="flex items-center gap-1.5 text-sm text-[var(--text-tertiary)]">
-                        <span>{t("footer.madeWith")}</span>
-                        <Heart
-                            size={14}
-                            className="text-danger-500 fill-danger-500"
-                        />
-                        <span>{t("footer.inMorocco")} 🇲🇦</span>
-                    </div>
-                </div>
-
-                {/* Copyright */}
-                <div className="mt-8 pt-6 border-t border-[var(--border)] text-center">
-                    <p className="text-xs text-[var(--text-tertiary)]">
-                        © {new Date().getFullYear()} Tekyida. {t("footer.rights")}
-                    </p>
                 </div>
             </div>
         </footer>

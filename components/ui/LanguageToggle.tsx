@@ -11,15 +11,15 @@ export default function LanguageToggle() {
     ];
 
     return (
-        <div className="flex items-center bg-[var(--bg-card)] border border-[var(--border)] rounded-full p-0.5">
+        <div className="flex items-center liquid-glass rounded-full p-0.5">
             {options.map(({ value, label, flag }) => (
                 <button
                     key={value}
                     onClick={() => setLanguage(value)}
                     aria-label={`Switch to ${label}`}
                     className={`px-2 py-1 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1 ${language === value
-                            ? "bg-primary-500 text-white shadow-md shadow-primary-500/25"
-                            : "text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                            ? "bg-primary-800/80 dark:bg-primary-500/70 text-white shadow-sm backdrop-blur-sm"
+                            : "text-(--text-tertiary) hover:text-(--text-primary)"
                         }`}
                 >
                     <span>{flag}</span>
