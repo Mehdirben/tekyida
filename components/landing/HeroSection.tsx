@@ -116,23 +116,23 @@ export default function HeroSection() {
             {/* ── Center Hero Content ── */}
             <div className="relative z-20 max-w-3xl mx-auto px-5 text-center">
                 {/* Logo icon */}
-                <div className="flex justify-center mb-8 animate-fade-in">
+                <div className="flex justify-center mb-8">
                     <Logo size="lg" showText={false} />
                 </div>
 
                 {/* Headline */}
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4.25rem] font-extrabold tracking-tight leading-[1.08] mb-6 animate-slide-up">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4.25rem] font-extrabold tracking-tight leading-[1.08] mb-6">
                     <span className="block">{t("hero.title.line1")}</span>
                     <span className="block gradient-text">{t("hero.title.line2")}</span>
                 </h1>
 
                 {/* Subtitle */}
-                <p className="text-base sm:text-lg text-(--text-secondary) max-w-xl mx-auto mb-10 animate-slide-up delay-200 leading-relaxed">
+                <p className="text-base sm:text-lg text-(--text-secondary) max-w-xl mx-auto mb-10 leading-relaxed">
                     {t("hero.subtitle")}
                 </p>
 
                 {/* CTA */}
-                <div className="animate-slide-up delay-400">
+                <div>
                     <Button size="lg" onClick={() => (window.location.href = "/app")}>
                         {t("hero.cta.primary")}
                         <ArrowRight size={16} />
