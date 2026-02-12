@@ -64,8 +64,7 @@ export default function BottomNav() {
                                 <Icon
                                     size={20}
                                     strokeWidth={tab.active ? 2.2 : 1.8}
-                                    className={`transition-all duration-300 ${!tab.active ? "hover:text-[var(--text-primary)]" : ""
-                                        }`}
+                                    className="transition-all duration-300"
                                 />
                                 {tab.active && (
                                     <span className="text-xs font-semibold tracking-wide whitespace-nowrap">

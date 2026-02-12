@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
     ArrowDownLeft,
     ArrowUpRight,
@@ -36,6 +37,7 @@ export default function TransactionList({
     const [amount, setAmount] = useState("");
     const [isPositive, setIsPositive] = useState(true); // true = they owe you
     const [description, setDescription] = useState("");
+    const [deleteTargetId, setDeleteTargetId] = useState<Id<"transactions"> | null>(null);
 
     const handleAdd = async () => {
         const parsedAmount = parseFloat(amount);
@@ -52,8 +54,10 @@ export default function TransactionList({
         setAdding(false);
     };
 
-    const handleDelete = async (id: Id<"transactions">) => {
-        await deleteTransaction({ id });
+    const confirmDelete = async () => {
+        if (!deleteTargetId) return;
+        await deleteTransaction({ id: deleteTargetId });
+        setDeleteTargetId(null);
     };
 
     const formatDate = (ts: number) => {
@@ -67,8 +71,8 @@ export default function TransactionList({
     const balance =
         transactions?.reduce((sum, t) => sum + t.amount, 0) ?? 0;
 
-    return (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center">
+    return createPortal(
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
@@ -120,7 +124,7 @@ export default function TransactionList({
                         transactions.map((tx) => (
                             <div
                                 key={tx._id}
-                                className="liquid-glass-card p-3.5 flex items-center gap-3 group"
+                                className="liquid-glass-card p-3.5 flex items-center gap-3"
                             >
                                 <div
                                     className={`p-1.5 rounded-lg ${tx.amount > 0
@@ -161,16 +165,51 @@ export default function TransactionList({
                                         {tx.amount.toFixed(2)}
                                     </span>
                                     <button
-                                        onClick={() => handleDelete(tx._id)}
-                                        className="p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-danger-500/10 transition-all cursor-pointer"
+                                        onClick={() => setDeleteTargetId(tx._id)}
+                                        className="p-1 rounded-md text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
                                     >
-                                        <Trash2 size={12} className="text-danger-500" />
+                                        <Trash2 size={12} />
                                     </button>
                                 </div>
                             </div>
                         ))
                     )}
                 </div>
+
+                {/* Delete Confirmation Popup */}
+                {deleteTargetId && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center">
+                        <div
+                            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+                            onClick={() => setDeleteTargetId(null)}
+                        />
+                        <div className="relative z-10 w-[85%] max-w-xs liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
+                            <div className="p-5 text-center">
+                                <div className="inline-flex p-3 rounded-full bg-danger-500/10 mb-3">
+                                    <Trash2 size={20} className="text-danger-500" />
+                                </div>
+                                <h3 className="text-sm font-bold mb-1">{t("transaction.delete")}</h3>
+                                <p className="text-xs text-(--text-secondary)">
+                                    {t("transaction.deleteConfirm")}
+                                </p>
+                            </div>
+                            <div className="flex border-t border-(--border)">
+                                <button
+                                    onClick={() => setDeleteTargetId(null)}
+                                    className="flex-1 py-3 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
+                                >
+                                    {t("common.cancel")}
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    className="flex-1 py-3 text-sm font-semibold text-danger-500 border-l border-(--border) transition-all active:bg-danger-500/10 cursor-pointer"
+                                >
+                                    {t("common.delete")}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Add Transaction */}
                 <div className="px-5 pb-5 pt-2 border-t border-(--border)">
@@ -238,6 +277,7 @@ export default function TransactionList({
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

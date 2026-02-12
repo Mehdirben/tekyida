@@ -130,6 +130,7 @@ const fr: Record<TranslationKey, string> = {
     "transaction.theyOweYou": "Vous doit",
     "transaction.youOweThem": "Vous devez",
     "transaction.delete": "Supprimer",
+    "transaction.deleteConfirm": "Supprimer cette transaction ? Cette action est irréversible.",
 
     // Common
     "common.cancel": "Annuler",

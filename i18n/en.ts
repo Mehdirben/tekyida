@@ -128,6 +128,7 @@ const en = {
     "transaction.theyOweYou": "They owe you",
     "transaction.youOweThem": "You owe them",
     "transaction.delete": "Delete",
+    "transaction.deleteConfirm": "Delete this transaction? This cannot be undone.",
 
     // Common
     "common.cancel": "Cancel",

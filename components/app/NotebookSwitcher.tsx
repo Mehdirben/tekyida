@@ -75,7 +75,7 @@ export default function NotebookSwitcher({
                         setNewName("");
                     }
                 }}
-                className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg active:scale-[0.97]"
+                className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl cursor-pointer transition-all duration-300 active:scale-[0.97]"
                 style={{
                     background: "var(--glass-bg-heavy)",
                     backdropFilter: "blur(32px) saturate(2)",
@@ -97,7 +97,7 @@ export default function NotebookSwitcher({
 
             {/* Dropdown */}
             <div
-                className={`absolute top-full right-0 mt-2 w-72 rounded-2xl overflow-hidden z-50 transition-all duration-300 ease-out origin-top-right ${open
+                className={`absolute top-full right-0 mt-2 w-72 rounded-2xl overflow-hidden z-60 transition-all duration-300 ease-out origin-top-right ${open
                     ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
                     : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
                     }`}

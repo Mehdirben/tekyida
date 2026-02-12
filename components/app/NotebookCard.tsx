@@ -33,7 +33,7 @@ export default function NotebookCard({
     return (
         <button
             onClick={onClick}
-            className="liquid-glass-card p-5 w-full text-left flex items-center gap-4 group cursor-pointer"
+            className="liquid-glass-card p-5 w-full text-left flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all"
         >
             {/* Icon */}
             <div className="p-2.5 rounded-xl liquid-glass shrink-0">
@@ -57,7 +57,7 @@ export default function NotebookCard({
             {/* Chevron */}
             <ChevronRight
                 size={18}
-                className="text-(--text-tertiary) group-hover:text-(--text-primary) transition-colors shrink-0"
+                className="text-(--text-tertiary) shrink-0"
             />
         </button>
     );

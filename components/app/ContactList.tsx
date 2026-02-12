@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { UserPlus, User, Phone, ChevronRight, Trash2 } from "lucide-react";
+import { createPortal } from "react-dom";
+import { UserPlus, User, Phone, ChevronRight, Trash2, X } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -30,6 +31,7 @@ export default function ContactList({
     const [adding, setAdding] = useState(false);
     const [newName, setNewName] = useState("");
     const [newPhone, setNewPhone] = useState("");
+    const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null);
     const nameRef = useRef<HTMLInputElement>(null);
 
     const createContact = useMutation(api.contacts.create);
@@ -52,12 +54,10 @@ export default function ContactList({
         setAdding(false);
     };
 
-    const handleDelete = async (e: React.MouseEvent, id: Id<"contacts">) => {
-        e.stopPropagation();
-        e.preventDefault();
-        if (confirm(t("contact.deleteConfirm"))) {
-            await deleteContact({ id });
-        }
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        await deleteContact({ id: deleteTarget._id });
+        setDeleteTarget(null);
     };
 
     const formatBalance = (amount: number) => {
@@ -98,7 +98,7 @@ export default function ContactList({
                     onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") onSelectContact(contact);
                     }}
-                    className="liquid-glass-card p-4 w-full text-left flex items-center gap-3 group cursor-pointer active:scale-[0.98] transition-all"
+                    className="liquid-glass-card p-4 w-full text-left flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all"
                 >
                     <div className="p-2 rounded-xl liquid-glass shrink-0">
                         <User size={18} className="text-primary-500" />
@@ -121,24 +121,65 @@ export default function ContactList({
                         <span
                             role="button"
                             tabIndex={0}
-                            onClick={(e) => handleDelete(e, contact._id)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                setDeleteTarget(contact);
+                            }}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter" || e.key === " ") {
                                     e.stopPropagation();
-                                    handleDelete(e as unknown as React.MouseEvent, contact._id);
+                                    setDeleteTarget(contact);
                                 }
                             }}
-                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-danger-500/10 transition-all cursor-pointer"
+                            className="p-1.5 rounded-lg text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
                         >
-                            <Trash2 size={14} className="text-danger-500" />
+                            <Trash2 size={14} />
                         </span>
                         <ChevronRight
                             size={16}
-                            className="text-(--text-tertiary) group-hover:text-(--text-primary) transition-colors"
+                            className="text-(--text-tertiary) transition-colors"
                         />
                     </div>
                 </div>
             ))}
+
+            {/* Delete Confirmation Popup */}
+            {deleteTarget && createPortal(
+                <div className="fixed inset-0 z-[200] flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+                        onClick={() => setDeleteTarget(null)}
+                    />
+                    <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
+                        <div className="p-5 text-center">
+                            <div className="inline-flex p-3 rounded-full bg-danger-500/10 mb-3">
+                                <Trash2 size={22} className="text-danger-500" />
+                            </div>
+                            <h3 className="text-base font-bold mb-1">{t("contact.delete")}</h3>
+                            <p className="text-sm text-(--text-secondary)">
+                                {t("contact.deleteConfirm")}
+                            </p>
+                            <p className="text-sm font-semibold mt-2">{deleteTarget.name}</p>
+                        </div>
+                        <div className="flex border-t border-(--border)">
+                            <button
+                                onClick={() => setDeleteTarget(null)}
+                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
+                            >
+                                {t("common.cancel")}
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="flex-1 py-3.5 text-sm font-semibold text-danger-500 border-l border-(--border) transition-all active:bg-danger-500/10 cursor-pointer"
+                            >
+                                {t("common.delete")}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
 
             {/* Add Contact Section */}
             {adding ? (
