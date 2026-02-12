@@ -1,0 +1,31 @@
+"use client";
+
+import { useTranslation } from "@/i18n/LanguageContext";
+
+export default function LanguageToggle() {
+    const { language, setLanguage } = useTranslation();
+
+    const options = [
+        { value: "fr" as const, label: "FR", flag: "🇫🇷" },
+        { value: "en" as const, label: "EN", flag: "🇬🇧" },
+    ];
+
+    return (
+        <div className="flex items-center bg-[var(--bg-card)] border border-[var(--border)] rounded-full p-0.5">
+            {options.map(({ value, label, flag }) => (
+                <button
+                    key={value}
+                    onClick={() => setLanguage(value)}
+                    aria-label={`Switch to ${label}`}
+                    className={`px-2 py-1 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1 ${language === value
+                            ? "bg-primary-500 text-white shadow-md shadow-primary-500/25"
+                            : "text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                        }`}
+                >
+                    <span>{flag}</span>
+                    <span className="hidden sm:inline">{label}</span>
+                </button>
+            ))}
+        </div>
+    );
+}
