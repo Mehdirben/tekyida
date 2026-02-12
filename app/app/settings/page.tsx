@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, LogOut, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, LogOut, Eye, EyeOff, Download, CheckCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageToggle from "@/components/ui/LanguageToggle";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAuthActions } from "@convex-dev/auth/react";
+
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
 
 export default function SettingsPage() {
     const { t } = useTranslation();
@@ -19,6 +24,44 @@ export default function SettingsPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    // PWA install prompt
+    const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+    const [isInstalled, setIsInstalled] = useState(false);
+
+    useEffect(() => {
+        // Check if already installed
+        const standalone =
+            window.matchMedia("(display-mode: standalone)").matches ||
+            (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+        setIsInstalled(standalone);
+
+        // Listen for install prompt
+        const handler = (e: Event) => {
+            e.preventDefault();
+            setDeferredPrompt(e as BeforeInstallPromptEvent);
+        };
+        window.addEventListener("beforeinstallprompt", handler);
+
+        // Listen for successful install
+        const installedHandler = () => setIsInstalled(true);
+        window.addEventListener("appinstalled", installedHandler);
+
+        return () => {
+            window.removeEventListener("beforeinstallprompt", handler);
+            window.removeEventListener("appinstalled", installedHandler);
+        };
+    }, []);
+
+    const handleInstall = async () => {
+        if (!deferredPrompt) return;
+        await deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === "accepted") {
+            setIsInstalled(true);
+        }
+        setDeferredPrompt(null);
+    };
 
     const handleSignOut = async () => {
         await signOut();
@@ -147,8 +190,37 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
-                {/* Sign Out Section */}
+                {/* Install App Section */}
                 <section className="liquid-glass-card p-6 animate-slide-up delay-400">
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
+                        {t("settings.installApp")}
+                    </h2>
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm text-(--text-secondary)">
+                                {t("settings.installDescription")}
+                            </p>
+                        </div>
+                        {isInstalled ? (
+                            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-accent-500/10 text-accent-500 shrink-0">
+                                <CheckCircle size={16} />
+                                <span className="text-xs font-semibold">{t("settings.installed")}</span>
+                            </div>
+                        ) : deferredPrompt ? (
+                            <Button size="md" onClick={handleInstall}>
+                                <Download size={16} />
+                                {t("settings.install")}
+                            </Button>
+                        ) : (
+                            <div className="text-xs text-(--text-tertiary) shrink-0">
+                                {t("settings.installed")}
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                {/* Sign Out Section */}
+                <section className="liquid-glass-card p-6 animate-slide-up delay-500">
                     <Button
                         variant="danger"
                         size="md"

@@ -128,12 +128,15 @@ body {
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+  contain: strict;
 }
 
 .mesh-gradient::before {
   content: "";
   position: absolute;
-  inset: -20%;
+  inset: -10%;
+  will-change: transform;
+  transform: translateZ(0);
   background:
     radial-gradient(ellipse 60% 50% at 20% 30%, var(--mesh-1) 0%, transparent 70%),
     radial-gradient(ellipse 50% 60% at 80% 20%, var(--mesh-2) 0%, transparent 70%),
@@ -145,23 +148,23 @@ body {
 
 @keyframes mesh-shift {
   0% {
-    transform: translate(0, 0) scale(1);
+    transform: translateZ(0) translate(0, 0) scale(1);
   }
 
   25% {
-    transform: translate(2%, -1%) scale(1.02);
+    transform: translateZ(0) translate(1%, -0.5%) scale(1.01);
   }
 
   50% {
-    transform: translate(-1%, 2%) scale(1.01);
+    transform: translateZ(0) translate(-0.5%, 1%) scale(1.005);
   }
 
   75% {
-    transform: translate(1%, 1%) scale(1.03);
+    transform: translateZ(0) translate(0.5%, 0.5%) scale(1.015);
   }
 
   100% {
-    transform: translate(-2%, -1%) scale(1);
+    transform: translateZ(0) translate(-1%, -0.5%) scale(1);
   }
 }
 

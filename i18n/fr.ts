@@ -148,6 +148,10 @@ const fr: Record<TranslationKey, string> = {
     "settings.save": "Enregistrer",
     "settings.appearance": "Apparence",
     "settings.language": "Langue",
+    "settings.installApp": "Installer l'App",
+    "settings.installDescription": "Installez Tekyida sur votre appareil pour un accès rapide.",
+    "settings.install": "Installer",
+    "settings.installed": "Application Installée",
     "settings.signOut": "Déconnexion",
     "settings.signOutConfirm": "Êtes-vous sûr de vouloir vous déconnecter ?",
 };

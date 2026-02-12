@@ -146,6 +146,10 @@ const en = {
     "settings.save": "Save Changes",
     "settings.appearance": "Appearance",
     "settings.language": "Language",
+    "settings.installApp": "Install App",
+    "settings.installDescription": "Install Tekyida on your device for quick access.",
+    "settings.install": "Install",
+    "settings.installed": "App Installed",
     "settings.signOut": "Sign Out",
     "settings.signOutConfirm": "Are you sure you want to sign out?",
 } as const;
