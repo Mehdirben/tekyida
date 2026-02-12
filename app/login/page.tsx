@@ -28,7 +28,7 @@ export default function LoginPage() {
 
         try {
             await signIn("password", { email, password, flow: "signIn" });
-            router.push("/");
+            router.push("/app");
         } catch {
             setError(t("login.error") || "Invalid email or password.");
         } finally {

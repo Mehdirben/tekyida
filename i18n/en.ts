@@ -86,6 +86,39 @@ const en = {
     "register.error": "Registration failed. Please try again.",
     "register.passwordMismatch": "Passwords do not match.",
     "register.passwordTooShort": "Password must be at least 6 characters.",
+
+    // App Navigation
+    "nav.dashboard": "Dashboard",
+    "nav.settings": "Settings",
+
+    // Dashboard
+    "dashboard.title": "Dashboard",
+    "dashboard.empty.title": "No notebooks yet",
+    "dashboard.empty.subtitle": "Create your first notebook to start tracking IOUs with friends, family, or colleagues.",
+    "dashboard.empty.cta": "Create Your First Notebook",
+    "dashboard.stats.moneyGiven": "Money Given",
+    "dashboard.stats.moneyOwed": "Money Owed to You",
+    "dashboard.stats.balance": "Net Balance",
+    "dashboard.loading": "Loading...",
+
+    // Notebook
+    "notebook.select": "Select Notebook",
+    "notebook.add": "Add Notebook",
+    "notebook.contacts": "contacts",
+    "notebook.balance": "Balance",
+
+    // Settings
+    "settings.title": "Settings",
+    "settings.account": "Account",
+    "settings.email": "Email address",
+    "settings.password": "Password",
+    "settings.newPassword": "New password",
+    "settings.confirmPassword": "Confirm new password",
+    "settings.save": "Save Changes",
+    "settings.appearance": "Appearance",
+    "settings.language": "Language",
+    "settings.signOut": "Sign Out",
+    "settings.signOutConfirm": "Are you sure you want to sign out?",
 } as const;
 
 export type TranslationKey = keyof typeof en;

@@ -88,6 +88,39 @@ const fr: Record<TranslationKey, string> = {
     "register.error": "L'inscription a échoué. Veuillez réessayer.",
     "register.passwordMismatch": "Les mots de passe ne correspondent pas.",
     "register.passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères.",
+
+    // App Navigation
+    "nav.dashboard": "Tableau de bord",
+    "nav.settings": "Paramètres",
+
+    // Dashboard
+    "dashboard.title": "Tableau de bord",
+    "dashboard.empty.title": "Aucun carnet pour le moment",
+    "dashboard.empty.subtitle": "Créez votre premier carnet pour commencer à suivre les dettes entre amis, famille ou collègues.",
+    "dashboard.empty.cta": "Créer Votre Premier Carnet",
+    "dashboard.stats.moneyGiven": "Argent Donné",
+    "dashboard.stats.moneyOwed": "Argent à Recevoir",
+    "dashboard.stats.balance": "Solde Net",
+    "dashboard.loading": "Chargement...",
+
+    // Notebook
+    "notebook.select": "Choisir un Carnet",
+    "notebook.add": "Ajouter un Carnet",
+    "notebook.contacts": "contacts",
+    "notebook.balance": "Solde",
+
+    // Settings
+    "settings.title": "Paramètres",
+    "settings.account": "Compte",
+    "settings.email": "Adresse email",
+    "settings.password": "Mot de passe",
+    "settings.newPassword": "Nouveau mot de passe",
+    "settings.confirmPassword": "Confirmer le nouveau mot de passe",
+    "settings.save": "Enregistrer",
+    "settings.appearance": "Apparence",
+    "settings.language": "Langue",
+    "settings.signOut": "Déconnexion",
+    "settings.signOutConfirm": "Êtes-vous sûr de vouloir vous déconnecter ?",
 };
 
 export default fr;
