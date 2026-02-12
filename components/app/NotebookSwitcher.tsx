@@ -97,7 +97,7 @@ export default function NotebookSwitcher({
 
             {/* Dropdown */}
             <div
-                className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 w-72 rounded-2xl overflow-hidden z-50 transition-all duration-300 ease-out origin-top ${open
+                className={`absolute top-full right-0 mt-2 w-72 rounded-2xl overflow-hidden z-50 transition-all duration-300 ease-out origin-top-right ${open
                     ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
                     : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
                     }`}

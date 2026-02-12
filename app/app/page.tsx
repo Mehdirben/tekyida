@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import Logo from "@/components/ui/Logo";
 import NotebookSwitcher from "@/components/app/NotebookSwitcher";
 import QuickStats from "@/components/app/QuickStats";
 import EmptyState from "@/components/app/EmptyState";
@@ -53,8 +54,9 @@ export default function DashboardPage() {
 
     return (
         <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
-            {/* Notebook Switcher */}
-            <div className="mb-6 animate-slide-up flex justify-center">
+            {/* Dashboard Header: Logo left, Notebook Switcher right */}
+            <div className="mb-6 animate-slide-up flex items-center justify-between relative z-50">
+                <Logo size="md" />
                 <NotebookSwitcher
                     notebooks={notebooks.map((n) => ({
                         id: n._id,
