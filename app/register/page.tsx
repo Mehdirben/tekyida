@@ -2,17 +2,53 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Mail, Lock, Eye, EyeOff, User, Loader2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Logo from "@/components/ui/Logo";
 import { useTranslation } from "@/i18n/LanguageContext";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageToggle from "@/components/ui/LanguageToggle";
+import { useAuthActions } from "@convex-dev/auth/react";
 
 export default function RegisterPage() {
     const { t } = useTranslation();
+    const { signIn } = useAuthActions();
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+
+        if (password !== confirmPassword) {
+            setError(t("register.passwordMismatch") || "Passwords do not match.");
+            return;
+        }
+
+        if (password.length < 6) {
+            setError(t("register.passwordTooShort") || "Password must be at least 6 characters.");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            await signIn("password", { email, password, name, flow: "signUp" });
+            router.push("/");
+        } catch {
+            setError(t("register.error") || "Registration failed. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <>
@@ -124,9 +160,16 @@ export default function RegisterPage() {
                                 {t("register.subtitle")}
                             </p>
 
+                            {/* Error message */}
+                            {error && (
+                                <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm text-center">
+                                    {error}
+                                </div>
+                            )}
+
                             {/* Form */}
                             <form
-                                onSubmit={(e) => e.preventDefault()}
+                                onSubmit={handleSubmit}
                                 className="space-y-4"
                             >
                                 {/* Name */}
@@ -143,6 +186,10 @@ export default function RegisterPage() {
                                             type="text"
                                             className="glass-input pl-10"
                                             placeholder="Ahmed Karim"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            required
+                                            disabled={loading}
                                         />
                                     </div>
                                 </div>
@@ -161,6 +208,10 @@ export default function RegisterPage() {
                                             type="email"
                                             className="glass-input pl-10"
                                             placeholder="you@example.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                            disabled={loading}
                                         />
                                     </div>
                                 </div>
@@ -179,6 +230,10 @@ export default function RegisterPage() {
                                             type={showPassword ? "text" : "password"}
                                             className="glass-input pl-10 pr-10"
                                             placeholder="••••••••"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            required
+                                            disabled={loading}
                                         />
                                         <button
                                             type="button"
@@ -204,6 +259,10 @@ export default function RegisterPage() {
                                             type={showConfirm ? "text" : "password"}
                                             className="glass-input pl-10 pr-10"
                                             placeholder="••••••••"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            required
+                                            disabled={loading}
                                         />
                                         <button
                                             type="button"
@@ -217,9 +276,15 @@ export default function RegisterPage() {
 
                                 {/* Submit */}
                                 <div className="pt-2">
-                                    <Button size="lg" className="w-full">
-                                        {t("register.submit")}
-                                        <ArrowRight size={16} />
+                                    <Button size="lg" className="w-full" disabled={loading}>
+                                        {loading ? (
+                                            <Loader2 size={16} className="animate-spin" />
+                                        ) : (
+                                            <>
+                                                {t("register.submit")}
+                                                <ArrowRight size={16} />
+                                            </>
+                                        )}
                                     </Button>
                                 </div>
                             </form>

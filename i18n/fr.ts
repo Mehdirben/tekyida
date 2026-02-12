@@ -73,6 +73,7 @@ const fr: Record<TranslationKey, string> = {
     "login.noAccount": "Pas encore de compte ?",
     "login.register": "Créer un compte",
     "login.forgotPassword": "Mot de passe oublié ?",
+    "login.error": "Email ou mot de passe invalide.",
 
     // Register
     "register.title": "Créer un Compte",
@@ -84,6 +85,9 @@ const fr: Record<TranslationKey, string> = {
     "register.submit": "Créer le Compte",
     "register.hasAccount": "Déjà un compte ?",
     "register.login": "Se connecter",
+    "register.error": "L'inscription a échoué. Veuillez réessayer.",
+    "register.passwordMismatch": "Les mots de passe ne correspondent pas.",
+    "register.passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères.",
 };
 
 export default fr;

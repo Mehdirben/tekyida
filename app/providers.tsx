@@ -2,11 +2,14 @@
 
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
     return (
-        <ThemeProvider>
-            <LanguageProvider>{children}</LanguageProvider>
-        </ThemeProvider>
+        <ConvexClientProvider>
+            <ThemeProvider>
+                <LanguageProvider>{children}</LanguageProvider>
+            </ThemeProvider>
+        </ConvexClientProvider>
     );
 }

@@ -71,6 +71,7 @@ const en = {
     "login.noAccount": "Don't have an account?",
     "login.register": "Create one",
     "login.forgotPassword": "Forgot password?",
+    "login.error": "Invalid email or password.",
 
     // Register
     "register.title": "Create Account",
@@ -82,6 +83,9 @@ const en = {
     "register.submit": "Create Account",
     "register.hasAccount": "Already have an account?",
     "register.login": "Sign in",
+    "register.error": "Registration failed. Please try again.",
+    "register.passwordMismatch": "Passwords do not match.",
+    "register.passwordTooShort": "Password must be at least 6 characters.",
 } as const;
 
 export type TranslationKey = keyof typeof en;
