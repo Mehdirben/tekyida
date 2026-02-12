@@ -150,6 +150,7 @@ const en = {
     "settings.installDescription": "Install Tekyida on your device for quick access.",
     "settings.install": "Install",
     "settings.installed": "App Installed",
+    "settings.installHint": "Use your browser's \"Add to Home Screen\" option.",
     "settings.signOut": "Sign Out",
     "settings.signOutConfirm": "Are you sure you want to sign out?",
 } as const;

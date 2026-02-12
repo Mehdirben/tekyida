@@ -142,19 +142,51 @@ cp .env.example .env.local
 
 ## 🏗 Production Deployment
 
-### Deploy Convex Backend
+### 1. Deploy Convex Backend
 
 ```bash
 npx convex deploy
 ```
 
-### Deploy Frontend (Vercel)
+### 2. Set Auth Environment Variables (Production)
+
+`@convex-dev/auth` requires three environment variables on your **production** Convex deployment. These are auto-set in dev mode but must be configured manually for production:
+
+```bash
+# Set your production frontend URL
+npx convex env set SITE_URL https://your-app.vercel.app --prod
+
+# Copy the JWKS from your dev deployment
+npx convex env set JWKS '{"keys":[...]}' --prod
+
+# Copy the JWT private key from your dev deployment
+npx convex env set --prod JWT_PRIVATE_KEY -- '-----BEGIN PRIVATE KEY----- ... -----END PRIVATE KEY-----'
+```
+
+> **Tip:** Run `npx convex env list` to see your dev environment variables, then copy `JWKS` and `JWT_PRIVATE_KEY` to production.
+
+You can verify production env vars with:
+
+```bash
+npx convex env list --prod
+```
+
+### 3. Deploy Frontend (Vercel)
+
+Set these environment variables in your Vercel dashboard:
+
+| Variable | Value |
+| --- | --- |
+| `CONVEX_DEPLOYMENT` | `prod:your-deployment-name` |
+| `NEXT_PUBLIC_CONVEX_URL` | `https://your-deployment.convex.cloud` |
+
+Then deploy:
 
 ```bash
 npx vercel --prod
 ```
 
-Or connect your GitHub repo to [Vercel](https://vercel.com/) for automatic deployments. Set the same environment variables in Vercel's dashboard, pointing to your **production** Convex URL.
+Or connect your GitHub repo to [Vercel](https://vercel.com/) for automatic deployments.
 
 ---
 

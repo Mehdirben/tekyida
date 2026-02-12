@@ -212,9 +212,9 @@ export default function SettingsPage() {
                                 {t("settings.install")}
                             </Button>
                         ) : (
-                            <div className="text-xs text-(--text-tertiary) shrink-0">
-                                {t("settings.installed")}
-                            </div>
+                            <span className="text-xs text-(--text-tertiary) shrink-0 max-w-[140px] text-right leading-snug">
+                                {t("settings.installHint")}
+                            </span>
                         )}
                     </div>
                 </section>
