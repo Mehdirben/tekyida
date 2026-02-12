@@ -44,7 +44,7 @@ export default function HowItWorksSection() {
     const { t } = useTranslation();
 
     return (
-        <section id="how-it-works" className="relative py-24 sm:py-32">
+        <section id="how-it-works" className="relative py-14 sm:py-20">
             <div className="max-w-5xl mx-auto px-5 sm:px-8">
                 {/* Section header */}
                 <div className="text-center mb-14">

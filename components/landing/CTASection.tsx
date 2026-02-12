@@ -8,7 +8,7 @@ export default function CTASection() {
     const { t } = useTranslation();
 
     return (
-        <section className="relative py-24 sm:py-32">
+        <section className="relative py-14 sm:py-20">
             <div className="max-w-3xl mx-auto px-5 sm:px-8">
                 <div className="liquid-glass-card p-10 sm:p-14 text-center relative overflow-hidden">
                     {/* Shimmer */}

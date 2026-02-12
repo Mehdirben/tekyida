@@ -69,7 +69,7 @@ export default function FeaturesSection() {
     const { t } = useTranslation();
 
     return (
-        <section id="features" className="relative py-24 sm:py-32">
+        <section id="features" className="relative py-14 sm:py-20">
             <div className="max-w-6xl mx-auto px-5 sm:px-8">
                 {/* Section header */}
                 <div className="text-center mb-14">
