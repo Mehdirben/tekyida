@@ -65,7 +65,7 @@ export default function TransactionList({
 
         await offlineMutation(
             "transactions:create",
-            createTransaction as (args: Record<string, unknown>) => Promise<unknown>,
+            createTransaction,
             {
                 notebookId,
                 contactId,
@@ -84,7 +84,7 @@ export default function TransactionList({
         if (!deleteTargetId) return;
         await offlineMutation(
             "transactions:remove",
-            deleteTransaction as (args: Record<string, unknown>) => Promise<unknown>,
+            deleteTransaction,
             { id: deleteTargetId }
         );
         setDeleteTargetId(null);
@@ -105,7 +105,7 @@ export default function TransactionList({
         const parsedDate = editDate ? new Date(editDate).getTime() : Date.now();
         await offlineMutation(
             "transactions:update",
-            updateTransaction as (args: Record<string, unknown>) => Promise<unknown>,
+            updateTransaction,
             {
                 id: editTarget._id,
                 amount: editIsPositive ? parsedAmount : -parsedAmount,

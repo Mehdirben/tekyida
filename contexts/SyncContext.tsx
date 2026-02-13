@@ -23,11 +23,8 @@ interface SyncContextValue {
     /** Whether the browser is online */
     isOnline: boolean;
     /** Wraps a Convex mutation call — queues it if offline */
-    offlineMutation: <T>(
-        functionPath: string,
-        mutationFn: (args: Record<string, unknown>) => Promise<T>,
-        args: Record<string, unknown>
-    ) => Promise<T | undefined>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    offlineMutation: (functionPath: string, mutationFn: (args: any) => Promise<any>, args: Record<string, unknown>) => Promise<any>;
     /** Force flush the queue now */
     flushQueue: () => Promise<void>;
 }
@@ -170,11 +167,12 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     }, [isOnline, pendingCount, flushQueue]);
 
     // The main wrapper: try mutation, queue if offline/failed
-    const offlineMutation = useCallback(async <T,>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const offlineMutation = useCallback(async (
         functionPath: string,
-        mutationFn: (args: Record<string, unknown>) => Promise<T>,
+        mutationFn: (args: any) => Promise<any>,
         args: Record<string, unknown>
-    ): Promise<T | undefined> => {
+    ): Promise<any> => {
         if (!navigator.onLine) {
             // Queue immediately
             await offlineQueue.enqueue({

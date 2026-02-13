@@ -58,7 +58,7 @@ export default function ContactList({
         if (!name) return;
         await offlineMutation(
             "contacts:create",
-            createContact as (args: Record<string, unknown>) => Promise<unknown>,
+            createContact,
             {
                 notebookId,
                 name,
@@ -74,7 +74,7 @@ export default function ContactList({
         if (!deleteTarget) return;
         await offlineMutation(
             "contacts:remove",
-            deleteContact as (args: Record<string, unknown>) => Promise<unknown>,
+            deleteContact,
             { id: deleteTarget._id }
         );
         setDeleteTarget(null);
@@ -90,7 +90,7 @@ export default function ContactList({
         if (!editTarget || !editName.trim()) return;
         await offlineMutation(
             "contacts:update",
-            updateContact as (args: Record<string, unknown>) => Promise<unknown>,
+            updateContact,
             {
                 id: editTarget._id,
                 name: editName.trim(),

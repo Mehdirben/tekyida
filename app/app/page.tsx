@@ -53,7 +53,7 @@ export default function DashboardPage() {
     const handleCreateNotebook = async (name: string) => {
         const id = await offlineMutation(
             "notebooks:create",
-            createNotebook as (args: Record<string, unknown>) => Promise<unknown>,
+            createNotebook,
             { name }
         );
         if (id) setActiveNotebookId(id as Id<"notebooks">);
@@ -62,7 +62,7 @@ export default function DashboardPage() {
     const handleEditNotebook = async (id: string, name: string) => {
         await offlineMutation(
             "notebooks:update",
-            updateNotebook as (args: Record<string, unknown>) => Promise<unknown>,
+            updateNotebook,
             { id: id as Id<"notebooks">, name }
         );
     };
@@ -70,7 +70,7 @@ export default function DashboardPage() {
     const handleDeleteNotebook = async (id: string) => {
         await offlineMutation(
             "notebooks:remove",
-            deleteNotebook as (args: Record<string, unknown>) => Promise<unknown>,
+            deleteNotebook,
             { id: id as Id<"notebooks"> }
         );
         if (resolvedActiveId === id) {
