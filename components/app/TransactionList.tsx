@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
     ArrowDownLeft,
@@ -50,6 +50,7 @@ export default function TransactionList({
     const { offlineMutation, isItemPending } = useSync();
 
     const [adding, setAdding] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
     const [amount, setAmount] = useState("");
     const [isPositive, setIsPositive] = useState(true); // true = they owe you
     const [description, setDescription] = useState("");
@@ -60,6 +61,13 @@ export default function TransactionList({
     const [editIsPositive, setEditIsPositive] = useState(true);
     const [editDescription, setEditDescription] = useState("");
     const [editDate, setEditDate] = useState("");
+
+    const handleAnimatedClose = useCallback(() => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 300);
+    }, [onClose]);
 
     const handleAdd = async () => {
         const parsedAmount = parseFloat(amount);
@@ -139,12 +147,12 @@ export default function TransactionList({
         <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
-                onClick={onClose}
+                className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
+                onClick={handleAnimatedClose}
             />
 
             {/* Sheet */}
-            <div className="relative z-10 w-full sm:max-w-md h-[92vh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl animate-slide-up overflow-hidden">
+            <div className={`relative z-10 w-full sm:max-w-md h-[92vh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl ${isClosing ? "animate-sheet-down" : "animate-sheet-up"} overflow-hidden`}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
                     <div className="flex-1 min-w-0">
@@ -161,7 +169,7 @@ export default function TransactionList({
                         </p>
                     </div>
                     <button
-                        onClick={onClose}
+                        onClick={handleAnimatedClose}
                         className="p-2 rounded-xl liquid-glass hover:bg-white/10 transition-all cursor-pointer"
                     >
                         <X size={18} />

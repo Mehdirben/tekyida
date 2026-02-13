@@ -107,7 +107,7 @@ export default function DashboardPage() {
         <CacheWarmer notebookIds={safeNotebooks.map((n) => n._id)} />
         <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
             {/* Dashboard Header: Logo left, Notebook Switcher right */}
-            <div className="mb-6 animate-slide-up flex items-center justify-between relative z-50">
+            <div className="mb-6 animate-reveal-up flex items-center justify-between relative z-50">
                 <div className="flex items-center gap-2">
                     <Logo size="md" />
                     <SyncIndicator />
@@ -128,7 +128,7 @@ export default function DashboardPage() {
 
             {safeNotebooks.length === 0 ? (
                 /* Empty State */
-                <div className="animate-slide-up delay-100">
+                <div className="animate-reveal-up delay-100">
                     <EmptyState
                         onCreateNotebook={() => {
                             const name = prompt("Notebook name:");
@@ -139,7 +139,7 @@ export default function DashboardPage() {
             ) : (
                 <>
                     {/* Stats */}
-                    <div className="mb-6 animate-slide-up delay-100">
+                    <div className="mb-6 animate-reveal-up delay-100">
                         <QuickStats
                             moneyGiven={moneyGiven}
                             moneyOwed={moneyOwed}
@@ -149,7 +149,7 @@ export default function DashboardPage() {
 
                     {/* Contact List */}
                     {resolvedActiveId && (
-                        <div className="animate-slide-up delay-200">
+                        <div className="animate-reveal-up delay-200">
                             <ContactList
                                 contacts={contacts ?? []}
                                 notebookId={resolvedActiveId}
