@@ -13,10 +13,11 @@ import {
 } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
+import { useCachedQuery } from "@/hooks/useCachedQuery";
 
 interface TransactionListProps {
     contactId: Id<"contacts">;
@@ -39,7 +40,7 @@ export default function TransactionList({
 }: TransactionListProps) {
     const { t } = useTranslation();
     const { mask } = useAmountsVisibility();
-    const transactions = useQuery(api.transactions.list, { contactId });
+    const transactions = useCachedQuery<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[]>("transactions.list", api.transactions.list, { contactId });
     const createTransaction = useMutation(api.transactions.create);
     const deleteTransaction = useMutation(api.transactions.remove);
     const updateTransaction = useMutation(api.transactions.update);

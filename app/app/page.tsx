@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import Logo from "@/components/ui/Logo";
@@ -13,9 +13,10 @@ import ContactList from "@/components/app/ContactList";
 import TransactionList from "@/components/app/TransactionList";
 import { AmountsVisibilityProvider } from "@/contexts/AmountsVisibilityContext";
 import { useSync } from "@/contexts/SyncContext";
+import { useCachedQuery } from "@/hooks/useCachedQuery";
 
 export default function DashboardPage() {
-    const notebooks = useQuery(api.notebooks.list);
+    const notebooks = useCachedQuery<{ _id: Id<"notebooks">; name: string; contactCount: number; balance: number }[]>("notebooks.list", api.notebooks.list, {});
     const createNotebook = useMutation(api.notebooks.create);
     const updateNotebook = useMutation(api.notebooks.update);
     const deleteNotebook = useMutation(api.notebooks.remove);
@@ -32,7 +33,8 @@ export default function DashboardPage() {
     const activeNotebook = notebooks?.find((n) => n._id === resolvedActiveId);
 
     // Get contacts for active notebook
-    const contacts = useQuery(
+    const contacts = useCachedQuery<{ _id: Id<"contacts">; name: string; phone?: string; balance: number; transactionCount: number }[]>(
+        "contacts.list",
         api.contacts.list,
         resolvedActiveId ? { notebookId: resolvedActiveId } : "skip"
     );
