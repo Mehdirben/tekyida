@@ -59,12 +59,14 @@ export default function TransactionList({
         const parsedAmount = parseFloat(amount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) return;
 
+        const parsedDate = date ? new Date(date).getTime() : Date.now();
+
         await createTransaction({
             notebookId,
             contactId,
             amount: isPositive ? parsedAmount : -parsedAmount,
             description: description.trim() || undefined,
-            date: new Date(date).getTime(),
+            date: isNaN(parsedDate) ? Date.now() : parsedDate,
         });
         setAmount("");
         setDescription("");
@@ -90,11 +92,12 @@ export default function TransactionList({
         if (!editTarget) return;
         const parsedAmount = parseFloat(editAmount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+        const parsedDate = editDate ? new Date(editDate).getTime() : Date.now();
         await updateTransaction({
             id: editTarget._id,
             amount: editIsPositive ? parsedAmount : -parsedAmount,
             description: editDescription.trim() || undefined,
-            date: new Date(editDate).getTime(),
+            date: isNaN(parsedDate) ? Date.now() : parsedDate,
         });
         setEditTarget(null);
     };
@@ -121,7 +124,7 @@ export default function TransactionList({
             />
 
             {/* Sheet */}
-            <div className="relative z-10 w-full sm:max-w-md max-h-[85vh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl animate-slide-up overflow-hidden">
+            <div className="relative z-10 w-full sm:max-w-md h-[92vh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl animate-slide-up overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
                     <div className="flex-1 min-w-0">
