@@ -15,6 +15,8 @@ export interface QueuedMutation {
     args: Record<string, unknown>;
     /** Timestamp when queued */
     queuedAt: number;
+    /** Temp ID assigned locally for create mutations (used for ID mapping during sync) */
+    tempId?: string;
 }
 
 function openDB(): Promise<IDBDatabase> {

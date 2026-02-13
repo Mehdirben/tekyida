@@ -75,7 +75,8 @@ export default function ContactList({
         await offlineMutation(
             "contacts:remove",
             deleteContact,
-            { id: deleteTarget._id }
+            { id: deleteTarget._id },
+            { notebookId }
         );
         setDeleteTarget(null);
     };
@@ -95,7 +96,8 @@ export default function ContactList({
                 id: editTarget._id,
                 name: editName.trim(),
                 phone: editPhone.trim() || undefined,
-            }
+            },
+            { notebookId }
         );
         setEditTarget(null);
     };

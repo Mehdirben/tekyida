@@ -7,6 +7,20 @@ const DB_NAME = "tekyida-cache";
 const DB_VERSION = 1;
 const STORE_NAME = "queries";
 
+// ─── Change notification ────────────────────────────────────
+type CacheListener = (changedKey: string) => void;
+const listeners = new Set<CacheListener>();
+
+/** Subscribe to cache changes. Returns an unsubscribe function. */
+export function subscribe(listener: CacheListener): () => void {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+}
+
+function notifyListeners(key: string) {
+    listeners.forEach((l) => l(key));
+}
+
 function openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -30,12 +44,13 @@ export function cacheKey(functionPath: string, args: Record<string, unknown>): s
 export async function set(key: string, data: unknown): Promise<void> {
     try {
         const db = await openDB();
-        return new Promise((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readwrite");
             tx.objectStore(STORE_NAME).put(data, key);
             tx.oncomplete = () => resolve();
             tx.onerror = () => reject(tx.error);
         });
+        notifyListeners(key);
     } catch {
         // Silently fail — cache is best-effort
     }

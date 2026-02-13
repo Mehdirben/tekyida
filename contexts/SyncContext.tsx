@@ -12,6 +12,7 @@ import {
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import * as offlineQueue from "@/lib/offlineQueue";
+import { applyOptimisticUpdate, type OptimisticContext } from "@/lib/optimisticUpdates";
 
 export type SyncStatus = "synced" | "pending" | "syncing" | "offline";
 
@@ -24,7 +25,7 @@ interface SyncContextValue {
     isOnline: boolean;
     /** Wraps a Convex mutation call — queues it if offline */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    offlineMutation: (functionPath: string, mutationFn: (args: any) => Promise<any>, args: Record<string, unknown>) => Promise<any>;
+    offlineMutation: (functionPath: string, mutationFn: (args: any) => Promise<any>, args: Record<string, unknown>, optimisticCtx?: OptimisticContext) => Promise<any>;
     /** Force flush the queue now */
     flushQueue: () => Promise<void>;
 }
@@ -110,7 +111,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         };
     }, [refreshCount]);
 
-    // Flush queue: replay queued mutations when online
+    // Flush queue: replay queued mutations when online, mapping temp IDs to real IDs
     const flushQueue = useCallback(async () => {
         if (flushingRef.current || !navigator.onLine) return;
         flushingRef.current = true;
@@ -118,6 +119,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
         try {
             const queued = await offlineQueue.getAll();
+            const idMap = new Map<string, string>(); // tempId → realId
+
             for (const item of queued) {
                 const fn = getMutationFn(item.functionPath);
                 if (!fn) {
@@ -125,8 +128,18 @@ export function SyncProvider({ children }: { children: ReactNode }) {
                     if (item.id) await offlineQueue.remove(item.id);
                     continue;
                 }
+
+                // Replace any temp IDs in args with real IDs from previous creates
+                const patchedArgs = replaceTempIds(item.args, idMap);
+
                 try {
-                    await fn(item.args);
+                    const result = await fn(patchedArgs);
+
+                    // If this was a create and we have a temp ID, store the mapping
+                    if (item.tempId && result) {
+                        idMap.set(item.tempId, result as string);
+                    }
+
                     if (item.id) await offlineQueue.remove(item.id);
                 } catch (err) {
                     // If still failing (not a network error), skip this item
@@ -166,22 +179,27 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         return () => clearInterval(interval);
     }, [isOnline, pendingCount, flushQueue]);
 
-    // The main wrapper: try mutation, queue if offline/failed
+    // The main wrapper: try mutation, queue if offline/failed, always apply optimistic update
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const offlineMutation = useCallback(async (
         functionPath: string,
         mutationFn: (args: any) => Promise<any>,
-        args: Record<string, unknown>
+        args: Record<string, unknown>,
+        optimisticCtx?: OptimisticContext
     ): Promise<any> => {
+        // Apply optimistic update to cache (always, for instant UI feedback)
+        const generatedTempId = await applyOptimisticUpdate(functionPath, args, optimisticCtx);
+
         if (!navigator.onLine) {
-            // Queue immediately
+            // Queue for later sync
             await offlineQueue.enqueue({
                 functionPath,
                 args,
                 queuedAt: Date.now(),
+                tempId: generatedTempId,
             });
             await refreshCount();
-            return undefined;
+            return generatedTempId;
         }
 
         try {
@@ -200,9 +218,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
                     functionPath,
                     args,
                     queuedAt: Date.now(),
+                    tempId: generatedTempId,
                 });
                 await refreshCount();
-                return undefined;
+                return generatedTempId;
             }
             // Otherwise rethrow (validation error, auth error, etc.)
             throw err;
@@ -230,4 +249,19 @@ export function useSync() {
     const ctx = useContext(SyncContext);
     if (!ctx) throw new Error("useSync must be used within SyncProvider");
     return ctx;
+}
+
+/** Replace temp IDs in mutation args with real IDs from the mapping */
+function replaceTempIds(
+    args: Record<string, unknown>,
+    idMap: Map<string, string>
+): Record<string, unknown> {
+    if (idMap.size === 0) return args;
+    const patched = { ...args };
+    for (const [key, value] of Object.entries(patched)) {
+        if (typeof value === "string" && idMap.has(value)) {
+            patched[key] = idMap.get(value)!;
+        }
+    }
+    return patched;
 }

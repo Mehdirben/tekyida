@@ -86,7 +86,8 @@ export default function TransactionList({
         await offlineMutation(
             "transactions:remove",
             deleteTransaction,
-            { id: deleteTargetId }
+            { id: deleteTargetId },
+            { contactId, notebookId }
         );
         setDeleteTargetId(null);
     };
@@ -112,7 +113,8 @@ export default function TransactionList({
                 amount: editIsPositive ? parsedAmount : -parsedAmount,
                 description: editDescription.trim() || undefined,
                 date: isNaN(parsedDate) ? Date.now() : parsedDate,
-            }
+            },
+            { contactId, notebookId }
         );
         setEditTarget(null);
     };
