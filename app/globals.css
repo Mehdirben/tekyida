@@ -297,20 +297,7 @@ body {
 
 @keyframes slide-up {
   from {
-    opacity: 0;
     transform: translateY(28px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Dashboard reveal — colors visible from the start */
-@keyframes reveal-up {
-  from {
-    transform: translateY(16px);
   }
 
   to {
@@ -392,12 +379,7 @@ body {
 }
 
 .animate-slide-up {
-  opacity: 0;
-  animation: slide-up 0.7s ease-out forwards;
-}
-
-.animate-reveal-up {
-  animation: reveal-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: slide-up 0.7s ease-out both;
 }
 
 .animate-fade-in {
