@@ -64,6 +64,7 @@ export default function SettingsPage() {
     };
 
     const handleSignOut = async () => {
+        try { localStorage.removeItem("tekyida-authed"); } catch {}
         await signOut();
         router.push("/login");
     };

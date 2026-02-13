@@ -12,23 +12,36 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const { t } = useTranslation();
     const [wasAuthenticated, setWasAuthenticated] = useState(false);
+    const [timedOut, setTimedOut] = useState(false);
 
     useEffect(() => {
-        // Track authentication state in sessionStorage for offline resilience
+        // Track authentication state in localStorage for offline resilience
+        // (survives browser close, unlike sessionStorage)
         if (isAuthenticated) {
             setWasAuthenticated(true);
-            try { sessionStorage.setItem("tekyida-authed", "1"); } catch {}
+            try { localStorage.setItem("tekyida-authed", "1"); } catch {}
         }
     }, [isAuthenticated]);
 
     useEffect(() => {
         // Check if previously authenticated (for offline case)
         try {
-            if (sessionStorage.getItem("tekyida-authed") === "1") {
+            if (localStorage.getItem("tekyida-authed") === "1") {
                 setWasAuthenticated(true);
             }
         } catch {}
     }, []);
+
+    // If auth is still loading after 3s and we're offline, stop waiting
+    useEffect(() => {
+        if (!isLoading || wasAuthenticated) return;
+        const timer = setTimeout(() => {
+            if (!navigator.onLine) {
+                setTimedOut(true);
+            }
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [isLoading, wasAuthenticated]);
 
     useEffect(() => {
         // Only redirect if definitely not authenticated AND online
@@ -37,8 +50,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }
     }, [isLoading, isAuthenticated, wasAuthenticated, router]);
 
-    // Show loading only on first load when online and not previously authenticated
-    if ((isLoading || !isAuthenticated) && !wasAuthenticated) {
+    // If offline and timed out with no prior auth, redirect to login
+    useEffect(() => {
+        if (timedOut && !wasAuthenticated && !isAuthenticated) {
+            router.push("/login");
+        }
+    }, [timedOut, wasAuthenticated, isAuthenticated, router]);
+
+    // Show loading only when still determining auth and not previously authenticated
+    if ((isLoading || !isAuthenticated) && !wasAuthenticated && !timedOut) {
         return (
             <>
                 <div className="mesh-gradient" />
