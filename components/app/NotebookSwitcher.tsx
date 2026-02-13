@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Plus, BookOpen, Check, Pencil, Trash2, X } from "lucide-react";
+import { ChevronDown, Plus, BookOpen, Check, Pencil, Trash2, X, CloudOff } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 
 interface Notebook {
@@ -17,6 +17,7 @@ interface NotebookSwitcherProps {
     onAdd?: (name: string) => void;
     onEdit?: (id: string, name: string) => void;
     onDelete?: (id: string) => void;
+    isItemPending?: (id: string) => boolean;
 }
 
 export default function NotebookSwitcher({
@@ -26,6 +27,7 @@ export default function NotebookSwitcher({
     onAdd,
     onEdit,
     onDelete,
+    isItemPending,
 }: NotebookSwitcherProps) {
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
@@ -121,6 +123,9 @@ export default function NotebookSwitcher({
                 <span className="font-semibold text-sm truncate max-w-[200px]">
                     {displayName}
                 </span>
+                {activeNotebookId && isItemPending?.(activeNotebookId) && (
+                    <CloudOff size={13} className="text-warning-500" />
+                )}
                 <ChevronDown
                     size={16}
                     className={`text-(--text-tertiary) transition-transform duration-300 ease-out ${open ? "rotate-180" : ""
@@ -196,6 +201,9 @@ export default function NotebookSwitcher({
                                         <span className="text-sm font-medium truncate flex-1">
                                             {notebook.name}
                                         </span>
+                                        {isItemPending?.(notebook.id) && (
+                                            <CloudOff size={13} className="text-warning-500 shrink-0" />
+                                        )}
                                         {notebook.id === activeNotebookId && (
                                             <Check size={15} className="text-primary-500 shrink-0" />
                                         )}

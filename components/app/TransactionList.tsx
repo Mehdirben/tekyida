@@ -10,6 +10,7 @@ import {
     Pencil,
     X,
     Receipt,
+    CloudOff,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
@@ -44,7 +45,7 @@ export default function TransactionList({
     const createTransaction = useMutation(api.transactions.create);
     const deleteTransaction = useMutation(api.transactions.remove);
     const updateTransaction = useMutation(api.transactions.update);
-    const { offlineMutation } = useSync();
+    const { offlineMutation, isItemPending } = useSync();
 
     const [adding, setAdding] = useState(false);
     const [amount, setAmount] = useState("");
@@ -215,6 +216,9 @@ export default function TransactionList({
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
+                                    {isItemPending(tx._id) && (
+                                        <CloudOff size={12} className="text-warning-500" />
+                                    )}
                                     <span
                                         className={`text-sm font-bold ${tx.amount > 0
                                             ? "text-accent-500"

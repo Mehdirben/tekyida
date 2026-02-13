@@ -21,7 +21,7 @@ export default function DashboardPage() {
     const createNotebook = useMutation(api.notebooks.create);
     const updateNotebook = useMutation(api.notebooks.update);
     const deleteNotebook = useMutation(api.notebooks.remove);
-    const { offlineMutation } = useSync();
+    const { offlineMutation, isItemPending } = useSync();
 
     const [activeNotebookId, setActiveNotebookId] = useState<Id<"notebooks"> | undefined>();
 
@@ -109,6 +109,7 @@ export default function DashboardPage() {
                     onAdd={handleCreateNotebook}
                     onEdit={handleEditNotebook}
                     onDelete={handleDeleteNotebook}
+                    isItemPending={isItemPending}
                 />
             </div>
 

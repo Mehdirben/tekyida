@@ -45,6 +45,10 @@ export function useCachedQuery<T>(
             initialLoadDone.current = false;
             return;
         }
+        // Key changed — clear stale data immediately, then load new cache
+        if (cacheKeyRef.current !== key) {
+            setCachedData(undefined);
+        }
         cacheKeyRef.current = key;
         initialLoadDone.current = false;
         readCache();

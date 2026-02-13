@@ -28,6 +28,8 @@ interface SyncContextValue {
     offlineMutation: (functionPath: string, mutationFn: (args: any) => Promise<any>, args: Record<string, unknown>, optimisticCtx?: OptimisticContext) => Promise<any>;
     /** Force flush the queue now */
     flushQueue: () => Promise<void>;
+    /** Check if an item is pending sync (by its _id) */
+    isItemPending: (id: string) => boolean;
 }
 
 const SyncContext = createContext<SyncContextValue | undefined>(undefined);
@@ -49,6 +51,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     const [isOnline, setIsOnline] = useState(true);
     const [pendingCount, setPendingCount] = useState(0);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
     const flushingRef = useRef(false);
 
     // Get all mutation functions
@@ -82,11 +85,20 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         transactionsCreate, transactionsUpdate, transactionsRemove,
     ]);
 
-    // Refresh pending count from IndexedDB
+    // Refresh pending count and pending IDs from IndexedDB
     const refreshCount = useCallback(async () => {
         try {
-            const c = await offlineQueue.count();
-            setPendingCount(c);
+            const items = await offlineQueue.getAll();
+            setPendingCount(items.length);
+            // Collect all IDs that are in the queue (temp IDs from creates, real IDs from updates/deletes)
+            const ids = new Set<string>();
+            for (const item of items) {
+                if (item.tempId) ids.add(item.tempId);
+                // For updates/deletes, the item's real ID is in args.id
+                const argId = item.args?.id as string | undefined;
+                if (argId) ids.add(argId);
+            }
+            setPendingIds(ids);
         } catch {
             // IndexedDB might not be available
         }
@@ -236,9 +248,16 @@ export function SyncProvider({ children }: { children: ReactNode }) {
                 ? "pending"
                 : "synced";
 
+    const isItemPending = useCallback((id: string): boolean => {
+        // Items with temp_ prefix are always unsynced (created offline)
+        if (id.startsWith("temp_")) return true;
+        // Items whose real ID is in the queue (edited/deleted offline)
+        return pendingIds.has(id);
+    }, [pendingIds]);
+
     return (
         <SyncContext.Provider
-            value={{ status, pendingCount, isOnline, offlineMutation, flushQueue }}
+            value={{ status, pendingCount, isOnline, offlineMutation, flushQueue, isItemPending }}
         >
             {children}
         </SyncContext.Provider>

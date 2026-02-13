@@ -2,13 +2,17 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { UserPlus, User, Phone, ChevronRight, Trash2, Pencil, X } from "lucide-react";
+import { UserPlus, User, Phone, ChevronRight, Trash2, Pencil, X, CloudOff } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
+
+function UnsyncedBadge() {
+    return <CloudOff size={12} className="text-warning-500 shrink-0" />;
+}
 
 interface Contact {
     _id: Id<"contacts">;
@@ -43,7 +47,7 @@ export default function ContactList({
     const createContact = useMutation(api.contacts.create);
     const deleteContact = useMutation(api.contacts.remove);
     const updateContact = useMutation(api.contacts.update);
-    const { offlineMutation } = useSync();
+    const { offlineMutation, isItemPending } = useSync();
 
     useEffect(() => {
         if (adding && nameRef.current) nameRef.current.focus();
@@ -148,7 +152,10 @@ export default function ContactList({
                         <User size={18} className="text-primary-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{contact.name}</p>
+                        <div className="flex items-center gap-1.5">
+                            <p className="font-semibold text-sm truncate">{contact.name}</p>
+                            {isItemPending(contact._id) && <UnsyncedBadge />}
+                        </div>
                         <div className="flex items-center gap-2 mt-0.5">
                             {contact.phone && (
                                 <span className="inline-flex items-center gap-1 text-[11px] text-(--text-tertiary)">
