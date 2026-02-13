@@ -41,7 +41,9 @@ export default function TransactionList({
 }: TransactionListProps) {
     const { t } = useTranslation();
     const { mask } = useAmountsVisibility();
-    const transactions = useCachedQuery<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[]>("transactions.list", api.transactions.list, { contactId });
+    const rawTransactions = useCachedQuery<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[]>("transactions.list", api.transactions.list, { contactId });
+    // For offline-created contacts (temp_ IDs), there are no server transactions yet — treat undefined as empty
+    const transactions = rawTransactions ?? (contactId.startsWith("temp_") ? [] : undefined);
     const createTransaction = useMutation(api.transactions.create);
     const deleteTransaction = useMutation(api.transactions.remove);
     const updateTransaction = useMutation(api.transactions.update);
