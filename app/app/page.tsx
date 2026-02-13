@@ -94,87 +94,87 @@ export default function DashboardPage() {
         }
     };
 
-    // Loading state — when offline and no data, show the header + empty state instead of blank
+    // Wait for data before rendering — prevents flash from 0 to loaded values
     const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
-
-    if (!notebooks && !isOffline) return null;
-
     const safeNotebooks = notebooks ?? [];
+    const dataReady = !!notebooks && (safeNotebooks.length === 0 || contacts !== undefined);
+
+    if (!dataReady && !isOffline) return null;
 
     return (
         <AmountsVisibilityProvider>
-        {/* Invisible: pre-caches contacts & transactions for ALL notebooks */}
-        <CacheWarmer notebookIds={safeNotebooks.map((n) => n._id)} />
-        <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
-            {/* Dashboard Header: Logo left, Notebook Switcher right */}
-            <div className="mb-6 animate-slide-up flex items-center justify-between relative z-50">
-                <div className="flex items-center gap-2">
-                    <Logo size="md" />
-                    <SyncIndicator />
-                </div>
-                <NotebookSwitcher
-                    notebooks={safeNotebooks.map((n) => ({
-                        id: n._id,
-                        name: n.name,
-                    }))}
-                    activeNotebookId={resolvedActiveId}
-                    onSelect={(id) => setActiveNotebookId(id as Id<"notebooks">)}
-                    onAdd={handleCreateNotebook}
-                    onEdit={handleEditNotebook}
-                    onDelete={handleDeleteNotebook}
-                    isItemPending={isItemPending}
-                />
-            </div>
-
-            {safeNotebooks.length === 0 ? (
-                /* Empty State */
-                <div className="animate-slide-up delay-100">
-                    <EmptyState
-                        onCreateNotebook={() => {
-                            const name = prompt("Notebook name:");
-                            if (name?.trim()) handleCreateNotebook(name.trim());
-                        }}
+            {/* Invisible: pre-caches contacts & transactions for ALL notebooks */}
+            <CacheWarmer notebookIds={safeNotebooks.map((n) => n._id)} />
+            <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
+                {/* Dashboard Header: Logo left, Notebook Switcher right */}
+                <div className="mb-6 animate-slide-up flex items-center justify-between relative z-50">
+                    <div className="flex items-center gap-2">
+                        <Logo size="md" />
+                        <SyncIndicator />
+                    </div>
+                    <NotebookSwitcher
+                        notebooks={safeNotebooks.map((n) => ({
+                            id: n._id,
+                            name: n.name,
+                        }))}
+                        activeNotebookId={resolvedActiveId}
+                        onSelect={(id) => setActiveNotebookId(id as Id<"notebooks">)}
+                        onAdd={handleCreateNotebook}
+                        onEdit={handleEditNotebook}
+                        onDelete={handleDeleteNotebook}
+                        isItemPending={isItemPending}
                     />
                 </div>
-            ) : (
-                <>
-                    {/* Stats */}
-                    <div className="mb-6 animate-slide-up delay-100">
-                        <QuickStats
-                            moneyGiven={moneyGiven}
-                            moneyOwed={moneyOwed}
-                            netBalance={netBalance}
+
+                {safeNotebooks.length === 0 ? (
+                    /* Empty State */
+                    <div className="animate-slide-up delay-100">
+                        <EmptyState
+                            onCreateNotebook={() => {
+                                const name = prompt("Notebook name:");
+                                if (name?.trim()) handleCreateNotebook(name.trim());
+                            }}
                         />
                     </div>
-
-                    {/* Contact List */}
-                    {resolvedActiveId && contacts !== undefined && (
-                        <div className="animate-slide-up delay-200">
-                            <ContactList
-                                contacts={contacts}
-                                notebookId={resolvedActiveId}
-                                onSelectContact={(c) =>
-                                    setSelectedContact({
-                                        _id: c._id,
-                                        name: c.name,
-                                    })
-                                }
+                ) : (
+                    <>
+                        {/* Stats */}
+                        <div className="mb-6 animate-slide-up delay-100">
+                            <QuickStats
+                                moneyGiven={moneyGiven}
+                                moneyOwed={moneyOwed}
+                                netBalance={netBalance}
                             />
                         </div>
-                    )}
-                </>
-            )}
 
-            {/* Transaction Sheet */}
-            {selectedContact && resolvedActiveId && (
-                <TransactionList
-                    contactId={selectedContact._id}
-                    contactName={selectedContact.name}
-                    notebookId={resolvedActiveId}
-                    onClose={() => setSelectedContact(null)}
-                />
-            )}
-        </main>
+                        {/* Contact List */}
+                        {resolvedActiveId && contacts !== undefined && (
+                            <div className="animate-slide-up delay-200">
+                                <ContactList
+                                    contacts={contacts}
+                                    notebookId={resolvedActiveId}
+                                    onSelectContact={(c) =>
+                                        setSelectedContact({
+                                            _id: c._id,
+                                            name: c.name,
+                                        })
+                                    }
+                                />
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* Transaction Sheet */}
+                {selectedContact && resolvedActiveId && (
+                    <TransactionList
+                        contactId={selectedContact._id}
+                        contactName={selectedContact.name}
+                        notebookId={resolvedActiveId}
+                        onClose={() => setSelectedContact(null)}
+                    />
+                )}
+            </main>
         </AmountsVisibilityProvider>
     );
 }
