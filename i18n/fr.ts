@@ -112,6 +112,8 @@ const fr: Record<TranslationKey, string> = {
     "notebook.delete": "Supprimer le Carnet",
     "notebook.deleteConfirm": "Supprimer ce carnet ainsi que tous ses contacts et transactions ? Cette action est irréversible.",
     "notebook.namePlaceholder": "Nom du carnet…",
+    "notebook.edit": "Modifier le Carnet",
+    "notebook.editName": "Nom du carnet",
 
     // Contact
     "contact.add": "Ajouter un Contact",
@@ -121,6 +123,7 @@ const fr: Record<TranslationKey, string> = {
     "contact.emptySubtitle": "Ajoutez votre premier contact pour commencer à suivre les transactions.",
     "contact.delete": "Supprimer le Contact",
     "contact.deleteConfirm": "Supprimer ce contact et toutes ses transactions ?",
+    "contact.edit": "Modifier le Contact",
 
     // Transaction
     "transaction.add": "Ajouter une Transaction",
@@ -131,6 +134,7 @@ const fr: Record<TranslationKey, string> = {
     "transaction.youOweThem": "Vous devez",
     "transaction.delete": "Supprimer",
     "transaction.deleteConfirm": "Supprimer cette transaction ? Cette action est irréversible.",
+    "transaction.edit": "Modifier la Transaction",
 
     // Common
     "common.cancel": "Annuler",

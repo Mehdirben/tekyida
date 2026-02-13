@@ -88,3 +88,21 @@ export const remove = mutation({
         await ctx.db.delete(args.id);
     },
 });
+
+export const update = mutation({
+    args: {
+        id: v.id("notebooks"),
+        name: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error("Not authenticated");
+
+        const notebook = await ctx.db.get(args.id);
+        if (!notebook || notebook.userId !== userId) {
+            throw new Error("Notebook not found");
+        }
+
+        await ctx.db.patch(args.id, { name: args.name });
+    },
+});

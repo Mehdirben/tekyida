@@ -14,6 +14,8 @@ import TransactionList from "@/components/app/TransactionList";
 export default function DashboardPage() {
     const notebooks = useQuery(api.notebooks.list);
     const createNotebook = useMutation(api.notebooks.create);
+    const updateNotebook = useMutation(api.notebooks.update);
+    const deleteNotebook = useMutation(api.notebooks.remove);
 
     const [activeNotebookId, setActiveNotebookId] = useState<Id<"notebooks"> | undefined>();
 
@@ -49,6 +51,17 @@ export default function DashboardPage() {
         setActiveNotebookId(id);
     };
 
+    const handleEditNotebook = async (id: string, name: string) => {
+        await updateNotebook({ id: id as Id<"notebooks">, name });
+    };
+
+    const handleDeleteNotebook = async (id: string) => {
+        await deleteNotebook({ id: id as Id<"notebooks"> });
+        if (resolvedActiveId === id) {
+            setActiveNotebookId(undefined);
+        }
+    };
+
     // Loading state
     if (!notebooks) return null;
 
@@ -65,6 +78,8 @@ export default function DashboardPage() {
                     activeNotebookId={resolvedActiveId}
                     onSelect={(id) => setActiveNotebookId(id as Id<"notebooks">)}
                     onAdd={handleCreateNotebook}
+                    onEdit={handleEditNotebook}
+                    onDelete={handleDeleteNotebook}
                 />
             </div>
 

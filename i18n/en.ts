@@ -110,6 +110,8 @@ const en = {
     "notebook.delete": "Delete Notebook",
     "notebook.deleteConfirm": "Delete this notebook and all its contacts and transactions? This cannot be undone.",
     "notebook.namePlaceholder": "Notebook name…",
+    "notebook.edit": "Edit Notebook",
+    "notebook.editName": "Notebook name",
 
     // Contact
     "contact.add": "Add Contact",
@@ -119,6 +121,7 @@ const en = {
     "contact.emptySubtitle": "Add your first contact to start tracking transactions.",
     "contact.delete": "Delete Contact",
     "contact.deleteConfirm": "Delete this contact and all their transactions?",
+    "contact.edit": "Edit Contact",
 
     // Transaction
     "transaction.add": "Add Transaction",
@@ -129,6 +132,7 @@ const en = {
     "transaction.youOweThem": "You owe them",
     "transaction.delete": "Delete",
     "transaction.deleteConfirm": "Delete this transaction? This cannot be undone.",
+    "transaction.edit": "Edit Transaction",
 
     // Common
     "common.cancel": "Cancel",

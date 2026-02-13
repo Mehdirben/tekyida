@@ -87,3 +87,25 @@ export const remove = mutation({
         await ctx.db.delete(args.id);
     },
 });
+
+export const update = mutation({
+    args: {
+        id: v.id("contacts"),
+        name: v.string(),
+        phone: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error("Not authenticated");
+
+        const contact = await ctx.db.get(args.id);
+        if (!contact || contact.userId !== userId) {
+            throw new Error("Contact not found");
+        }
+
+        await ctx.db.patch(args.id, {
+            name: args.name,
+            phone: args.phone,
+        });
+    },
+});

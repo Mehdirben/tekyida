@@ -66,3 +66,25 @@ export const remove = mutation({
         await ctx.db.delete(args.id);
     },
 });
+
+export const update = mutation({
+    args: {
+        id: v.id("transactions"),
+        amount: v.number(),
+        description: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error("Not authenticated");
+
+        const transaction = await ctx.db.get(args.id);
+        if (!transaction || transaction.userId !== userId) {
+            throw new Error("Transaction not found");
+        }
+
+        await ctx.db.patch(args.id, {
+            amount: args.amount,
+            description: args.description,
+        });
+    },
+});

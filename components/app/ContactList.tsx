@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { UserPlus, User, Phone, ChevronRight, Trash2, X } from "lucide-react";
+import { UserPlus, User, Phone, ChevronRight, Trash2, Pencil, X } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -32,14 +32,23 @@ export default function ContactList({
     const [newName, setNewName] = useState("");
     const [newPhone, setNewPhone] = useState("");
     const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null);
+    const [editTarget, setEditTarget] = useState<Contact | null>(null);
+    const [editName, setEditName] = useState("");
+    const [editPhone, setEditPhone] = useState("");
     const nameRef = useRef<HTMLInputElement>(null);
+    const editNameRef = useRef<HTMLInputElement>(null);
 
     const createContact = useMutation(api.contacts.create);
     const deleteContact = useMutation(api.contacts.remove);
+    const updateContact = useMutation(api.contacts.update);
 
     useEffect(() => {
         if (adding && nameRef.current) nameRef.current.focus();
     }, [adding]);
+
+    useEffect(() => {
+        if (editTarget && editNameRef.current) editNameRef.current.focus();
+    }, [editTarget]);
 
     const handleAdd = async () => {
         const name = newName.trim();
@@ -58,6 +67,22 @@ export default function ContactList({
         if (!deleteTarget) return;
         await deleteContact({ id: deleteTarget._id });
         setDeleteTarget(null);
+    };
+
+    const openEdit = (contact: Contact) => {
+        setEditTarget(contact);
+        setEditName(contact.name);
+        setEditPhone(contact.phone || "");
+    };
+
+    const handleEdit = async () => {
+        if (!editTarget || !editName.trim()) return;
+        await updateContact({
+            id: editTarget._id,
+            name: editName.trim(),
+            phone: editPhone.trim() || undefined,
+        });
+        setEditTarget(null);
     };
 
     const formatBalance = (amount: number) => {
@@ -124,6 +149,24 @@ export default function ContactList({
                             onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
+                                openEdit(contact);
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    e.stopPropagation();
+                                    openEdit(contact);
+                                }
+                            }}
+                            className="p-1.5 rounded-lg text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
+                        >
+                            <Pencil size={14} />
+                        </span>
+                        <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
                                 setDeleteTarget(contact);
                             }}
                             onKeyDown={(e) => {
@@ -174,6 +217,68 @@ export default function ContactList({
                                 className="flex-1 py-3.5 text-sm font-semibold text-danger-500 border-l border-(--border) transition-all active:bg-danger-500/10 cursor-pointer"
                             >
                                 {t("common.delete")}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Edit Contact Popup */}
+            {editTarget && createPortal(
+                <div className="fixed inset-0 z-[200] flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+                        onClick={() => setEditTarget(null)}
+                    />
+                    <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
+                        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
+                            <h3 className="text-base font-bold">{t("contact.edit")}</h3>
+                            <button
+                                onClick={() => setEditTarget(null)}
+                                className="p-1.5 rounded-lg active:bg-white/10 transition-all cursor-pointer"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-3">
+                            <input
+                                ref={editNameRef}
+                                type="text"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleEdit();
+                                    if (e.key === "Escape") setEditTarget(null);
+                                }}
+                                placeholder={t("contact.name")}
+                                className="glass-input py-2.5 text-sm"
+                            />
+                            <input
+                                type="tel"
+                                value={editPhone}
+                                onChange={(e) => setEditPhone(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleEdit();
+                                    if (e.key === "Escape") setEditTarget(null);
+                                }}
+                                placeholder={t("contact.phone")}
+                                className="glass-input py-2.5 text-sm"
+                            />
+                        </div>
+                        <div className="flex border-t border-(--border)">
+                            <button
+                                onClick={() => setEditTarget(null)}
+                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
+                            >
+                                {t("common.cancel")}
+                            </button>
+                            <button
+                                onClick={handleEdit}
+                                disabled={!editName.trim()}
+                                className="flex-1 py-3.5 text-sm font-semibold text-primary-500 border-l border-(--border) transition-all active:bg-primary-500/10 disabled:opacity-40 cursor-pointer"
+                            >
+                                {t("common.save")}
                             </button>
                         </div>
                     </div>

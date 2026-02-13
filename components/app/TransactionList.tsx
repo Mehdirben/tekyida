@@ -7,6 +7,7 @@ import {
     ArrowUpRight,
     Plus,
     Trash2,
+    Pencil,
     X,
     Receipt,
 } from "lucide-react";
@@ -32,12 +33,17 @@ export default function TransactionList({
     const transactions = useQuery(api.transactions.list, { contactId });
     const createTransaction = useMutation(api.transactions.create);
     const deleteTransaction = useMutation(api.transactions.remove);
+    const updateTransaction = useMutation(api.transactions.update);
 
     const [adding, setAdding] = useState(false);
     const [amount, setAmount] = useState("");
     const [isPositive, setIsPositive] = useState(true); // true = they owe you
     const [description, setDescription] = useState("");
     const [deleteTargetId, setDeleteTargetId] = useState<Id<"transactions"> | null>(null);
+    const [editTarget, setEditTarget] = useState<{ _id: Id<"transactions">; amount: number; description?: string } | null>(null);
+    const [editAmount, setEditAmount] = useState("");
+    const [editIsPositive, setEditIsPositive] = useState(true);
+    const [editDescription, setEditDescription] = useState("");
 
     const handleAdd = async () => {
         const parsedAmount = parseFloat(amount);
@@ -58,6 +64,25 @@ export default function TransactionList({
         if (!deleteTargetId) return;
         await deleteTransaction({ id: deleteTargetId });
         setDeleteTargetId(null);
+    };
+
+    const openEditTx = (tx: { _id: Id<"transactions">; amount: number; description?: string }) => {
+        setEditTarget(tx);
+        setEditAmount(Math.abs(tx.amount).toString());
+        setEditIsPositive(tx.amount >= 0);
+        setEditDescription(tx.description || "");
+    };
+
+    const handleEditTx = async () => {
+        if (!editTarget) return;
+        const parsedAmount = parseFloat(editAmount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+        await updateTransaction({
+            id: editTarget._id,
+            amount: editIsPositive ? parsedAmount : -parsedAmount,
+            description: editDescription.trim() || undefined,
+        });
+        setEditTarget(null);
     };
 
     const formatDate = (ts: number) => {
@@ -165,6 +190,12 @@ export default function TransactionList({
                                         {tx.amount.toFixed(2)}
                                     </span>
                                     <button
+                                        onClick={() => openEditTx(tx)}
+                                        className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
+                                    >
+                                        <Pencil size={12} />
+                                    </button>
+                                    <button
                                         onClick={() => setDeleteTargetId(tx._id)}
                                         className="p-1 rounded-md text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
                                     >
@@ -205,6 +236,78 @@ export default function TransactionList({
                                     className="flex-1 py-3 text-sm font-semibold text-danger-500 border-l border-(--border) transition-all active:bg-danger-500/10 cursor-pointer"
                                 >
                                     {t("common.delete")}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Edit Transaction Popup */}
+                {editTarget && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center">
+                        <div
+                            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+                            onClick={() => setEditTarget(null)}
+                        />
+                        <div className="relative z-10 w-[85%] max-w-xs liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
+                            <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-(--border)">
+                                <h3 className="text-sm font-bold">{t("transaction.edit")}</h3>
+                                <button
+                                    onClick={() => setEditTarget(null)}
+                                    className="p-1 rounded-lg active:bg-white/10 transition-all cursor-pointer"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                            <div className="p-4 space-y-3">
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setEditIsPositive(!editIsPositive)}
+                                        className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${editIsPositive
+                                            ? "bg-accent-500/15 text-accent-500 border border-accent-500/30"
+                                            : "bg-danger-500/15 text-danger-500 border border-danger-500/30"
+                                            }`}
+                                    >
+                                        {editIsPositive
+                                            ? t("transaction.theyOweYou")
+                                            : t("transaction.youOweThem")}
+                                    </button>
+                                    <input
+                                        type="number"
+                                        inputMode="decimal"
+                                        value={editAmount}
+                                        onChange={(e) => setEditAmount(e.target.value)}
+                                        placeholder={t("transaction.amount")}
+                                        className="glass-input py-2 text-sm flex-1"
+                                        min="0"
+                                        step="0.01"
+                                    />
+                                </div>
+                                <input
+                                    type="text"
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") handleEditTx();
+                                        if (e.key === "Escape") setEditTarget(null);
+                                    }}
+                                    placeholder={t("transaction.description")}
+                                    className="glass-input py-2 text-sm"
+                                />
+                            </div>
+                            <div className="flex border-t border-(--border)">
+                                <button
+                                    onClick={() => setEditTarget(null)}
+                                    className="flex-1 py-3 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
+                                >
+                                    {t("common.cancel")}
+                                </button>
+                                <button
+                                    onClick={handleEditTx}
+                                    disabled={!editAmount || parseFloat(editAmount) <= 0}
+                                    className="flex-1 py-3 text-sm font-semibold text-primary-500 border-l border-(--border) transition-all active:bg-primary-500/10 disabled:opacity-40 cursor-pointer"
+                                >
+                                    {t("common.save")}
                                 </button>
                             </div>
                         </div>
