@@ -208,10 +208,10 @@ export default function TransactionList({
                 </div>
 
                 {/* Delete Confirmation Popup */}
-                {deleteTargetId && (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center">
+                {deleteTargetId && createPortal(
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center">
                         <div
-                            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
                             onClick={() => setDeleteTargetId(null)}
                         />
                         <div className="relative z-10 w-[85%] max-w-xs liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
@@ -239,14 +239,15 @@ export default function TransactionList({
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )}
 
                 {/* Edit Transaction Popup */}
-                {editTarget && (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center">
+                {editTarget && createPortal(
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center">
                         <div
-                            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
                             onClick={() => setEditTarget(null)}
                         />
                         <div className="relative z-10 w-[85%] max-w-xs liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
@@ -311,7 +312,8 @@ export default function TransactionList({
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </div>,
+                    document.body
                 )}
 
                 {/* Add Transaction */}
