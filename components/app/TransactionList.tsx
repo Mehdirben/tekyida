@@ -23,6 +23,12 @@ interface TransactionListProps {
     onClose: () => void;
 }
 
+function toLocalDatetime(ts: number) {
+    const d = new Date(ts);
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function TransactionList({
     contactId,
     contactName,
@@ -40,10 +46,12 @@ export default function TransactionList({
     const [isPositive, setIsPositive] = useState(true); // true = they owe you
     const [description, setDescription] = useState("");
     const [deleteTargetId, setDeleteTargetId] = useState<Id<"transactions"> | null>(null);
-    const [editTarget, setEditTarget] = useState<{ _id: Id<"transactions">; amount: number; description?: string } | null>(null);
+    const [date, setDate] = useState(() => toLocalDatetime(Date.now()));
+    const [editTarget, setEditTarget] = useState<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number } | null>(null);
     const [editAmount, setEditAmount] = useState("");
     const [editIsPositive, setEditIsPositive] = useState(true);
     const [editDescription, setEditDescription] = useState("");
+    const [editDate, setEditDate] = useState("");
 
     const handleAdd = async () => {
         const parsedAmount = parseFloat(amount);
@@ -54,9 +62,11 @@ export default function TransactionList({
             contactId,
             amount: isPositive ? parsedAmount : -parsedAmount,
             description: description.trim() || undefined,
+            date: new Date(date).getTime(),
         });
         setAmount("");
         setDescription("");
+        setDate(toLocalDatetime(Date.now()));
         setAdding(false);
     };
 
@@ -66,11 +76,12 @@ export default function TransactionList({
         setDeleteTargetId(null);
     };
 
-    const openEditTx = (tx: { _id: Id<"transactions">; amount: number; description?: string }) => {
+    const openEditTx = (tx: { _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }) => {
         setEditTarget(tx);
         setEditAmount(Math.abs(tx.amount).toString());
         setEditIsPositive(tx.amount >= 0);
         setEditDescription(tx.description || "");
+        setEditDate(toLocalDatetime(tx.date ?? tx.createdAt));
     };
 
     const handleEditTx = async () => {
@@ -81,15 +92,18 @@ export default function TransactionList({
             id: editTarget._id,
             amount: editIsPositive ? parsedAmount : -parsedAmount,
             description: editDescription.trim() || undefined,
+            date: new Date(editDate).getTime(),
         });
         setEditTarget(null);
     };
 
     const formatDate = (ts: number) => {
-        return new Date(ts).toLocaleDateString(undefined, {
+        return new Date(ts).toLocaleString(undefined, {
             day: "numeric",
             month: "short",
             year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
         });
     };
 
@@ -171,7 +185,7 @@ export default function TransactionList({
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs text-(--text-tertiary)">
-                                        {formatDate(tx.createdAt)}
+                                        {formatDate(tx.date ?? tx.createdAt)}
                                     </p>
                                     {tx.description && (
                                         <p className="text-sm text-(--text-secondary) truncate mt-0.5">
@@ -295,6 +309,12 @@ export default function TransactionList({
                                     placeholder={t("transaction.description")}
                                     className="glass-input py-2 text-sm"
                                 />
+                                <input
+                                    type="datetime-local"
+                                    value={editDate}
+                                    onChange={(e) => setEditDate(e.target.value)}
+                                    className="glass-input py-2 text-sm w-full min-w-0 appearance-none"
+                                />
                             </div>
                             <div className="flex border-t border-(--border)">
                                 <button
@@ -354,6 +374,12 @@ export default function TransactionList({
                                 }}
                                 placeholder={t("transaction.description")}
                                 className="glass-input py-2.5 text-sm"
+                            />
+                            <input
+                                type="datetime-local"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                className="glass-input py-2.5 text-sm w-full min-w-0 appearance-none"
                             />
                             <div className="flex gap-2">
                                 <button

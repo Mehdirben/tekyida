@@ -133,6 +133,7 @@ const en = {
     "transaction.delete": "Delete",
     "transaction.deleteConfirm": "Delete this transaction? This cannot be undone.",
     "transaction.edit": "Edit Transaction",
+    "transaction.date": "Date & Time",
 
     // Common
     "common.cancel": "Cancel",

@@ -135,6 +135,7 @@ const fr: Record<TranslationKey, string> = {
     "transaction.delete": "Supprimer",
     "transaction.deleteConfirm": "Supprimer cette transaction ? Cette action est irréversible.",
     "transaction.edit": "Modifier la Transaction",
+    "transaction.date": "Date & Heure",
 
     // Common
     "common.cancel": "Annuler",

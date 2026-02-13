@@ -25,6 +25,7 @@ const schema = defineSchema({
         contactId: v.id("contacts"),
         amount: v.number(), // positive = they owe you, negative = you owe them
         description: v.optional(v.string()),
+        date: v.optional(v.number()), // user-selected date/time
         createdAt: v.number(),
     })
         .index("by_notebook", ["notebookId"])

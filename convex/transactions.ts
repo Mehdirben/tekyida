@@ -24,6 +24,7 @@ export const create = mutation({
         contactId: v.id("contacts"),
         amount: v.number(),
         description: v.optional(v.string()),
+        date: v.optional(v.number()),
     },
     handler: async (ctx, args) => {
         const userId = await getAuthUserId(ctx);
@@ -47,6 +48,7 @@ export const create = mutation({
             contactId: args.contactId,
             amount: args.amount,
             description: args.description,
+            date: args.date ?? Date.now(),
             createdAt: Date.now(),
         });
     },
@@ -72,6 +74,7 @@ export const update = mutation({
         id: v.id("transactions"),
         amount: v.number(),
         description: v.optional(v.string()),
+        date: v.optional(v.number()),
     },
     handler: async (ctx, args) => {
         const userId = await getAuthUserId(ctx);
@@ -85,6 +88,7 @@ export const update = mutation({
         await ctx.db.patch(args.id, {
             amount: args.amount,
             description: args.description,
+            date: args.date,
         });
     },
 });
