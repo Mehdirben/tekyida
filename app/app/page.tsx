@@ -135,10 +135,10 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Contact List */}
-                    {resolvedActiveId && contacts && (
+                    {resolvedActiveId && (
                         <div className="animate-slide-up delay-200">
                             <ContactList
-                                contacts={contacts}
+                                contacts={contacts ?? []}
                                 notebookId={resolvedActiveId}
                                 onSelectContact={(c) =>
                                     setSelectedContact({
