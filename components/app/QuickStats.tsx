@@ -32,16 +32,16 @@ export default function QuickStats({
 
     const stats: StatItem[] = [
         {
-            label: t("dashboard.stats.moneyGiven"),
-            value: formatAmount(moneyGiven),
-            icon: <ArrowUpRight size={20} className="text-danger-500" />,
-            accent: "text-danger-500",
-        },
-        {
             label: t("dashboard.stats.moneyOwed"),
             value: formatAmount(moneyOwed),
             icon: <ArrowDownLeft size={20} className="text-accent-500" />,
             accent: "text-accent-500",
+        },
+        {
+            label: t("dashboard.stats.moneyGiven"),
+            value: formatAmount(moneyGiven),
+            icon: <ArrowUpRight size={20} className="text-danger-500" />,
+            accent: "text-danger-500",
         },
         {
             label: t("dashboard.stats.balance"),
@@ -62,20 +62,20 @@ export default function QuickStats({
     return (
         <div className="space-y-4">
             {/* Money Given + Money Owed — side by side */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
                 {moneyCards.map((stat) => (
                     <div
                         key={stat.label}
-                        className="liquid-glass-card p-5 flex items-center gap-3"
+                        className="liquid-glass-card p-4 flex flex-col items-start gap-2"
                     >
                         <div className="p-2 rounded-xl liquid-glass shrink-0">
                             {stat.icon}
                         </div>
-                        <div className="min-w-0">
-                            <p className="text-[10px] sm:text-xs font-medium text-(--text-tertiary) uppercase tracking-wider truncate">
+                        <div>
+                            <p className="text-[10px] sm:text-xs font-medium text-(--text-tertiary) uppercase tracking-wider leading-tight">
                                 {stat.label}
                             </p>
-                            <p className={`text-lg sm:text-xl font-bold mt-0.5 ${stat.accent || ""}`}>
+                            <p className={`text-lg sm:text-xl font-bold mt-1 ${stat.accent || ""}`}>
                                 {stat.value}
                             </p>
                         </div>
