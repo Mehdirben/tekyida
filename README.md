@@ -12,8 +12,11 @@ A modern, mobile-first IOU (I Owe You) tracker built for tracking debts between 
 - **Contact Management** — Add contacts with optional phone numbers per notebook
 - **Transaction Tracking** — Log who owes whom, how much, and why
 - **Real-time Sync** — All data syncs instantly via Convex
+- **Offline-First** — Full offline support with IndexedDB-backed mutation queue and query cache
+- **Optimistic Updates** — All changes appear instantly in the UI, even offline
+- **Sync Indicators** — Per-item unsynced icons (☁✕) and global sync status badge
 - **Bilingual** — Full French / English support with one-click toggle
-- **Dark / Light Mode** — Automatic system detection + manual toggle
+- **Dark / Light Mode** — Automatic system detection + manual toggle (iOS status bar aware)
 - **PWA Ready** — Install on mobile for native-like experience with offline support
 - **Secure Auth** — Email & password authentication via Convex Auth
 
@@ -28,8 +31,9 @@ A modern, mobile-first IOU (I Owe You) tracker built for tracking debts between 
 | **Backend** | [Convex](https://convex.dev/) (real-time database + serverless functions) |
 | **Auth** | [@convex-dev/auth](https://labs.convex.dev/auth) (email/password) |
 | **Icons** | [Lucide React](https://lucide.dev/) |
-| **PWA** | Service Worker + Web App Manifest |
+| **PWA** | Service Worker + Web App Manifest + IndexedDB |
 | **Design** | Liquid Glass aesthetic with mesh gradients and glassmorphism |
+| **Offline** | IndexedDB mutation queue + query cache, optimistic updates |
 
 ---
 
@@ -54,8 +58,10 @@ tekyida/
 │   │   ├── BottomNav.tsx       # Floating pill navigation bar
 │   │   ├── NotebookSwitcher.tsx# Notebook dropdown picker
 │   │   ├── QuickStats.tsx      # Balance summary cards
-│   │   ├── ContactList.tsx     # Contact list with add/delete
-│   │   └── TransactionList.tsx # Transaction sheet with add/delete
+│   │   ├── ContactList.tsx     # Contact list with add/delete + sync badges
+│   │   ├── TransactionList.tsx # Transaction sheet with add/delete + sync badges
+│   │   ├── SyncIndicator.tsx   # Global sync status icon (offline/pending/syncing)
+│   │   └── CacheWarmer.tsx     # Pre-fetches all notebooks' data for offline access
 │   └── landing/            # Landing page sections
 │       ├── Header.tsx      # Navigation header
 │       ├── HeroSection.tsx # Hero with floating cards
@@ -71,6 +77,16 @@ tekyida/
 │   ├── contacts.ts         # Contact CRUD mutations & queries
 │   ├── transactions.ts     # Transaction CRUD mutations & queries
 │   └── http.ts             # HTTP router for auth endpoints
+├── contexts/               # React contexts
+│   ├── ThemeContext.tsx     # Dark/light mode with iOS theme-color sync
+│   ├── SyncContext.tsx      # Offline mutation queue, sync status, per-item pending tracking
+│   └── AmountsVisibilityContext.tsx # Toggle balance visibility
+├── lib/                    # Offline infrastructure
+│   ├── offlineQueue.ts     # IndexedDB mutation queue (enqueue, flush, retry)
+│   ├── queryCache.ts       # IndexedDB query result cache with reactive subscriptions
+│   └── optimisticUpdates.ts# Applies mutations to cache for instant UI feedback
+├── hooks/
+│   └── useCachedQuery.ts   # Drop-in useQuery replacement with offline cache + reactivity
 ├── i18n/                   # Internationalization
 │   ├── en.ts               # English translations
 │   ├── fr.ts               # French translations
