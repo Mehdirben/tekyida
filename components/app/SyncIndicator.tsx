@@ -48,15 +48,14 @@ export default function SyncIndicator() {
                     flushQueue();
                 }
             }}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all active:scale-95 cursor-pointer ${config.className}`}
+            className={`inline-flex items-center justify-center w-7 h-7 rounded-full border transition-all active:scale-95 cursor-pointer ${config.className}`}
             title={config.label}
         >
             <Icon
-                size={12}
+                size={14}
                 strokeWidth={2.5}
                 className={config.spinning ? "animate-spin" : ""}
             />
-            <span className="max-w-[120px] truncate">{config.label}</span>
         </button>
     );
 }
