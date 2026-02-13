@@ -12,6 +12,7 @@ import {
     Receipt,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
+import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -36,6 +37,7 @@ export default function TransactionList({
     onClose,
 }: TransactionListProps) {
     const { t } = useTranslation();
+    const { mask } = useAmountsVisibility();
     const transactions = useQuery(api.transactions.list, { contactId });
     const createTransaction = useMutation(api.transactions.create);
     const deleteTransaction = useMutation(api.transactions.remove);
@@ -132,8 +134,7 @@ export default function TransactionList({
                                     : "text-(--text-secondary)"
                                 }`}
                         >
-                            {balance >= 0 ? "+" : ""}
-                            {balance.toFixed(2)} MAD
+                            {mask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
                         </p>
                     </div>
                     <button
@@ -200,8 +201,7 @@ export default function TransactionList({
                                             : "text-danger-500"
                                             }`}
                                     >
-                                        {tx.amount > 0 ? "+" : ""}
-                                        {tx.amount.toFixed(2)}
+                                        {mask(`${tx.amount > 0 ? "+" : ""}${tx.amount.toFixed(2)}`)}
                                     </span>
                                     <button
                                         onClick={() => openEditTx(tx)}

@@ -2,6 +2,7 @@
 
 import { BookOpen, Users, ChevronRight } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
+import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 
 interface NotebookCardProps {
     name: string;
@@ -17,6 +18,7 @@ export default function NotebookCard({
     onClick,
 }: NotebookCardProps) {
     const { t } = useTranslation();
+    const { mask } = useAmountsVisibility();
 
     const balanceColor =
         balance > 0
@@ -27,7 +29,7 @@ export default function NotebookCard({
 
     const formatBalance = (amount: number) => {
         const sign = amount >= 0 ? "+" : "";
-        return `${sign}${amount.toFixed(2)} MAD`;
+        return mask(`${sign}${amount.toFixed(2)} MAD`);
     };
 
     return (

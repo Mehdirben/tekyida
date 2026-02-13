@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowUpRight, ArrowDownLeft, TrendingUp } from "lucide-react";
+import { ArrowUpRight, ArrowDownLeft, TrendingUp, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
+import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 
 interface StatItem {
     label: string;
@@ -22,12 +23,13 @@ export default function QuickStats({
     netBalance = 0,
 }: QuickStatsProps) {
     const { t } = useTranslation();
+    const { hidden, toggle, mask } = useAmountsVisibility();
 
-    const formatAmount = (amount: number) => `${amount.toFixed(2)} MAD`;
+    const formatAmount = (amount: number) => mask(`${amount.toFixed(2)} MAD`);
 
     const formatBalance = (amount: number) => {
         const sign = amount >= 0 ? "+" : "";
-        return `${sign}${amount.toFixed(2)} MAD`;
+        return mask(`${sign}${amount.toFixed(2)} MAD`);
     };
 
     const stats: StatItem[] = [
@@ -88,7 +90,7 @@ export default function QuickStats({
                 <div className="p-2.5 rounded-xl liquid-glass">
                     {balanceCard.icon}
                 </div>
-                <div>
+                <div className="flex-1">
                     <p className="text-xs font-medium text-(--text-tertiary) uppercase tracking-wider">
                         {balanceCard.label}
                     </p>
@@ -96,6 +98,17 @@ export default function QuickStats({
                         {balanceCard.value}
                     </p>
                 </div>
+                <button
+                    onClick={toggle}
+                    className="p-2.5 rounded-xl liquid-glass active:bg-white/10 transition-all cursor-pointer"
+                    aria-label={hidden ? "Show amounts" : "Hide amounts"}
+                >
+                    {hidden ? (
+                        <EyeOff size={18} className="text-(--text-tertiary)" />
+                    ) : (
+                        <Eye size={18} className="text-(--text-tertiary)" />
+                    )}
+                </button>
             </div>
         </div>
     );

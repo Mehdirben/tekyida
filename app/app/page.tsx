@@ -10,6 +10,7 @@ import QuickStats from "@/components/app/QuickStats";
 import EmptyState from "@/components/app/EmptyState";
 import ContactList from "@/components/app/ContactList";
 import TransactionList from "@/components/app/TransactionList";
+import { AmountsVisibilityProvider } from "@/contexts/AmountsVisibilityContext";
 
 export default function DashboardPage() {
     const notebooks = useQuery(api.notebooks.list);
@@ -66,6 +67,7 @@ export default function DashboardPage() {
     if (!notebooks) return null;
 
     return (
+        <AmountsVisibilityProvider>
         <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
             {/* Dashboard Header: Logo left, Notebook Switcher right */}
             <div className="mb-6 animate-slide-up flex items-center justify-between relative z-50">
@@ -132,5 +134,6 @@ export default function DashboardPage() {
                 />
             )}
         </main>
+        </AmountsVisibilityProvider>
     );
 }

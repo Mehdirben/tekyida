@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { UserPlus, User, Phone, ChevronRight, Trash2, Pencil, X } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
+import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -85,9 +86,11 @@ export default function ContactList({
         setEditTarget(null);
     };
 
+    const { mask } = useAmountsVisibility();
+
     const formatBalance = (amount: number) => {
         const sign = amount >= 0 ? "+" : "";
-        return `${sign}${amount.toFixed(2)} MAD`;
+        return mask(`${sign}${amount.toFixed(2)} MAD`);
     };
 
     const balanceColor = (amount: number) =>
