@@ -78,8 +78,12 @@ export default function DashboardPage() {
         }
     };
 
-    // Loading state
-    if (!notebooks) return null;
+    // Loading state — when offline and no data, show the header + empty state instead of blank
+    const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+
+    if (!notebooks && !isOffline) return null;
+
+    const safeNotebooks = notebooks ?? [];
 
     return (
         <AmountsVisibilityProvider>
@@ -91,7 +95,7 @@ export default function DashboardPage() {
                     <SyncIndicator />
                 </div>
                 <NotebookSwitcher
-                    notebooks={notebooks.map((n) => ({
+                    notebooks={safeNotebooks.map((n) => ({
                         id: n._id,
                         name: n.name,
                     }))}
@@ -103,7 +107,7 @@ export default function DashboardPage() {
                 />
             </div>
 
-            {notebooks.length === 0 ? (
+            {safeNotebooks.length === 0 ? (
                 /* Empty State */
                 <div className="animate-slide-up delay-100">
                     <EmptyState
