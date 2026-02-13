@@ -170,11 +170,13 @@ body {
 
 /* ══════════════════════════════════════
    Liquid Glass Material
+   Android Chrome: backdrop-filter with var() can silently fail,
+   so we use literal px values for the blur radius.
    ══════════════════════════════════════ */
 @utility liquid-glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
   border: 1px solid var(--glass-border);
   box-shadow:
     0 2px 16px var(--glass-shadow),
@@ -184,8 +186,8 @@ body {
 
 @utility liquid-glass-heavy {
   background: var(--glass-bg-heavy);
-  backdrop-filter: blur(32px) saturate(2);
   -webkit-backdrop-filter: blur(32px) saturate(2);
+  backdrop-filter: blur(32px) saturate(2);
   border: 1px solid var(--glass-border);
   box-shadow:
     0 4px 24px var(--glass-shadow),
@@ -196,8 +198,8 @@ body {
 
 @utility liquid-glass-card {
   background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
   border: 1px solid var(--glass-border);
   border-radius: 1.25rem;
   box-shadow:
@@ -212,8 +214,8 @@ body {
    ══════════════════════════════════════ */
 @utility glass-btn {
   background: var(--glass-bg-heavy);
-  backdrop-filter: blur(16px) saturate(1.6);
   -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  backdrop-filter: blur(16px) saturate(1.6);
   border: 1px solid var(--glass-border);
   box-shadow:
     0 2px 8px var(--glass-shadow),
@@ -241,8 +243,8 @@ body {
   line-height: 1.5;
   color: var(--text-primary);
   background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
   border: 1px solid var(--glass-border-subtle);
   border-radius: 0.875rem;
   box-shadow: inset 0 1px 0 var(--glass-highlight);
