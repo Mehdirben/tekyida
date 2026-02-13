@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -23,7 +23,20 @@ export default function DashboardPage() {
     const deleteNotebook = useMutation(api.notebooks.remove);
     const { offlineMutation, isItemPending } = useSync();
 
-    const [activeNotebookId, setActiveNotebookId] = useState<Id<"notebooks"> | undefined>();
+    const [activeNotebookId, setActiveNotebookIdRaw] = useState<Id<"notebooks"> | undefined>(() => {
+        if (typeof window === "undefined") return undefined;
+        const saved = localStorage.getItem("tekyida-active-notebook");
+        return saved ? (saved as Id<"notebooks">) : undefined;
+    });
+
+    const setActiveNotebookId = useCallback((id: Id<"notebooks"> | undefined) => {
+        setActiveNotebookIdRaw(id);
+        if (id) {
+            localStorage.setItem("tekyida-active-notebook", id);
+        } else {
+            localStorage.removeItem("tekyida-active-notebook");
+        }
+    }, []);
 
     // Auto-select first notebook when loaded
     const resolvedActiveId =
