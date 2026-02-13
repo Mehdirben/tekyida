@@ -14,6 +14,7 @@ import TransactionList from "@/components/app/TransactionList";
 import { AmountsVisibilityProvider } from "@/contexts/AmountsVisibilityContext";
 import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
+import CacheWarmer from "@/components/app/CacheWarmer";
 
 export default function DashboardPage() {
     const notebooks = useCachedQuery<{ _id: Id<"notebooks">; name: string; contactCount: number; balance: number }[]>("notebooks.list", api.notebooks.list, {});
@@ -89,6 +90,8 @@ export default function DashboardPage() {
 
     return (
         <AmountsVisibilityProvider>
+        {/* Invisible: pre-caches contacts & transactions for ALL notebooks */}
+        <CacheWarmer notebookIds={safeNotebooks.map((n) => n._id)} />
         <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
             {/* Dashboard Header: Logo left, Notebook Switcher right */}
             <div className="mb-6 animate-slide-up flex items-center justify-between relative z-50">
