@@ -16,6 +16,7 @@ import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useSync } from "@/contexts/SyncContext";
 
 interface TransactionListProps {
     contactId: Id<"contacts">;
@@ -42,6 +43,7 @@ export default function TransactionList({
     const createTransaction = useMutation(api.transactions.create);
     const deleteTransaction = useMutation(api.transactions.remove);
     const updateTransaction = useMutation(api.transactions.update);
+    const { offlineMutation } = useSync();
 
     const [adding, setAdding] = useState(false);
     const [amount, setAmount] = useState("");
@@ -61,13 +63,17 @@ export default function TransactionList({
 
         const parsedDate = date ? new Date(date).getTime() : Date.now();
 
-        await createTransaction({
-            notebookId,
-            contactId,
-            amount: isPositive ? parsedAmount : -parsedAmount,
-            description: description.trim() || undefined,
-            date: isNaN(parsedDate) ? Date.now() : parsedDate,
-        });
+        await offlineMutation(
+            "transactions:create",
+            createTransaction as (args: Record<string, unknown>) => Promise<unknown>,
+            {
+                notebookId,
+                contactId,
+                amount: isPositive ? parsedAmount : -parsedAmount,
+                description: description.trim() || undefined,
+                date: isNaN(parsedDate) ? Date.now() : parsedDate,
+            }
+        );
         setAmount("");
         setDescription("");
         setDate(toLocalDatetime(Date.now()));
@@ -76,7 +82,11 @@ export default function TransactionList({
 
     const confirmDelete = async () => {
         if (!deleteTargetId) return;
-        await deleteTransaction({ id: deleteTargetId });
+        await offlineMutation(
+            "transactions:remove",
+            deleteTransaction as (args: Record<string, unknown>) => Promise<unknown>,
+            { id: deleteTargetId }
+        );
         setDeleteTargetId(null);
     };
 
@@ -93,12 +103,16 @@ export default function TransactionList({
         const parsedAmount = parseFloat(editAmount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) return;
         const parsedDate = editDate ? new Date(editDate).getTime() : Date.now();
-        await updateTransaction({
-            id: editTarget._id,
-            amount: editIsPositive ? parsedAmount : -parsedAmount,
-            description: editDescription.trim() || undefined,
-            date: isNaN(parsedDate) ? Date.now() : parsedDate,
-        });
+        await offlineMutation(
+            "transactions:update",
+            updateTransaction as (args: Record<string, unknown>) => Promise<unknown>,
+            {
+                id: editTarget._id,
+                amount: editIsPositive ? parsedAmount : -parsedAmount,
+                description: editDescription.trim() || undefined,
+                date: isNaN(parsedDate) ? Date.now() : parsedDate,
+            }
+        );
         setEditTarget(null);
     };
 

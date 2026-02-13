@@ -8,6 +8,7 @@ import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useSync } from "@/contexts/SyncContext";
 
 interface Contact {
     _id: Id<"contacts">;
@@ -42,6 +43,7 @@ export default function ContactList({
     const createContact = useMutation(api.contacts.create);
     const deleteContact = useMutation(api.contacts.remove);
     const updateContact = useMutation(api.contacts.update);
+    const { offlineMutation } = useSync();
 
     useEffect(() => {
         if (adding && nameRef.current) nameRef.current.focus();
@@ -54,11 +56,15 @@ export default function ContactList({
     const handleAdd = async () => {
         const name = newName.trim();
         if (!name) return;
-        await createContact({
-            notebookId,
-            name,
-            phone: newPhone.trim() || undefined,
-        });
+        await offlineMutation(
+            "contacts:create",
+            createContact as (args: Record<string, unknown>) => Promise<unknown>,
+            {
+                notebookId,
+                name,
+                phone: newPhone.trim() || undefined,
+            }
+        );
         setNewName("");
         setNewPhone("");
         setAdding(false);
@@ -66,7 +72,11 @@ export default function ContactList({
 
     const confirmDelete = async () => {
         if (!deleteTarget) return;
-        await deleteContact({ id: deleteTarget._id });
+        await offlineMutation(
+            "contacts:remove",
+            deleteContact as (args: Record<string, unknown>) => Promise<unknown>,
+            { id: deleteTarget._id }
+        );
         setDeleteTarget(null);
     };
 
@@ -78,11 +88,15 @@ export default function ContactList({
 
     const handleEdit = async () => {
         if (!editTarget || !editName.trim()) return;
-        await updateContact({
-            id: editTarget._id,
-            name: editName.trim(),
-            phone: editPhone.trim() || undefined,
-        });
+        await offlineMutation(
+            "contacts:update",
+            updateContact as (args: Record<string, unknown>) => Promise<unknown>,
+            {
+                id: editTarget._id,
+                name: editName.trim(),
+                phone: editPhone.trim() || undefined,
+            }
+        );
         setEditTarget(null);
     };
 

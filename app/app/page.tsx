@@ -5,18 +5,21 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import Logo from "@/components/ui/Logo";
+import SyncIndicator from "@/components/app/SyncIndicator";
 import NotebookSwitcher from "@/components/app/NotebookSwitcher";
 import QuickStats from "@/components/app/QuickStats";
 import EmptyState from "@/components/app/EmptyState";
 import ContactList from "@/components/app/ContactList";
 import TransactionList from "@/components/app/TransactionList";
 import { AmountsVisibilityProvider } from "@/contexts/AmountsVisibilityContext";
+import { useSync } from "@/contexts/SyncContext";
 
 export default function DashboardPage() {
     const notebooks = useQuery(api.notebooks.list);
     const createNotebook = useMutation(api.notebooks.create);
     const updateNotebook = useMutation(api.notebooks.update);
     const deleteNotebook = useMutation(api.notebooks.remove);
+    const { offlineMutation } = useSync();
 
     const [activeNotebookId, setActiveNotebookId] = useState<Id<"notebooks"> | undefined>();
 
@@ -48,16 +51,28 @@ export default function DashboardPage() {
     const netBalance = moneyOwed - moneyGiven;
 
     const handleCreateNotebook = async (name: string) => {
-        const id = await createNotebook({ name });
-        setActiveNotebookId(id);
+        const id = await offlineMutation(
+            "notebooks:create",
+            createNotebook as (args: Record<string, unknown>) => Promise<unknown>,
+            { name }
+        );
+        if (id) setActiveNotebookId(id as Id<"notebooks">);
     };
 
     const handleEditNotebook = async (id: string, name: string) => {
-        await updateNotebook({ id: id as Id<"notebooks">, name });
+        await offlineMutation(
+            "notebooks:update",
+            updateNotebook as (args: Record<string, unknown>) => Promise<unknown>,
+            { id: id as Id<"notebooks">, name }
+        );
     };
 
     const handleDeleteNotebook = async (id: string) => {
-        await deleteNotebook({ id: id as Id<"notebooks"> });
+        await offlineMutation(
+            "notebooks:remove",
+            deleteNotebook as (args: Record<string, unknown>) => Promise<unknown>,
+            { id: id as Id<"notebooks"> }
+        );
         if (resolvedActiveId === id) {
             setActiveNotebookId(undefined);
         }
@@ -71,7 +86,10 @@ export default function DashboardPage() {
         <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
             {/* Dashboard Header: Logo left, Notebook Switcher right */}
             <div className="mb-6 animate-slide-up flex items-center justify-between relative z-50">
-                <Logo size="md" />
+                <div className="flex items-center gap-2">
+                    <Logo size="md" />
+                    <SyncIndicator />
+                </div>
                 <NotebookSwitcher
                     notebooks={notebooks.map((n) => ({
                         id: n._id,

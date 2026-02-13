@@ -161,6 +161,12 @@ const fr: Record<TranslationKey, string> = {
     "settings.installHint": "Utilisez l'option \"Ajouter à l'écran d'accueil\" de votre navigateur.",
     "settings.signOut": "Déconnexion",
     "settings.signOutConfirm": "Êtes-vous sûr de vouloir vous déconnecter ?",
+
+    // Sync
+    "sync.offline": "Hors-ligne",
+    "sync.pending": "{count} en attente",
+    "sync.syncing": "Synchronisation…",
+    "sync.synced": "Synchronisé",
 };
 
 export default fr;

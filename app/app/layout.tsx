@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
 import { Loader2 } from "lucide-react";
@@ -11,15 +11,34 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading } = useConvexAuth();
     const router = useRouter();
     const { t } = useTranslation();
+    const [wasAuthenticated, setWasAuthenticated] = useState(false);
 
     useEffect(() => {
-        if (!isLoading && !isAuthenticated) {
+        // Track authentication state in sessionStorage for offline resilience
+        if (isAuthenticated) {
+            setWasAuthenticated(true);
+            try { sessionStorage.setItem("tekyida-authed", "1"); } catch {}
+        }
+    }, [isAuthenticated]);
+
+    useEffect(() => {
+        // Check if previously authenticated (for offline case)
+        try {
+            if (sessionStorage.getItem("tekyida-authed") === "1") {
+                setWasAuthenticated(true);
+            }
+        } catch {}
+    }, []);
+
+    useEffect(() => {
+        // Only redirect if definitely not authenticated AND online
+        if (!isLoading && !isAuthenticated && !wasAuthenticated && navigator.onLine) {
             router.push("/login");
         }
-    }, [isLoading, isAuthenticated, router]);
+    }, [isLoading, isAuthenticated, wasAuthenticated, router]);
 
-    // Loading / unauthenticated state
-    if (isLoading || !isAuthenticated) {
+    // Show loading only on first load when online and not previously authenticated
+    if ((isLoading || !isAuthenticated) && !wasAuthenticated) {
         return (
             <>
                 <div className="mesh-gradient" />

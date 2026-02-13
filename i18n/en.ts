@@ -159,6 +159,12 @@ const en = {
     "settings.installHint": "Use your browser's \"Add to Home Screen\" option.",
     "settings.signOut": "Sign Out",
     "settings.signOutConfirm": "Are you sure you want to sign out?",
+
+    // Sync
+    "sync.offline": "Offline",
+    "sync.pending": "{count} pending",
+    "sync.syncing": "Syncing…",
+    "sync.synced": "Synced",
 } as const;
 
 export type TranslationKey = keyof typeof en;

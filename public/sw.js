@@ -1,7 +1,7 @@
-const CACHE_NAME = "tekyida-v1";
+const CACHE_NAME = "tekyida-v2";
 const OFFLINE_URL = "/app";
 
-// Assets to precache
+// Assets to precache for offline shell
 const PRECACHE_ASSETS = [
     "/",
     "/app",
@@ -33,47 +33,101 @@ self.addEventListener("activate", (event) => {
     self.clients.claim();
 });
 
-// Fetch — network-first for navigation, cache-first for static assets
+// Fetch — smarter offline strategy
 self.addEventListener("fetch", (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // Skip non-GET requests and Convex/auth API calls
+    // Skip non-GET requests (mutations go through IndexedDB queue, not SW)
     if (request.method !== "GET") return;
-    if (url.pathname.startsWith("/api/")) return;
-    if (url.hostname !== self.location.hostname) return;
 
-    // Navigation requests — network first, fallback to cache
+    // Skip Convex WebSocket & API calls — they handle their own reconnection
+    if (url.hostname !== self.location.hostname) return;
+    if (url.pathname.startsWith("/api/")) return;
+
+    // Navigation requests — network first, fallback to cached app shell
     if (request.mode === "navigate") {
         event.respondWith(
             fetch(request)
                 .then((response) => {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+                    if (response.ok) {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+                    }
                     return response;
                 })
-                .catch(() => caches.match(OFFLINE_URL))
+                .catch(() => {
+                    return caches.match(request).then(
+                        (cached) => cached || caches.match(OFFLINE_URL)
+                    );
+                })
         );
         return;
     }
 
-    // Static assets — cache first, fallback to network
+    // Next.js build assets & static files — stale-while-revalidate
     if (
         url.pathname.startsWith("/_next/static/") ||
         url.pathname.startsWith("/icons/") ||
         url.pathname.endsWith(".css") ||
-        url.pathname.endsWith(".js")
+        url.pathname.endsWith(".js") ||
+        url.pathname.endsWith(".woff2") ||
+        url.pathname.endsWith(".woff") ||
+        url.pathname.endsWith(".png") ||
+        url.pathname.endsWith(".svg") ||
+        url.pathname.endsWith(".ico")
     ) {
         event.respondWith(
             caches.match(request).then((cached) => {
-                if (cached) return cached;
-                return fetch(request).then((response) => {
-                    const clone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-                    return response;
-                });
+                const fetchPromise = fetch(request)
+                    .then((response) => {
+                        if (response.ok) {
+                            const clone = response.clone();
+                            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+                        }
+                        return response;
+                    })
+                    .catch(() => cached);
+
+                return cached || fetchPromise;
             })
         );
         return;
+    }
+
+    // Next.js data requests — network first, cache fallback
+    if (url.pathname.startsWith("/_next/data/")) {
+        event.respondWith(
+            fetch(request)
+                .then((response) => {
+                    if (response.ok) {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+                    }
+                    return response;
+                })
+                .catch(() => caches.match(request))
+        );
+        return;
+    }
+
+    // Default: network first, cache fallback
+    event.respondWith(
+        fetch(request)
+            .then((response) => {
+                if (response.ok) {
+                    const clone = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+                }
+                return response;
+            })
+            .catch(() => caches.match(request))
+    );
+});
+
+// Listen for messages from the app
+self.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "SKIP_WAITING") {
+        self.skipWaiting();
     }
 });
