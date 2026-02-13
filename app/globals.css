@@ -87,8 +87,8 @@ html {
 .dark {
   --bg: #0e1020;
   --text-primary: #e8eaf0;
-  --text-secondary: #8b91b0;
-  --text-tertiary: #5c6280;
+  --text-secondary: #bec3d8;
+  --text-tertiary: #969cb8;
 
   /* Dark mesh */
   --mesh-1: #1a1f48;
