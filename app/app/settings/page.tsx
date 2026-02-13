@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, LogOut, Eye, EyeOff, Download, CheckCircle } from "lucide-react";
+import { Mail, Lock, LogOut, Eye, EyeOff, Download, CheckCircle, WifiOff } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageToggle from "@/components/ui/LanguageToggle";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useSync } from "@/contexts/SyncContext";
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -18,8 +19,10 @@ export default function SettingsPage() {
     const { t } = useTranslation();
     const { signOut } = useAuthActions();
     const router = useRouter();
+    const { isOnline } = useSync();
 
     const [email, setEmail] = useState("");
+    const [confirmEmail, setConfirmEmail] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showNewPassword, setShowNewPassword] = useState(false);
@@ -72,21 +75,25 @@ export default function SettingsPage() {
     return (
         <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
             {/* Title */}
-            <div className="mb-8 animate-slide-up">
+            <div className="mb-8 animate-slide-up text-center">
                 <h1 className="text-2xl font-extrabold tracking-tight">
                     <span className="gradient-text">{t("settings.title")}</span>
                 </h1>
             </div>
 
             <div className="space-y-6">
-                {/* Account Section */}
-                <section className="liquid-glass-card p-6 animate-slide-up delay-100">
+                {/* Email Section */}
+                <section className="liquid-glass-card p-6 animate-slide-up delay-100 relative">
+                    {!isOnline && (
+                        <div className="absolute inset-0 z-10 rounded-2xl bg-(--surface-primary)/70 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
+                            <WifiOff size={22} className="text-(--text-tertiary)" />
+                            <span className="text-sm font-semibold text-(--text-tertiary)">{t("settings.offlineUnavailable")}</span>
+                        </div>
+                    )}
                     <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
-                        {t("settings.account")}
+                        {t("settings.email")}
                     </h2>
-
                     <div className="space-y-4">
-                        {/* Email */}
                         <div>
                             <label className="block text-xs font-semibold text-(--text-secondary) mb-1.5 ml-1">
                                 {t("settings.email")}
@@ -102,11 +109,49 @@ export default function SettingsPage() {
                                     placeholder="you@example.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
+                                    disabled={!isOnline}
                                 />
                             </div>
                         </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-(--text-secondary) mb-1.5 ml-1">
+                                {t("settings.confirmEmail")}
+                            </label>
+                            <div className="relative">
+                                <Mail
+                                    size={16}
+                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-(--text-tertiary)"
+                                />
+                                <input
+                                    type="email"
+                                    className="glass-input pl-10"
+                                    placeholder="you@example.com"
+                                    value={confirmEmail}
+                                    onChange={(e) => setConfirmEmail(e.target.value)}
+                                    disabled={!isOnline}
+                                />
+                            </div>
+                        </div>
+                        <div className="pt-1 flex justify-center">
+                            <Button size="md" disabled={!isOnline}>
+                                {t("settings.saveEmail")}
+                            </Button>
+                        </div>
+                    </div>
+                </section>
 
-                        {/* New Password */}
+                {/* Password Section */}
+                <section className="liquid-glass-card p-6 animate-slide-up delay-150 relative">
+                    {!isOnline && (
+                        <div className="absolute inset-0 z-10 rounded-2xl bg-(--surface-primary)/70 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
+                            <WifiOff size={22} className="text-(--text-tertiary)" />
+                            <span className="text-sm font-semibold text-(--text-tertiary)">{t("settings.offlineUnavailable")}</span>
+                        </div>
+                    )}
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
+                        {t("settings.password")}
+                    </h2>
+                    <div className="space-y-4">
                         <div>
                             <label className="block text-xs font-semibold text-(--text-secondary) mb-1.5 ml-1">
                                 {t("settings.newPassword")}
@@ -122,6 +167,7 @@ export default function SettingsPage() {
                                     placeholder="••••••••"
                                     value={newPassword}
                                     onChange={(e) => setNewPassword(e.target.value)}
+                                    disabled={!isOnline}
                                 />
                                 <button
                                     type="button"
@@ -132,8 +178,6 @@ export default function SettingsPage() {
                                 </button>
                             </div>
                         </div>
-
-                        {/* Confirm Password */}
                         <div>
                             <label className="block text-xs font-semibold text-(--text-secondary) mb-1.5 ml-1">
                                 {t("settings.confirmPassword")}
@@ -149,6 +193,7 @@ export default function SettingsPage() {
                                     placeholder="••••••••"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
+                                    disabled={!isOnline}
                                 />
                                 <button
                                     type="button"
@@ -159,11 +204,9 @@ export default function SettingsPage() {
                                 </button>
                             </div>
                         </div>
-
-                        {/* Save */}
-                        <div className="pt-1">
-                            <Button size="md">
-                                {t("settings.save")}
+                        <div className="pt-1 flex justify-center">
+                            <Button size="md" disabled={!isOnline}>
+                                {t("settings.savePassword")}
                             </Button>
                         </div>
                     </div>
