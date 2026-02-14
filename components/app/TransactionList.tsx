@@ -220,7 +220,7 @@ export default function TransactionList({
                                         {formatDate(tx.date ?? tx.createdAt)}
                                     </p>
                                     {tx.description && (
-                                        <p className="text-sm text-black dark:text-white truncate mt-0.5">
+                                        <p className="text-sm text-(--text-primary) truncate mt-0.5">
                                             {tx.description}
                                         </p>
                                     )}
