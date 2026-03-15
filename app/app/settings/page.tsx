@@ -32,8 +32,12 @@ export default function SettingsPage() {
     const [passwordLoading, setPasswordLoading] = useState(false);
     const [passwordError, setPasswordError] = useState("");
     const [passwordSuccess, setPasswordSuccess] = useState("");
+    const [emailLoading, setEmailLoading] = useState(false);
+    const [emailError, setEmailError] = useState("");
+    const [emailSuccess, setEmailSuccess] = useState("");
 
     const changePassword = useAction(api.users.changePassword);
+    const changeEmail = useAction(api.users.changeEmail);
 
     // PWA install prompt
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -96,6 +100,32 @@ export default function SettingsPage() {
             setPasswordError(t("settings.passwordChangeError"));
         } finally {
             setPasswordLoading(false);
+        }
+    };
+
+    const handleChangeEmail = async () => {
+        setEmailError("");
+        setEmailSuccess("");
+
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            setEmailError(t("settings.emailInvalid"));
+            return;
+        }
+        if (email !== confirmEmail) {
+            setEmailError(t("settings.emailMismatch"));
+            return;
+        }
+
+        setEmailLoading(true);
+        try {
+            await changeEmail({ newEmail: email });
+            setEmailSuccess(t("settings.emailChanged"));
+            setEmail("");
+            setConfirmEmail("");
+        } catch {
+            setEmailError(t("settings.emailChangeError"));
+        } finally {
+            setEmailLoading(false);
         }
     };
 
@@ -165,9 +195,24 @@ export default function SettingsPage() {
                                 />
                             </div>
                         </div>
+                        {emailError && (
+                            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm text-center">
+                                {emailError}
+                            </div>
+                        )}
+                        {emailSuccess && (
+                            <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-sm text-center flex items-center justify-center gap-2">
+                                <CheckCircle size={14} />
+                                {emailSuccess}
+                            </div>
+                        )}
                         <div className="pt-1 flex justify-center">
-                            <Button size="md" disabled={!isOnline}>
-                                {t("settings.saveEmail")}
+                            <Button size="md" disabled={!isOnline || emailLoading} onClick={handleChangeEmail}>
+                                {emailLoading ? (
+                                    <Loader2 size={16} className="animate-spin" />
+                                ) : (
+                                    t("settings.saveEmail")
+                                )}
                             </Button>
                         </div>
                     </div>
