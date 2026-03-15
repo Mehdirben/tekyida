@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, LogOut, Eye, EyeOff, Download, CheckCircle, WifiOff } from "lucide-react";
+import { Mail, Lock, LogOut, Eye, EyeOff, Download, CheckCircle, WifiOff, Loader2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageToggle from "@/components/ui/LanguageToggle";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useSync } from "@/contexts/SyncContext";
+import { useAction } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -27,6 +29,11 @@ export default function SettingsPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [passwordError, setPasswordError] = useState("");
+    const [passwordSuccess, setPasswordSuccess] = useState("");
+
+    const changePassword = useAction(api.users.changePassword);
 
     // PWA install prompt
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -64,6 +71,32 @@ export default function SettingsPage() {
             setIsInstalled(true);
         }
         setDeferredPrompt(null);
+    };
+
+    const handleChangePassword = async () => {
+        setPasswordError("");
+        setPasswordSuccess("");
+
+        if (!newPassword || newPassword.length < 6) {
+            setPasswordError(t("settings.passwordTooShort"));
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setPasswordError(t("settings.passwordMismatch"));
+            return;
+        }
+
+        setPasswordLoading(true);
+        try {
+            await changePassword({ newPassword });
+            setPasswordSuccess(t("settings.passwordChanged"));
+            setNewPassword("");
+            setConfirmPassword("");
+        } catch {
+            setPasswordError(t("settings.passwordChangeError"));
+        } finally {
+            setPasswordLoading(false);
+        }
     };
 
     const handleSignOut = async () => {
@@ -204,9 +237,24 @@ export default function SettingsPage() {
                                 </button>
                             </div>
                         </div>
+                        {passwordError && (
+                            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm text-center">
+                                {passwordError}
+                            </div>
+                        )}
+                        {passwordSuccess && (
+                            <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-sm text-center flex items-center justify-center gap-2">
+                                <CheckCircle size={14} />
+                                {passwordSuccess}
+                            </div>
+                        )}
                         <div className="pt-1 flex justify-center">
-                            <Button size="md" disabled={!isOnline}>
-                                {t("settings.savePassword")}
+                            <Button size="md" disabled={!isOnline || passwordLoading} onClick={handleChangePassword}>
+                                {passwordLoading ? (
+                                    <Loader2 size={16} className="animate-spin" />
+                                ) : (
+                                    t("settings.savePassword")
+                                )}
                             </Button>
                         </div>
                     </div>
