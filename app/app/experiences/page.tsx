@@ -1,27 +1,38 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import Logo from "@/components/ui/Logo";
 import SyncIndicator from "@/components/app/SyncIndicator";
 import NotebookSwitcher from "@/components/app/NotebookSwitcher";
-import QuickStats from "@/components/app/QuickStats";
-import EmptyState from "@/components/app/EmptyState";
-import ContactList from "@/components/app/ContactList";
-import TransactionList from "@/components/app/TransactionList";
+import ExperienceList from "@/components/app/ExperienceList";
+import ExperienceDetail from "@/components/app/ExperienceDetail";
 import { AmountsVisibilityProvider } from "@/contexts/AmountsVisibilityContext";
 import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import CacheWarmer from "@/components/app/CacheWarmer";
 
-export default function DashboardPage() {
+interface ExperienceSummary {
+    _id: Id<"experiences">;
+    name: string;
+    closed: boolean;
+    balance: number;
+    transactionCount: number;
+    contactId?: Id<"contacts">;
+}
+
+export default function ExperiencesPage() {
     const notebooks = useCachedQuery<{ _id: Id<"notebooks">; name: string; contactCount: number; balance: number }[]>("notebooks.list", api.notebooks.list, {});
     const createNotebook = useMutation(api.notebooks.create);
     const updateNotebook = useMutation(api.notebooks.update);
     const deleteNotebook = useMutation(api.notebooks.remove);
+    const closeExperience = useMutation(api.experiences.close);
+    const reopenExperience = useMutation(api.experiences.reopen);
     const { offlineMutation, isItemPending } = useSync();
+    const router = useRouter();
 
     const [activeNotebookId, setActiveNotebookIdRaw] = useState<Id<"notebooks"> | undefined>(() => {
         if (typeof window === "undefined") return undefined;
@@ -38,34 +49,44 @@ export default function DashboardPage() {
         }
     }, []);
 
-    // Auto-select first notebook when loaded
     const resolvedActiveId =
         activeNotebookId && notebooks?.some((n) => n._id === activeNotebookId)
             ? activeNotebookId
             : notebooks?.[0]?._id;
 
-    const activeNotebook = notebooks?.find((n) => n._id === resolvedActiveId);
-
-    // Get contacts for active notebook
-    const contacts = useCachedQuery<{ _id: Id<"contacts">; name: string; phone?: string; balance: number; transactionCount: number; experiences: { _id: Id<"experiences">; name: string; closed: boolean; balance: number; transactionCount: number; lastTransactionDate?: number }[] }[]>(
+    // Get contacts for the active notebook (for linking experiences)
+    const contacts = useCachedQuery<{ _id: Id<"contacts">; name: string }[]>(
         "contacts.list",
         api.contacts.list,
         resolvedActiveId ? { notebookId: resolvedActiveId } : "skip"
     );
 
-    // Transaction sheet state
-    const [selectedContact, setSelectedContact] = useState<{
-        _id: Id<"contacts">;
-        name: string;
-        experiences: { _id: Id<"experiences">; name: string; closed: boolean; balance: number; transactionCount: number; lastTransactionDate?: number }[];
-    } | null>(null);
+    // Get experiences for active notebook
+    const experiences = useCachedQuery<ExperienceSummary[]>(
+        "experiences.list",
+        api.experiences.list,
+        resolvedActiveId ? { notebookId: resolvedActiveId } : "skip"
+    );
 
-    // Compute stats from contacts
-    const moneyGiven =
-        contacts?.reduce((sum, c) => (c.balance < 0 ? sum + Math.abs(c.balance) : sum), 0) ?? 0;
-    const moneyOwed =
-        contacts?.reduce((sum, c) => (c.balance > 0 ? sum + c.balance : sum), 0) ?? 0;
-    const netBalance = moneyOwed - moneyGiven;
+    // Selected experience for detail sheet
+    const [selectedExperience, setSelectedExperience] = useState<ExperienceSummary | null>(null);
+
+    // Auto-open experience detail from ?open=<id> query param (once only)
+    const searchParams = useSearchParams();
+    const openId = searchParams.get("open");
+    const handledOpenRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (openId && openId !== handledOpenRef.current && experiences) {
+            const match = experiences.find((e) => e._id === openId);
+            if (match) {
+                handledOpenRef.current = openId;
+                setSelectedExperience(match);
+            }
+        }
+    }, [openId, experiences]);
+
+    const safeNotebooks = notebooks ?? [];
+    const safeContacts = contacts ?? [];
 
     const handleCreateNotebook = async (name: string) => {
         const id = await offlineMutation(
@@ -95,19 +116,37 @@ export default function DashboardPage() {
         }
     };
 
-    // Wait for data before rendering — prevents flash from 0 to loaded values
+    const handleToggleClosed = async () => {
+        if (!selectedExperience) return;
+        if (selectedExperience.closed) {
+            await offlineMutation(
+                "experiences:reopen",
+                reopenExperience,
+                { id: selectedExperience._id },
+                { notebookId: resolvedActiveId }
+            );
+            setSelectedExperience({ ...selectedExperience, closed: false });
+        } else {
+            await offlineMutation(
+                "experiences:close",
+                closeExperience,
+                { id: selectedExperience._id },
+                { notebookId: resolvedActiveId }
+            );
+            setSelectedExperience({ ...selectedExperience, closed: true });
+        }
+    };
+
     const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
-    const safeNotebooks = notebooks ?? [];
-    const dataReady = !!notebooks && (safeNotebooks.length === 0 || contacts !== undefined);
+    const dataReady = !!notebooks && (safeNotebooks.length === 0 || experiences !== undefined);
 
     if (!dataReady && !isOffline) return null;
 
     return (
         <AmountsVisibilityProvider>
-            {/* Invisible: pre-caches contacts & transactions for ALL notebooks */}
             <CacheWarmer notebookIds={safeNotebooks.map((n) => n._id)} />
             <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
-                {/* Dashboard Header: Logo left, Notebook Switcher right */}
+                {/* Header */}
                 <div className="mb-6 animate-slide-up flex items-center justify-between relative z-50">
                     <div className="flex items-center gap-2">
                         <Logo size="md" />
@@ -127,54 +166,31 @@ export default function DashboardPage() {
                     />
                 </div>
 
-                {safeNotebooks.length === 0 ? (
-                    /* Empty State */
+                {/* Experience List */}
+                {resolvedActiveId && experiences !== undefined && (
                     <div className="animate-slide-up delay-100">
-                        <EmptyState
-                            onCreateNotebook={() => {
-                                const name = prompt("Notebook name:");
-                                if (name?.trim()) handleCreateNotebook(name.trim());
-                            }}
+                        <ExperienceList
+                            experiences={experiences}
+                            notebookId={resolvedActiveId}
+                            contacts={safeContacts.map((c) => ({ _id: c._id, name: c.name }))}
+                            onSelectExperience={(exp) => setSelectedExperience(exp)}
                         />
                     </div>
-                ) : (
-                    <>
-                        {/* Stats */}
-                        <div className="mb-6 animate-slide-up delay-100">
-                            <QuickStats
-                                moneyGiven={moneyGiven}
-                                moneyOwed={moneyOwed}
-                                netBalance={netBalance}
-                            />
-                        </div>
-
-                        {/* Contact List */}
-                        {resolvedActiveId && contacts !== undefined && (
-                            <div className="animate-slide-up delay-200">
-                                <ContactList
-                                    contacts={contacts}
-                                    notebookId={resolvedActiveId}
-                                    onSelectContact={(c) =>
-                                        setSelectedContact({
-                                            _id: c._id,
-                                            name: c.name,
-                                            experiences: (c as { experiences?: { _id: Id<"experiences">; name: string; closed: boolean; balance: number; transactionCount: number; lastTransactionDate?: number }[] }).experiences ?? [],
-                                        })
-                                    }
-                                />
-                            </div>
-                        )}
-                    </>
                 )}
 
-                {/* Transaction Sheet */}
-                {selectedContact && resolvedActiveId && (
-                    <TransactionList
-                        contactId={selectedContact._id}
-                        contactName={selectedContact.name}
+                {/* Experience Detail Sheet */}
+                {selectedExperience && resolvedActiveId && (
+                    <ExperienceDetail
+                        experienceId={selectedExperience._id}
+                        experienceName={selectedExperience.name}
                         notebookId={resolvedActiveId}
-                        onClose={() => setSelectedContact(null)}
-                        experiences={selectedContact.experiences}
+                        contactId={selectedExperience.contactId}
+                        closed={selectedExperience.closed}
+                        onClose={() => {
+                            setSelectedExperience(null);
+                            if (openId) router.replace("/app/experiences", { scroll: false });
+                        }}
+                        onToggleClosed={handleToggleClosed}
                     />
                 )}
             </main>

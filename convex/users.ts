@@ -1,8 +1,18 @@
 import { v } from "convex/values";
-import { action, internalQuery, internalMutation } from "./_generated/server";
+import { query, action, internalQuery, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { modifyAccountCredentials } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
+
+export const currentEmail = query({
+    args: {},
+    handler: async (ctx) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) return null;
+        const user = await ctx.db.get(userId);
+        return user?.email ?? null;
+    },
+});
 
 export const getUserEmail = internalQuery({
     args: { userId: v.id("users") },

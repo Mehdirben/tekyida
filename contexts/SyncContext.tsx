@@ -45,6 +45,11 @@ const MUTATION_MAP: Record<string, readonly [string, string]> = {
     "transactions:create": ["transactions", "create"],
     "transactions:update": ["transactions", "update"],
     "transactions:remove": ["transactions", "remove"],
+    "experiences:create": ["experiences", "create"],
+    "experiences:update": ["experiences", "update"],
+    "experiences:remove": ["experiences", "remove"],
+    "experiences:close": ["experiences", "close"],
+    "experiences:reopen": ["experiences", "reopen"],
 };
 
 export function SyncProvider({ children }: { children: ReactNode }) {
@@ -64,6 +69,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     const transactionsCreate = useMutation(api.transactions.create);
     const transactionsUpdate = useMutation(api.transactions.update);
     const transactionsRemove = useMutation(api.transactions.remove);
+    const experiencesCreate = useMutation(api.experiences.create);
+    const experiencesUpdate = useMutation(api.experiences.update);
+    const experiencesRemove = useMutation(api.experiences.remove);
+    const experiencesClose = useMutation(api.experiences.close);
+    const experiencesReopen = useMutation(api.experiences.reopen);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const getMutationFn = useCallback((path: string): ((args: any) => Promise<any>) | null => {
@@ -77,12 +87,19 @@ export function SyncProvider({ children }: { children: ReactNode }) {
             case "transactions:create": return transactionsCreate;
             case "transactions:update": return transactionsUpdate;
             case "transactions:remove": return transactionsRemove;
+            case "experiences:create": return experiencesCreate;
+            case "experiences:update": return experiencesUpdate;
+            case "experiences:remove": return experiencesRemove;
+            case "experiences:close": return experiencesClose;
+            case "experiences:reopen": return experiencesReopen;
             default: return null;
         }
     }, [
         notebooksCreate, notebooksUpdate, notebooksRemove,
         contactsCreate, contactsUpdate, contactsRemove,
         transactionsCreate, transactionsUpdate, transactionsRemove,
+        experiencesCreate, experiencesUpdate, experiencesRemove,
+        experiencesClose, experiencesReopen,
     ]);
 
     // Refresh pending count and pending IDs from IndexedDB

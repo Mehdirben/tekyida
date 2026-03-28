@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
     ArrowDownLeft,
@@ -12,6 +11,8 @@ import {
     X,
     Receipt,
     CloudOff,
+    Lock,
+    Unlock,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
@@ -20,24 +21,15 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
-import ExperienceContactCard from "@/components/app/ExperienceContactCard";
 
-interface ExperienceForContact {
-    _id: Id<"experiences">;
-    name: string;
-    closed: boolean;
-    balance: number;
-    transactionCount: number;
-    lastTransactionDate?: number;
-}
-
-interface TransactionListProps {
-    contactId: Id<"contacts">;
-    contactName: string;
+interface ExperienceDetailProps {
+    experienceId: Id<"experiences">;
+    experienceName: string;
     notebookId: Id<"notebooks">;
+    contactId?: Id<"contacts">;
+    closed: boolean;
     onClose: () => void;
-    experiences?: ExperienceForContact[];
-    onSelectExperience?: (exp: ExperienceForContact) => void;
+    onToggleClosed: () => void;
 }
 
 function toLocalDatetime(ts: number) {
@@ -46,20 +38,23 @@ function toLocalDatetime(ts: number) {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function TransactionList({
-    contactId,
-    contactName,
+export default function ExperienceDetail({
+    experienceId,
+    experienceName,
     notebookId,
+    contactId,
+    closed,
     onClose,
-    experiences,
-    onSelectExperience,
-}: TransactionListProps) {
+    onToggleClosed,
+}: ExperienceDetailProps) {
     const { t } = useTranslation();
     const { mask } = useAmountsVisibility();
-    const router = useRouter();
-    const rawTransactions = useCachedQuery<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[]>("transactions.list", api.transactions.list, { contactId });
-    // For offline-created contacts (temp_ IDs), there are no server transactions yet — treat undefined as empty
-    const transactions = rawTransactions ?? (contactId.startsWith("temp_") ? [] : undefined);
+    const rawTransactions = useCachedQuery<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[]>(
+        "transactions.list",
+        api.transactions.list,
+        { experienceId }
+    );
+    const transactions = rawTransactions ?? [];
     const createTransaction = useMutation(api.transactions.create);
     const deleteTransaction = useMutation(api.transactions.remove);
     const updateTransaction = useMutation(api.transactions.update);
@@ -68,10 +63,10 @@ export default function TransactionList({
     const [adding, setAdding] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     const [amount, setAmount] = useState("");
-    const [isPositive, setIsPositive] = useState(true); // true = they owe you
+    const [isPositive, setIsPositive] = useState(true);
     const [description, setDescription] = useState("");
-    const [deleteTargetId, setDeleteTargetId] = useState<Id<"transactions"> | null>(null);
     const [date, setDate] = useState(() => toLocalDatetime(Date.now()));
+    const [deleteTargetId, setDeleteTargetId] = useState<Id<"transactions"> | null>(null);
     const [editTarget, setEditTarget] = useState<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number } | null>(null);
     const [editAmount, setEditAmount] = useState("");
     const [editIsPositive, setEditIsPositive] = useState(true);
@@ -96,7 +91,8 @@ export default function TransactionList({
             createTransaction,
             {
                 notebookId,
-                contactId,
+                ...(contactId ? { contactId } : {}),
+                experienceId,
                 amount: isPositive ? parsedAmount : -parsedAmount,
                 description: description.trim() || undefined,
                 date: isNaN(parsedDate) ? Date.now() : parsedDate,
@@ -114,7 +110,7 @@ export default function TransactionList({
             "transactions:remove",
             deleteTransaction,
             { id: deleteTargetId },
-            { contactId, notebookId }
+            { experienceId, notebookId }
         );
         setDeleteTargetId(null);
     };
@@ -141,7 +137,7 @@ export default function TransactionList({
                 description: editDescription.trim() || undefined,
                 date: isNaN(parsedDate) ? Date.now() : parsedDate,
             },
-            { contactId, notebookId }
+            { experienceId, notebookId }
         );
         setEditTarget(null);
     };
@@ -156,8 +152,7 @@ export default function TransactionList({
         });
     };
 
-    const balance =
-        transactions?.reduce((sum, t) => sum + t.amount, 0) ?? 0;
+    const balance = transactions.reduce((sum, t) => sum + t.amount, 0);
 
     return createPortal(
         <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center">
@@ -172,7 +167,25 @@ export default function TransactionList({
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
                     <div className="flex-1 min-w-0">
-                        <h2 className="text-lg font-bold truncate">{contactName}</h2>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-lg font-bold truncate">{experienceName}</h2>
+                            <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={onToggleClosed}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") onToggleClosed();
+                                }}
+                                className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-all ${
+                                    closed
+                                        ? "bg-warning-500/15 text-warning-500"
+                                        : "bg-accent-500/15 text-accent-500"
+                                }`}
+                            >
+                                {closed ? <Lock size={9} /> : <Unlock size={9} />}
+                                {closed ? t("experience.closed") : t("experience.open")}
+                            </span>
+                        </div>
                         <p
                             className={`text-sm font-semibold mt-0.5 ${balance > 0
                                 ? "text-accent-500"
@@ -192,13 +205,18 @@ export default function TransactionList({
                     </button>
                 </div>
 
-                {/* Transaction List — merged timeline of transactions + experience cards sorted by date */}
+                {/* Closed Notice */}
+                {closed && (
+                    <div className="px-5 py-2.5 bg-warning-500/10 border-b border-warning-500/20">
+                        <p className="text-xs text-warning-500 font-medium text-center">
+                            {t("experience.closedNotice")}
+                        </p>
+                    </div>
+                )}
+
+                {/* Transaction List */}
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2.5">
-                    {!transactions ? (
-                        <div className="text-center py-8 text-sm text-(--text-tertiary)">
-                            {t("dashboard.loading")}
-                        </div>
-                    ) : transactions.length === 0 && !adding && (!experiences || experiences.length === 0) ? (
+                    {transactions.length === 0 && !adding ? (
                         <div className="text-center py-8">
                             <div className="inline-flex p-3 rounded-2xl liquid-glass mb-3">
                                 <Receipt size={24} className="text-primary-500" />
@@ -208,19 +226,70 @@ export default function TransactionList({
                             </p>
                         </div>
                     ) : (
-                        <TimelineMerged
-                            transactions={transactions}
-                            experiences={experiences}
-                            formatDate={formatDate}
-                            mask={mask}
-                            isItemPending={isItemPending}
-                            openEditTx={openEditTx}
-                            setDeleteTargetId={setDeleteTargetId}
-                            onExperienceClick={(expId) => {
-                                handleAnimatedClose();
-                                setTimeout(() => router.push(`/app/experiences?open=${expId}`), 350);
-                            }}
-                        />
+                        transactions.map((tx) => (
+                            <div
+                                key={tx._id}
+                                className="liquid-glass-card p-3.5 flex items-center gap-3"
+                            >
+                                <div
+                                    className={`p-1.5 rounded-lg ${tx.amount > 0
+                                        ? "bg-accent-500/10"
+                                        : "bg-danger-500/10"
+                                        }`}
+                                >
+                                    {tx.amount > 0 ? (
+                                        <ArrowDownLeft
+                                            size={16}
+                                            className="text-accent-500"
+                                        />
+                                    ) : (
+                                        <ArrowUpRight
+                                            size={16}
+                                            className="text-danger-500"
+                                        />
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-(--text-tertiary)">
+                                        {formatDate(tx.date ?? tx.createdAt)}
+                                    </p>
+                                    {tx.description && (
+                                        <p className="text-sm text-(--text-primary) truncate mt-0.5">
+                                            {tx.description}
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {isItemPending(tx._id) && (
+                                        <CloudOff size={12} className="text-warning-500" />
+                                    )}
+                                    <span
+                                        className={`text-sm font-bold ${tx.amount > 0
+                                            ? "text-accent-500"
+                                            : "text-danger-500"
+                                            }`}
+                                    >
+                                        {mask(`${tx.amount > 0 ? "+" : ""}${tx.amount.toFixed(2)}`)}
+                                    </span>
+                                    {!closed && (
+                                        <>
+                                            <button
+                                                onClick={() => openEditTx(tx)}
+                                                className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
+                                            >
+                                                <Pencil size={12} />
+                                            </button>
+                                            <button
+                                                onClick={() => setDeleteTargetId(tx._id)}
+                                                className="p-1 rounded-md text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        ))
                     )}
                 </div>
 
@@ -339,194 +408,80 @@ export default function TransactionList({
                     document.body
                 )}
 
-                {/* Add Transaction */}
-                <div className="px-5 pb-5 pt-2 border-t border-(--border)">
-                    {adding ? (
-                        <div className="space-y-3 animate-scale-in">
-                            {/* Amount + Direction Toggle */}
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setIsPositive(!isPositive)}
-                                    className={`shrink-0 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isPositive
-                                        ? "bg-accent-500/15 text-accent-500 border border-accent-500/30"
-                                        : "bg-danger-500/15 text-danger-500 border border-danger-500/30"
-                                        }`}
-                                >
-                                    {isPositive
-                                        ? t("transaction.theyOweYou")
-                                        : t("transaction.youOweThem")}
-                                </button>
+                {/* Add Transaction (disabled when closed) */}
+                {!closed && (
+                    <div className="px-5 pb-5 pt-2 border-t border-(--border)">
+                        {adding ? (
+                            <div className="space-y-3 animate-scale-in">
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setIsPositive(!isPositive)}
+                                        className={`shrink-0 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isPositive
+                                            ? "bg-accent-500/15 text-accent-500 border border-accent-500/30"
+                                            : "bg-danger-500/15 text-danger-500 border border-danger-500/30"
+                                            }`}
+                                    >
+                                        {isPositive
+                                            ? t("transaction.theyOweYou")
+                                            : t("transaction.youOweThem")}
+                                    </button>
+                                    <input
+                                        type="number"
+                                        inputMode="decimal"
+                                        value={amount}
+                                        onChange={(e) => setAmount(e.target.value)}
+                                        placeholder={t("transaction.amount")}
+                                        className="glass-input py-2.5 text-sm flex-1"
+                                        min="0"
+                                        step="0.01"
+                                    />
+                                </div>
                                 <input
-                                    type="number"
-                                    inputMode="decimal"
-                                    value={amount}
-                                    onChange={(e) => setAmount(e.target.value)}
-                                    placeholder={t("transaction.amount")}
-                                    className="glass-input py-2.5 text-sm flex-1"
-                                    min="0"
-                                    step="0.01"
+                                    type="text"
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") handleAdd();
+                                        if (e.key === "Escape") setAdding(false);
+                                    }}
+                                    placeholder={t("transaction.description")}
+                                    className="glass-input py-2.5 text-sm"
                                 />
+                                <input
+                                    type="datetime-local"
+                                    value={date}
+                                    onChange={(e) => setDate(e.target.value)}
+                                    className="glass-input py-2.5 text-sm w-full min-w-0 appearance-none"
+                                />
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setAdding(false)}
+                                        className="flex-1 py-2.5 rounded-xl text-sm font-medium text-(--text-secondary) liquid-glass hover:bg-white/10 transition-all cursor-pointer"
+                                    >
+                                        {t("common.cancel")}
+                                    </button>
+                                    <button
+                                        onClick={handleAdd}
+                                        disabled={!amount || parseFloat(amount) <= 0}
+                                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary-800/80 dark:bg-primary-500/70 text-white transition-all hover:shadow-md disabled:opacity-40 cursor-pointer"
+                                    >
+                                        {t("transaction.add")}
+                                    </button>
+                                </div>
                             </div>
-                            <input
-                                type="text"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleAdd();
-                                    if (e.key === "Escape") setAdding(false);
-                                }}
-                                placeholder={t("transaction.description")}
-                                className="glass-input py-2.5 text-sm"
-                            />
-                            <input
-                                type="datetime-local"
-                                value={date}
-                                onChange={(e) => setDate(e.target.value)}
-                                className="glass-input py-2.5 text-sm w-full min-w-0 appearance-none"
-                            />
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setAdding(false)}
-                                    className="flex-1 py-2.5 rounded-xl text-sm font-medium text-(--text-secondary) liquid-glass hover:bg-white/10 transition-all cursor-pointer"
-                                >
-                                    {t("common.cancel")}
-                                </button>
-                                <button
-                                    onClick={handleAdd}
-                                    disabled={!amount || parseFloat(amount) <= 0}
-                                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary-800/80 dark:bg-primary-500/70 text-white transition-all hover:shadow-md disabled:opacity-40 cursor-pointer"
-                                >
-                                    {t("transaction.add")}
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setAdding(true)}
-                            className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold bg-primary-800/80 dark:bg-primary-500/70 text-white transition-all hover:shadow-md active:scale-[0.97] cursor-pointer"
-                        >
-                            <Plus size={16} />
-                            {t("transaction.add")}
-                        </button>
-                    )}
-                </div>
+                        ) : (
+                            <button
+                                onClick={() => setAdding(true)}
+                                className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold bg-primary-800/80 dark:bg-primary-500/70 text-white transition-all hover:shadow-md active:scale-[0.97] cursor-pointer"
+                            >
+                                <Plus size={16} />
+                                {t("transaction.add")}
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
         </div>,
         document.body
-    );
-}
-
-// ─── Merged timeline component ──────────────────────────────────────────
-
-type TimelineItem =
-    | { type: "transaction"; sortDate: number; data: { _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number } }
-    | { type: "experience"; sortDate: number; data: ExperienceForContact };
-
-function TimelineMerged({
-    transactions,
-    experiences,
-    formatDate,
-    mask,
-    isItemPending,
-    openEditTx,
-    setDeleteTargetId,
-    onExperienceClick,
-}: {
-    transactions: { _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[];
-    experiences?: ExperienceForContact[];
-    formatDate: (ts: number) => string;
-    mask: (s: string) => string;
-    isItemPending: (id: string) => boolean;
-    openEditTx: (tx: { _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }) => void;
-    setDeleteTargetId: (id: Id<"transactions">) => void;
-    onExperienceClick: (expId: string) => void;
-}) {
-    const items: TimelineItem[] = useMemo(() => {
-        const txItems: TimelineItem[] = transactions.map((tx) => ({
-            type: "transaction" as const,
-            sortDate: tx.date ?? tx.createdAt,
-            data: tx,
-        }));
-
-        const expItems: TimelineItem[] = (experiences ?? []).map((exp) => ({
-            type: "experience" as const,
-            sortDate: exp.lastTransactionDate ?? 0,
-            data: exp,
-        }));
-
-        return [...txItems, ...expItems].sort((a, b) => b.sortDate - a.sortDate);
-    }, [transactions, experiences]);
-
-    return (
-        <>
-            {items.map((item) => {
-                if (item.type === "experience") {
-                    const exp = item.data as ExperienceForContact;
-                    return (
-                        <ExperienceContactCard
-                            key={exp._id}
-                            experience={exp}
-                            onSelect={() => onExperienceClick(exp._id)}
-                        />
-                    );
-                }
-
-                const tx = item.data as { _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number };
-                return (
-                    <div
-                        key={tx._id}
-                        className="liquid-glass-card p-3.5 flex items-center gap-3"
-                    >
-                        <div
-                            className={`p-1.5 rounded-lg ${tx.amount > 0
-                                ? "bg-accent-500/10"
-                                : "bg-danger-500/10"
-                                }`}
-                        >
-                            {tx.amount > 0 ? (
-                                <ArrowDownLeft size={16} className="text-accent-500" />
-                            ) : (
-                                <ArrowUpRight size={16} className="text-danger-500" />
-                            )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs text-(--text-tertiary)">
-                                {formatDate(tx.date ?? tx.createdAt)}
-                            </p>
-                            {tx.description && (
-                                <p className="text-sm text-(--text-primary) truncate mt-0.5">
-                                    {tx.description}
-                                </p>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                            {isItemPending(tx._id) && (
-                                <CloudOff size={12} className="text-warning-500" />
-                            )}
-                            <span
-                                className={`text-sm font-bold ${tx.amount > 0
-                                    ? "text-accent-500"
-                                    : "text-danger-500"
-                                    }`}
-                            >
-                                {mask(`${tx.amount > 0 ? "+" : ""}${tx.amount.toFixed(2)}`)}
-                            </span>
-                            <button
-                                onClick={() => openEditTx(tx)}
-                                className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
-                            >
-                                <Pencil size={12} />
-                            </button>
-                            <button
-                                onClick={() => setDeleteTargetId(tx._id)}
-                                className="p-1 rounded-md text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
-                            >
-                                <Trash2 size={12} />
-                            </button>
-                        </div>
-                    </div>
-                );
-            })}
-        </>
     );
 }

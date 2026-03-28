@@ -75,6 +75,15 @@ export const remove = mutation({
             await ctx.db.delete(t._id);
         }
 
+        // Cascade: delete all experiences in this notebook
+        const experiences = await ctx.db
+            .query("experiences")
+            .withIndex("by_notebook", (q) => q.eq("notebookId", args.id))
+            .collect();
+        for (const e of experiences) {
+            await ctx.db.delete(e._id);
+        }
+
         // Cascade: delete all contacts in this notebook
         const contacts = await ctx.db
             .query("contacts")

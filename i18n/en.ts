@@ -90,6 +90,7 @@ const en = {
     // App Navigation
     "nav.dashboard": "Dashboard",
     "nav.contacts": "Contacts",
+    "nav.experiences": "Experiences",
     "nav.settings": "Settings",
 
     // Dashboard
@@ -122,6 +123,24 @@ const en = {
     "contact.delete": "Delete Contact",
     "contact.deleteConfirm": "Delete this contact and all their transactions?",
     "contact.edit": "Edit Contact",
+
+    // Experience
+    "experience.add": "Add Experience",
+    "experience.name": "Experience name",
+    "experience.empty": "No experiences yet",
+    "experience.emptySubtitle": "Create your first experience to track expenses for a trip or event.",
+    "experience.close": "Close",
+    "experience.reopen": "Reopen",
+    "experience.closed": "Closed",
+    "experience.open": "Open",
+    "experience.delete": "Delete Experience",
+    "experience.deleteConfirm": "Delete this experience and all its transactions? This cannot be undone.",
+    "experience.edit": "Edit Experience",
+    "experience.linkContact": "Link to contact",
+    "experience.contactOptional": "Contact (optional)",
+    "experience.noContact": "No contact",
+    "experience.transactions": "transactions",
+    "experience.closedNotice": "This experience is closed. Reopen it to make changes.",
 
     // Transaction
     "transaction.add": "Add Transaction",

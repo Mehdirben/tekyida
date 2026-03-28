@@ -13,6 +13,7 @@ export function tempId(): string {
 export interface OptimisticContext {
     notebookId?: string;
     contactId?: string;
+    experienceId?: string;
 }
 
 /**
@@ -44,6 +45,16 @@ export async function applyOptimisticUpdate(
                 return void (await transactionUpdate(args, context));
             case "transactions:remove":
                 return void (await transactionRemove(args, context));
+            case "experiences:create":
+                return await experienceCreate(args);
+            case "experiences:update":
+                return void (await experienceUpdate(args, context));
+            case "experiences:remove":
+                return void (await experienceRemove(args, context));
+            case "experiences:close":
+                return void (await experienceSetClosed(args, context, true));
+            case "experiences:reopen":
+                return void (await experienceSetClosed(args, context, false));
             default:
                 return undefined;
         }
@@ -333,5 +344,73 @@ async function transactionRemove(
             };
             await queryCache.set(nbKey, notebooks);
         }
+    }
+}
+
+// ─── Experiences ─────────────────────────────────────────────
+
+async function experienceCreate(args: Record<string, unknown>): Promise<string> {
+    const id = tempId();
+    const notebookId = args.notebookId as string;
+    const key = queryCache.cacheKey("experiences.list", { notebookId });
+    const list = await readList(key);
+    list.unshift({
+        _id: id,
+        _creationTime: Date.now(),
+        userId: "local",
+        notebookId,
+        name: args.name,
+        contactId: args.contactId,
+        closed: false,
+        createdAt: Date.now(),
+        balance: 0,
+        transactionCount: 0,
+    });
+    await queryCache.set(key, list);
+    return id;
+}
+
+async function experienceUpdate(
+    args: Record<string, unknown>,
+    ctx?: OptimisticContext
+): Promise<void> {
+    const notebookId = ctx?.notebookId;
+    if (!notebookId) return;
+    const key = queryCache.cacheKey("experiences.list", { notebookId });
+    const list = await readList(key);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const idx = list.findIndex((e: any) => e._id === args.id);
+    if (idx !== -1) {
+        list[idx] = { ...list[idx], name: args.name, contactId: args.contactId };
+        await queryCache.set(key, list);
+    }
+}
+
+async function experienceRemove(
+    args: Record<string, unknown>,
+    ctx?: OptimisticContext
+): Promise<void> {
+    const notebookId = ctx?.notebookId;
+    if (!notebookId) return;
+    const key = queryCache.cacheKey("experiences.list", { notebookId });
+    const list = await readList(key);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await queryCache.set(key, list.filter((e: any) => e._id !== args.id));
+}
+
+async function experienceSetClosed(
+    args: Record<string, unknown>,
+    ctx?: OptimisticContext,
+    closed?: boolean
+): Promise<void> {
+    const notebookId = ctx?.notebookId;
+    if (!notebookId) return;
+    const key = queryCache.cacheKey("experiences.list", { notebookId });
+    const list = await readList(key);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const idx = list.findIndex((e: any) => e._id === args.id);
+    if (idx !== -1) {
+        list[idx] = { ...list[idx], closed: closed ?? true };
+        await queryCache.set(key, list);
     }
 }

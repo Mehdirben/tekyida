@@ -9,7 +9,7 @@ import LanguageToggle from "@/components/ui/LanguageToggle";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useSync } from "@/contexts/SyncContext";
-import { useAction } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -38,6 +38,7 @@ export default function SettingsPage() {
 
     const changePassword = useAction(api.users.changePassword);
     const changeEmail = useAction(api.users.changeEmail);
+    const currentEmailData = useQuery(api.users.currentEmail);
 
     // PWA install prompt
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -130,7 +131,7 @@ export default function SettingsPage() {
     };
 
     const handleSignOut = async () => {
-        try { localStorage.removeItem("tekyida-authed"); } catch {}
+        try { localStorage.removeItem("tekyida-authed"); } catch { }
         await signOut();
         router.push("/login");
     };
@@ -156,6 +157,11 @@ export default function SettingsPage() {
                     <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.email")}
                     </h2>
+                    {currentEmailData && (
+                        <p className="text-sm text-(--text-secondary) mb-4 ml-1">
+                            {currentEmailData}
+                        </p>
+                    )}
                     <div className="space-y-4">
                         <div>
                             <label className="block text-xs font-semibold text-(--text-secondary) mb-1.5 ml-1">

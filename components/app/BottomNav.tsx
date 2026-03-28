@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Settings } from "lucide-react";
+import { BookOpen, Compass, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "@/i18n/LanguageContext";
@@ -15,6 +15,12 @@ export default function BottomNav() {
             label: t("nav.dashboard"),
             icon: BookOpen,
             active: pathname === "/app",
+        },
+        {
+            href: "/app/experiences",
+            label: t("nav.experiences"),
+            icon: Compass,
+            active: pathname === "/app/experiences",
         },
         {
             href: "/app/settings",

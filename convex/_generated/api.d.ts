@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as contacts from "../contacts.js";
+import type * as experiences from "../experiences.js";
 import type * as http from "../http.js";
 import type * as notebooks from "../notebooks.js";
 import type * as transactions from "../transactions.js";
@@ -24,6 +25,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   contacts: typeof contacts;
+  experiences: typeof experiences;
   http: typeof http;
   notebooks: typeof notebooks;
   transactions: typeof transactions;

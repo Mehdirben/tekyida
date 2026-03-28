@@ -19,17 +19,60 @@ export const list = query({
             contacts
                 .filter((c) => c.userId === userId)
                 .map(async (contact) => {
-                    const transactions = await ctx.db
+                    const allTransactions = await ctx.db
                         .query("transactions")
                         .withIndex("by_contact", (q) => q.eq("contactId", contact._id))
                         .collect();
 
-                    const balance = transactions.reduce((sum, t) => sum + t.amount, 0);
+                    // Only count non-experience transactions for the contact's own balance
+                    const directTransactions = allTransactions.filter((t) => !t.experienceId);
+                    const directBalance = directTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+                    // Fetch experiences linked to this contact
+                    const experiences = await ctx.db
+                        .query("experiences")
+                        .withIndex("by_contact", (q) => q.eq("contactId", contact._id))
+                        .collect();
+
+                    // Only show CLOSED experiences as summary cards
+                    const closedExperiences = experiences.filter((e) => e.closed);
+
+                    const experienceSummaries = await Promise.all(
+                        closedExperiences.map(async (exp) => {
+                            const expTx = await ctx.db
+                                .query("transactions")
+                                .withIndex("by_experience", (q) => q.eq("experienceId", exp._id))
+                                .collect();
+                            const expBalance = expTx.reduce((sum, t) => sum + t.amount, 0);
+
+                            // Find the date of the last transaction
+                            let lastTransactionDate: number | undefined;
+                            if (expTx.length > 0) {
+                                lastTransactionDate = expTx.reduce((latest, t) => {
+                                    const txDate = t.date ?? t.createdAt;
+                                    return txDate > latest ? txDate : latest;
+                                }, 0);
+                            }
+
+                            return {
+                                _id: exp._id,
+                                name: exp.name,
+                                closed: exp.closed,
+                                balance: expBalance,
+                                transactionCount: expTx.length,
+                                lastTransactionDate,
+                            };
+                        })
+                    );
+
+                    // Total balance = direct transactions + closed experience totals
+                    const experienceBalance = experienceSummaries.reduce((sum, e) => sum + e.balance, 0);
 
                     return {
                         ...contact,
-                        balance,
-                        transactionCount: transactions.length,
+                        balance: directBalance + experienceBalance,
+                        transactionCount: directTransactions.length,
+                        experiences: experienceSummaries,
                     };
                 })
         );

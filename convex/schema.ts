@@ -19,17 +19,30 @@ const schema = defineSchema({
         createdAt: v.number(),
     }).index("by_notebook", ["notebookId"]),
 
+    experiences: defineTable({
+        userId: v.id("users"),
+        notebookId: v.id("notebooks"),
+        name: v.string(),
+        contactId: v.optional(v.id("contacts")),
+        closed: v.boolean(),
+        createdAt: v.number(),
+    })
+        .index("by_notebook", ["notebookId"])
+        .index("by_contact", ["contactId"]),
+
     transactions: defineTable({
         userId: v.id("users"),
         notebookId: v.id("notebooks"),
-        contactId: v.id("contacts"),
+        contactId: v.optional(v.id("contacts")),
+        experienceId: v.optional(v.id("experiences")),
         amount: v.number(), // positive = they owe you, negative = you owe them
         description: v.optional(v.string()),
         date: v.optional(v.number()), // user-selected date/time
         createdAt: v.number(),
     })
         .index("by_notebook", ["notebookId"])
-        .index("by_contact", ["contactId"]),
+        .index("by_contact", ["contactId"])
+        .index("by_experience", ["experienceId"]),
 });
 
 export default schema;

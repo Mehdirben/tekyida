@@ -92,6 +92,7 @@ const fr: Record<TranslationKey, string> = {
     // App Navigation
     "nav.dashboard": "Tableau de bord",
     "nav.contacts": "Contacts",
+    "nav.experiences": "Expériences",
     "nav.settings": "Paramètres",
 
     // Dashboard
@@ -124,6 +125,24 @@ const fr: Record<TranslationKey, string> = {
     "contact.delete": "Supprimer le Contact",
     "contact.deleteConfirm": "Supprimer ce contact et toutes ses transactions ?",
     "contact.edit": "Modifier le Contact",
+
+    // Experience
+    "experience.add": "Ajouter une Expérience",
+    "experience.name": "Nom de l'expérience",
+    "experience.empty": "Aucune expérience",
+    "experience.emptySubtitle": "Créez votre première expérience pour suivre les dépenses d'un voyage ou événement.",
+    "experience.close": "Clôturer",
+    "experience.reopen": "Rouvrir",
+    "experience.closed": "Clôturé",
+    "experience.open": "Ouvert",
+    "experience.delete": "Supprimer l'Expérience",
+    "experience.deleteConfirm": "Supprimer cette expérience et toutes ses transactions ? Cette action est irréversible.",
+    "experience.edit": "Modifier l'Expérience",
+    "experience.linkContact": "Lier à un contact",
+    "experience.contactOptional": "Contact (optionnel)",
+    "experience.noContact": "Aucun contact",
+    "experience.transactions": "transactions",
+    "experience.closedNotice": "Cette expérience est clôturée. Rouvrez-la pour faire des modifications.",
 
     // Transaction
     "transaction.add": "Ajouter une Transaction",
