@@ -3,6 +3,7 @@
 import { RefreshCw, Check, WifiOff, CloudUpload } from "lucide-react";
 import { useSync } from "@/contexts/SyncContext";
 import { useTranslation } from "@/i18n/LanguageContext";
+import { triggerHaptic } from "@/lib/haptics";
 
 export default function SyncIndicator() {
     const { status, pendingCount, flushQueue } = useSync();
@@ -45,6 +46,7 @@ export default function SyncIndicator() {
         <button
             onClick={() => {
                 if (status === "pending" || status === "offline") {
+                    triggerHaptic("warning");
                     flushQueue();
                 }
             }}

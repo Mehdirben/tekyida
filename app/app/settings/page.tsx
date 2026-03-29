@@ -11,6 +11,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useSync } from "@/contexts/SyncContext";
 import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { triggerHaptic } from "@/lib/haptics";
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -255,7 +256,10 @@ export default function SettingsPage() {
                                 />
                                 <button
                                     type="button"
-                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                    onClick={() => {
+                                        setShowNewPassword(!showNewPassword);
+                                        triggerHaptic("selection");
+                                    }}
                                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-(--text-tertiary) hover:text-(--text-primary) transition-colors cursor-pointer"
                                 >
                                     {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -281,7 +285,10 @@ export default function SettingsPage() {
                                 />
                                 <button
                                     type="button"
-                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    onClick={() => {
+                                        setShowConfirmPassword(!showConfirmPassword);
+                                        triggerHaptic("selection");
+                                    }}
                                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-(--text-tertiary) hover:text-(--text-primary) transition-colors cursor-pointer"
                                 >
                                     {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}

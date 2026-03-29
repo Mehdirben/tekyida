@@ -3,6 +3,7 @@
 import { BookOpen, Users, ChevronRight } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
+import { triggerHaptic } from "@/lib/haptics";
 
 interface NotebookCardProps {
     name: string;
@@ -34,7 +35,10 @@ export default function NotebookCard({
 
     return (
         <button
-            onClick={onClick}
+            onClick={() => {
+                triggerHaptic("selection");
+                onClick?.();
+            }}
             className="liquid-glass-card p-5 w-full text-left flex items-center gap-4 cursor-pointer active:scale-[0.98] transition-all"
         >
             {/* Icon */}

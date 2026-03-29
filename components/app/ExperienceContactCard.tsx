@@ -4,6 +4,7 @@ import { Compass, ChevronRight, Lock } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import type { Id } from "@/convex/_generated/dataModel";
+import { triggerHaptic } from "@/lib/haptics";
 
 interface ExperienceSummary {
     _id: Id<"experiences">;
@@ -37,9 +38,15 @@ export default function ExperienceContactCard({
         <div
             role="button"
             tabIndex={0}
-            onClick={() => onSelect(experience)}
+            onClick={() => {
+                triggerHaptic("selection");
+                onSelect(experience);
+            }}
             onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") onSelect(experience);
+                if (e.key === "Enter" || e.key === " ") {
+                    triggerHaptic("selection");
+                    onSelect(experience);
+                }
             }}
             className="liquid-glass-card p-3 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all border border-primary-500/20"
         >

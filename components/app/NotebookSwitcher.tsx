@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Plus, BookOpen, Check, Pencil, Trash2, X, CloudOff } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
+import { triggerHaptic } from "@/lib/haptics";
 
 interface Notebook {
     id: string;
@@ -72,6 +73,7 @@ export default function NotebookSwitcher({
     const handleAdd = () => {
         const trimmed = newName.trim();
         if (trimmed) {
+            triggerHaptic("success");
             onAdd?.(trimmed);
             setNewName("");
             setAdding(false);
@@ -87,12 +89,14 @@ export default function NotebookSwitcher({
 
     const handleEdit = () => {
         if (!editingId || !editName.trim()) return;
+        triggerHaptic("success");
         onEdit?.(editingId, editName.trim());
         setEditingId(null);
     };
 
     const confirmDelete = () => {
         if (!deleteTargetId) return;
+        triggerHaptic("warning");
         onDelete?.(deleteTargetId);
         setDeleteTargetId(null);
         setOpen(false);
@@ -103,6 +107,7 @@ export default function NotebookSwitcher({
             {/* Trigger */}
             <button
                 onClick={() => {
+                    triggerHaptic("selection");
                     setOpen(!open);
                     if (open) {
                         setAdding(false);
@@ -176,7 +181,10 @@ export default function NotebookSwitcher({
                                         <Check size={14} />
                                     </button>
                                     <button
-                                        onClick={() => setEditingId(null)}
+                                        onClick={() => {
+                                            triggerHaptic("light");
+                                            setEditingId(null);
+                                        }}
                                         className="p-1.5 rounded-lg text-(--text-tertiary) active:bg-white/10 cursor-pointer"
                                     >
                                         <X size={14} />
@@ -192,6 +200,7 @@ export default function NotebookSwitcher({
                                 >
                                     <button
                                         onClick={() => {
+                                            triggerHaptic("selection");
                                             onSelect?.(notebook.id);
                                             setOpen(false);
                                         }}
@@ -212,6 +221,7 @@ export default function NotebookSwitcher({
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
+                                                triggerHaptic("light");
                                                 startEdit(notebook);
                                             }}
                                             className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
@@ -221,6 +231,7 @@ export default function NotebookSwitcher({
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
+                                                triggerHaptic("warning");
                                                 setDeleteTargetId(notebook.id);
                                             }}
                                             className="p-1 rounded-md text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
@@ -266,6 +277,7 @@ export default function NotebookSwitcher({
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
+                                triggerHaptic("selection");
                                 setAdding(true);
                             }}
                             className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-primary-600 dark:text-primary-400 transition-all duration-200 cursor-pointer"
@@ -282,7 +294,10 @@ export default function NotebookSwitcher({
                 <div className="fixed inset-0 z-[200] flex items-center justify-center">
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
-                        onClick={() => setDeleteTargetId(null)}
+                        onClick={() => {
+                            triggerHaptic("light");
+                            setDeleteTargetId(null);
+                        }}
                     />
                     <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
                         <div className="p-5 text-center">
@@ -297,13 +312,18 @@ export default function NotebookSwitcher({
                         </div>
                         <div className="flex border-t border-(--border)">
                             <button
-                                onClick={() => setDeleteTargetId(null)}
+                                onClick={() => {
+                                    triggerHaptic("light");
+                                    setDeleteTargetId(null);
+                                }}
                                 className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
                             >
                                 {t("common.cancel")}
                             </button>
                             <button
-                                onClick={confirmDelete}
+                                onClick={() => {
+                                    confirmDelete();
+                                }}
                                 className="flex-1 py-3.5 text-sm font-semibold text-danger-500 border-l border-(--border) transition-all active:bg-danger-500/10 cursor-pointer"
                             >
                                 {t("common.delete")}

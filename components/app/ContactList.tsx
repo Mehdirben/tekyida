@@ -9,6 +9,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
+import { triggerHaptic } from "@/lib/haptics";
 
 function UnsyncedBadge() {
     return <CloudOff size={12} className="text-warning-500 shrink-0" />;
@@ -60,6 +61,7 @@ export default function ContactList({
     const handleAdd = async () => {
         const name = newName.trim();
         if (!name) return;
+        triggerHaptic("success");
         await offlineMutation(
             "contacts:create",
             createContact,
@@ -76,6 +78,7 @@ export default function ContactList({
 
     const confirmDelete = async () => {
         if (!deleteTarget) return;
+        triggerHaptic("warning");
         await offlineMutation(
             "contacts:remove",
             deleteContact,
@@ -86,6 +89,7 @@ export default function ContactList({
     };
 
     const openEdit = (contact: Contact) => {
+        triggerHaptic("light");
         setEditTarget(contact);
         setEditName(contact.name);
         setEditPhone(contact.phone || "");
@@ -93,6 +97,7 @@ export default function ContactList({
 
     const handleEdit = async () => {
         if (!editTarget || !editName.trim()) return;
+        triggerHaptic("success");
         await offlineMutation(
             "contacts:update",
             updateContact,
@@ -142,9 +147,15 @@ export default function ContactList({
                     key={contact._id}
                     role="button"
                     tabIndex={0}
-                    onClick={() => onSelectContact(contact)}
+                    onClick={() => {
+                        triggerHaptic("selection");
+                        onSelectContact(contact);
+                    }}
                     onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") onSelectContact(contact);
+                        if (e.key === "Enter" || e.key === " ") {
+                            triggerHaptic("selection");
+                            onSelectContact(contact);
+                        }
                     }}
                     className="liquid-glass-card p-4 w-full text-left flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all"
                 >
@@ -193,6 +204,7 @@ export default function ContactList({
                             onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
+                                triggerHaptic("warning");
                                 setDeleteTarget(contact);
                             }}
                             onKeyDown={(e) => {
@@ -218,7 +230,10 @@ export default function ContactList({
                 <div className="fixed inset-0 z-[200] flex items-center justify-center">
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
-                        onClick={() => setDeleteTarget(null)}
+                        onClick={() => {
+                            triggerHaptic("light");
+                            setDeleteTarget(null);
+                        }}
                     />
                     <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
                         <div className="p-5 text-center">
@@ -233,7 +248,10 @@ export default function ContactList({
                         </div>
                         <div className="flex border-t border-(--border)">
                             <button
-                                onClick={() => setDeleteTarget(null)}
+                                onClick={() => {
+                                    triggerHaptic("light");
+                                    setDeleteTarget(null);
+                                }}
                                 className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
                             >
                                 {t("common.cancel")}
@@ -255,13 +273,19 @@ export default function ContactList({
                 <div className="fixed inset-0 z-[200] flex items-center justify-center">
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
-                        onClick={() => setEditTarget(null)}
+                        onClick={() => {
+                            triggerHaptic("light");
+                            setEditTarget(null);
+                        }}
                     />
                     <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
                         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
                             <h3 className="text-base font-bold">{t("contact.edit")}</h3>
                             <button
-                                onClick={() => setEditTarget(null)}
+                                onClick={() => {
+                                    triggerHaptic("light");
+                                    setEditTarget(null);
+                                }}
                                 className="p-1.5 rounded-lg active:bg-white/10 transition-all cursor-pointer"
                             >
                                 <X size={16} />
@@ -294,7 +318,10 @@ export default function ContactList({
                         </div>
                         <div className="flex border-t border-(--border)">
                             <button
-                                onClick={() => setEditTarget(null)}
+                                onClick={() => {
+                                    triggerHaptic("light");
+                                    setEditTarget(null);
+                                }}
                                 className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
                             >
                                 {t("common.cancel")}
@@ -349,6 +376,7 @@ export default function ContactList({
                     <div className="flex gap-2">
                         <button
                             onClick={() => {
+                                triggerHaptic("light");
                                 setAdding(false);
                                 setNewName("");
                                 setNewPhone("");
@@ -368,7 +396,10 @@ export default function ContactList({
                 </div>
             ) : (
                 <button
-                    onClick={() => setAdding(true)}
+                    onClick={() => {
+                        triggerHaptic("selection");
+                        setAdding(true);
+                    }}
                     className="liquid-glass-card p-4 w-full flex items-center justify-center gap-2 text-primary-500 hover:shadow-lg transition-all cursor-pointer active:scale-[0.97]"
                 >
                     <UserPlus size={18} />

@@ -3,6 +3,7 @@
 import { ArrowUpRight, ArrowDownLeft, TrendingUp, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
+import { triggerHaptic } from "@/lib/haptics";
 
 interface StatItem {
     label: string;
@@ -99,7 +100,10 @@ export default function QuickStats({
                     </p>
                 </div>
                 <button
-                    onClick={toggle}
+                    onClick={() => {
+                        toggle();
+                        triggerHaptic("selection");
+                    }}
                     className="p-2.5 rounded-xl liquid-glass active:bg-white/10 transition-all cursor-pointer"
                     aria-label={hidden ? "Show amounts" : "Hide amounts"}
                 >

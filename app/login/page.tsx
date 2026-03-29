@@ -11,6 +11,7 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageToggle from "@/components/ui/LanguageToggle";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
+import { triggerHaptic } from "@/lib/haptics";
 
 export default function LoginPage() {
     const { t } = useTranslation();
@@ -201,7 +202,10 @@ export default function LoginPage() {
                                         />
                                         <button
                                             type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
+                                            onClick={() => {
+                                                setShowPassword(!showPassword);
+                                                triggerHaptic("selection");
+                                            }}
                                             className="absolute right-3.5 top-1/2 -translate-y-1/2 text-(--text-tertiary) hover:text-(--text-primary) transition-colors cursor-pointer"
                                         >
                                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

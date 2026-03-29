@@ -1,6 +1,7 @@
 "use client";
 
-import { type ButtonHTMLAttributes, forwardRef } from "react";
+import { type ButtonHTMLAttributes, type MouseEvent, forwardRef } from "react";
+import { triggerHaptic } from "@/lib/haptics";
 
 type Variant = "primary" | "glass" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
@@ -8,8 +9,16 @@ type Size = "sm" | "md" | "lg";
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: Variant;
     size?: Size;
+    haptic?: boolean;
     children: React.ReactNode;
 }
+
+const variantHapticPatterns: Record<Variant, "medium" | "light" | "selection" | "warning"> = {
+    primary: "medium",
+    glass: "light",
+    ghost: "selection",
+    danger: "warning",
+};
 
 const variantClasses: Record<Variant, string> = {
     primary:
@@ -29,11 +38,23 @@ const sizeClasses: Record<Size, string> = {
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-    ({ variant = "primary", size = "md", className = "", children, ...props }, ref) => {
+    ({ variant = "primary", size = "md", className = "", haptic = true, children, onClick, disabled, ...props }, ref) => {
+        const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+            onClick?.(event);
+
+            if (!haptic || disabled || event.defaultPrevented) {
+                return;
+            }
+
+            triggerHaptic(variantHapticPatterns[variant]);
+        };
+
         return (
             <button
                 ref={ref}
                 className={`inline-flex items-center justify-center gap-2 font-semibold cursor-pointer ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+                disabled={disabled}
+                onClick={handleClick}
                 {...props}
             >
                 {children}

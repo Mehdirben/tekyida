@@ -4,6 +4,7 @@ import { BookOpen, Compass, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "@/i18n/LanguageContext";
+import { triggerHaptic } from "@/lib/haptics";
 
 export default function BottomNav() {
     const { t } = useTranslation();
@@ -50,6 +51,7 @@ export default function BottomNav() {
                             <Link
                                 key={tab.href}
                                 href={tab.href}
+                                onClick={() => triggerHaptic(tab.active ? "light" : "selection")}
                                 className="relative flex items-center gap-2 rounded-full transition-all duration-300 ease-out"
                                 style={
                                     tab.active

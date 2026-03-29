@@ -21,6 +21,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import ExperienceContactCard from "@/components/app/ExperienceContactCard";
+import { triggerHaptic } from "@/lib/haptics";
 
 interface ExperienceForContact {
     _id: Id<"experiences">;
@@ -79,6 +80,7 @@ export default function TransactionList({
     const [editDate, setEditDate] = useState("");
 
     const handleAnimatedClose = useCallback(() => {
+        triggerHaptic("light");
         setIsClosing(true);
         setTimeout(() => {
             onClose();
@@ -88,6 +90,7 @@ export default function TransactionList({
     const handleAdd = async () => {
         const parsedAmount = parseFloat(amount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+        triggerHaptic("success");
 
         const parsedDate = date ? new Date(date).getTime() : Date.now();
 
@@ -110,6 +113,7 @@ export default function TransactionList({
 
     const confirmDelete = async () => {
         if (!deleteTargetId) return;
+        triggerHaptic("warning");
         await offlineMutation(
             "transactions:remove",
             deleteTransaction,
@@ -120,6 +124,7 @@ export default function TransactionList({
     };
 
     const openEditTx = (tx: { _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }) => {
+        triggerHaptic("light");
         setEditTarget(tx);
         setEditAmount(Math.abs(tx.amount).toString());
         setEditIsPositive(tx.amount >= 0);
@@ -131,6 +136,7 @@ export default function TransactionList({
         if (!editTarget) return;
         const parsedAmount = parseFloat(editAmount);
         if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+        triggerHaptic("success");
         const parsedDate = editDate ? new Date(editDate).getTime() : Date.now();
         await offlineMutation(
             "transactions:update",
@@ -229,7 +235,10 @@ export default function TransactionList({
                     <div className="fixed inset-0 z-[300] flex items-center justify-center">
                         <div
                             className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
-                            onClick={() => setDeleteTargetId(null)}
+                            onClick={() => {
+                                triggerHaptic("light");
+                                setDeleteTargetId(null);
+                            }}
                         />
                         <div className="relative z-10 w-[85%] max-w-xs liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
                             <div className="p-5 text-center">
@@ -243,7 +252,10 @@ export default function TransactionList({
                             </div>
                             <div className="flex border-t border-(--border)">
                                 <button
-                                    onClick={() => setDeleteTargetId(null)}
+                                    onClick={() => {
+                                        triggerHaptic("light");
+                                        setDeleteTargetId(null);
+                                    }}
                                     className="flex-1 py-3 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
                                 >
                                     {t("common.cancel")}
@@ -265,13 +277,19 @@ export default function TransactionList({
                     <div className="fixed inset-0 z-[300] flex items-center justify-center">
                         <div
                             className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
-                            onClick={() => setEditTarget(null)}
+                            onClick={() => {
+                                triggerHaptic("light");
+                                setEditTarget(null);
+                            }}
                         />
                         <div className="relative z-10 w-[85%] max-w-xs liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
                             <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-(--border)">
                                 <h3 className="text-sm font-bold">{t("transaction.edit")}</h3>
                                 <button
-                                    onClick={() => setEditTarget(null)}
+                                    onClick={() => {
+                                        triggerHaptic("light");
+                                        setEditTarget(null);
+                                    }}
                                     className="p-1 rounded-lg active:bg-white/10 transition-all cursor-pointer"
                                 >
                                     <X size={14} />
@@ -280,7 +298,10 @@ export default function TransactionList({
                             <div className="p-4 space-y-3">
                                 <div className="flex gap-2">
                                     <button
-                                        onClick={() => setEditIsPositive(!editIsPositive)}
+                                        onClick={() => {
+                                            setEditIsPositive(!editIsPositive);
+                                            triggerHaptic("selection");
+                                        }}
                                         className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${editIsPositive
                                             ? "bg-accent-500/15 text-accent-500 border border-accent-500/30"
                                             : "bg-danger-500/15 text-danger-500 border border-danger-500/30"
@@ -321,7 +342,10 @@ export default function TransactionList({
                             </div>
                             <div className="flex border-t border-(--border)">
                                 <button
-                                    onClick={() => setEditTarget(null)}
+                                    onClick={() => {
+                                        triggerHaptic("light");
+                                        setEditTarget(null);
+                                    }}
                                     className="flex-1 py-3 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
                                 >
                                     {t("common.cancel")}
@@ -346,7 +370,10 @@ export default function TransactionList({
                             {/* Amount + Direction Toggle */}
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => setIsPositive(!isPositive)}
+                                    onClick={() => {
+                                        setIsPositive(!isPositive);
+                                        triggerHaptic("selection");
+                                    }}
                                     className={`shrink-0 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isPositive
                                         ? "bg-accent-500/15 text-accent-500 border border-accent-500/30"
                                         : "bg-danger-500/15 text-danger-500 border border-danger-500/30"
@@ -386,7 +413,10 @@ export default function TransactionList({
                             />
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => setAdding(false)}
+                                    onClick={() => {
+                                        triggerHaptic("light");
+                                        setAdding(false);
+                                    }}
                                     className="flex-1 py-2.5 rounded-xl text-sm font-medium text-(--text-secondary) liquid-glass hover:bg-white/10 transition-all cursor-pointer"
                                 >
                                     {t("common.cancel")}
@@ -402,7 +432,10 @@ export default function TransactionList({
                         </div>
                     ) : (
                         <button
-                            onClick={() => setAdding(true)}
+                            onClick={() => {
+                                triggerHaptic("selection");
+                                setAdding(true);
+                            }}
                             className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold bg-primary-800/80 dark:bg-primary-500/70 text-white transition-all hover:shadow-md active:scale-[0.97] cursor-pointer"
                         >
                             <Plus size={16} />
@@ -512,13 +545,18 @@ function TimelineMerged({
                                 {mask(`${tx.amount > 0 ? "+" : ""}${tx.amount.toFixed(2)}`)}
                             </span>
                             <button
-                                onClick={() => openEditTx(tx)}
+                                onClick={() => {
+                                    openEditTx(tx);
+                                }}
                                 className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
                             >
                                 <Pencil size={12} />
                             </button>
                             <button
-                                onClick={() => setDeleteTargetId(tx._id)}
+                                onClick={() => {
+                                    triggerHaptic("warning");
+                                    setDeleteTargetId(tx._id);
+                                }}
                                 className="p-1 rounded-md text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
                             >
                                 <Trash2 size={12} />

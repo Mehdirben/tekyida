@@ -2,6 +2,7 @@
 
 import { Sun, Monitor, Moon } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { triggerHaptic } from "@/lib/haptics";
 
 export default function ThemeToggle() {
     const { theme, setTheme } = useTheme();
@@ -17,7 +18,10 @@ export default function ThemeToggle() {
             {options.map(({ value, icon: Icon, label }) => (
                 <button
                     key={value}
-                    onClick={() => setTheme(value)}
+                    onClick={() => {
+                        setTheme(value);
+                        triggerHaptic(theme === value ? "light" : "selection");
+                    }}
                     aria-label={label}
                     className={`p-1.5 rounded-full transition-all duration-200 cursor-pointer ${theme === value
                             ? "bg-primary-800/80 dark:bg-primary-500/70 text-white shadow-sm backdrop-blur-sm"

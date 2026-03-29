@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from "@/i18n/LanguageContext";
+import { triggerHaptic } from "@/lib/haptics";
 
 export default function LanguageToggle() {
     const { language, setLanguage } = useTranslation();
@@ -15,7 +16,10 @@ export default function LanguageToggle() {
             {options.map(({ value, label, flag }) => (
                 <button
                     key={value}
-                    onClick={() => setLanguage(value)}
+                    onClick={() => {
+                        setLanguage(value);
+                        triggerHaptic(language === value ? "light" : "selection");
+                    }}
                     aria-label={`Switch to ${label}`}
                     className={`px-2 py-1 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center gap-1 ${language === value
                             ? "bg-primary-800/80 dark:bg-primary-500/70 text-white shadow-sm backdrop-blur-sm"
