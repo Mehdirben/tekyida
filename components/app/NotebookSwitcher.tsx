@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Plus, BookOpen, Check, Pencil, Trash2, X, CloudOff } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { triggerHaptic } from "@/lib/haptics";
 
 interface Notebook {
@@ -44,6 +45,8 @@ export default function NotebookSwitcher({
     const activeNotebook = notebooks.find((n) => n.id === activeNotebookId);
     const displayName = activeNotebook?.name || t("notebook.select");
     const deleteTarget = notebooks.find((n) => n.id === deleteTargetId);
+
+    useBodyScrollLock(Boolean(deleteTarget));
 
     // Close dropdown on outside click
     useEffect(() => {

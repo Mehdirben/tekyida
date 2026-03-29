@@ -9,6 +9,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { triggerHaptic } from "@/lib/haptics";
 
 function UnsyncedBadge() {
@@ -49,6 +50,8 @@ export default function ContactList({
     const deleteContact = useMutation(api.contacts.remove);
     const updateContact = useMutation(api.contacts.update);
     const { offlineMutation, isItemPending } = useSync();
+
+    useBodyScrollLock(Boolean(deleteTarget || editTarget));
 
     useEffect(() => {
         if (adding && nameRef.current) nameRef.current.focus();
