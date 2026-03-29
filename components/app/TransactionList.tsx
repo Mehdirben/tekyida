@@ -20,6 +20,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import ExperienceContactCard from "@/components/app/ExperienceContactCard";
 import { triggerHaptic } from "@/lib/haptics";
 
@@ -55,6 +56,8 @@ export default function TransactionList({
     experiences,
     onSelectExperience,
 }: TransactionListProps) {
+    useBodyScrollLock(true);
+
     const { t } = useTranslation();
     const { mask } = useAmountsVisibility();
     const router = useRouter();
@@ -199,7 +202,7 @@ export default function TransactionList({
                 </div>
 
                 {/* Transaction List — merged timeline of transactions + experience cards sorted by date */}
-                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2.5">
+                <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 py-4 space-y-2.5">
                     {!transactions ? (
                         <div className="text-center py-8 text-sm text-(--text-tertiary)">
                             {t("dashboard.loading")}

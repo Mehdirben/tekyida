@@ -21,6 +21,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { triggerHaptic } from "@/lib/haptics";
 
 interface ExperienceDetailProps {
@@ -48,6 +49,8 @@ export default function ExperienceDetail({
     onClose,
     onToggleClosed,
 }: ExperienceDetailProps) {
+    useBodyScrollLock(true);
+
     const { t } = useTranslation();
     const { mask } = useAmountsVisibility();
     const rawTransactions = useCachedQuery<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[]>(
@@ -227,7 +230,7 @@ export default function ExperienceDetail({
                 )}
 
                 {/* Transaction List */}
-                <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2.5">
+                <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 py-4 space-y-2.5">
                     {transactions.length === 0 && !adding ? (
                         <div className="text-center py-8">
                             <div className="inline-flex p-3 rounded-2xl liquid-glass mb-3">
