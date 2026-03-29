@@ -22,6 +22,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import { triggerHaptic } from "@/lib/haptics";
 
 interface ExperienceDetailProps {
@@ -50,6 +51,8 @@ export default function ExperienceDetail({
     onToggleClosed,
 }: ExperienceDetailProps) {
     useBodyScrollLock(true);
+    const keyboardInset = useKeyboardInset();
+    const keyboardOffsetStyle = keyboardInset > 0 ? { paddingBottom: `${keyboardInset + 12}px` } : undefined;
 
     const { t } = useTranslation();
     const { mask } = useAmountsVisibility();
@@ -164,7 +167,7 @@ export default function ExperienceDetail({
     const balance = transactions.reduce((sum, t) => sum + t.amount, 0);
 
     return createPortal(
-        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center">
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
             {/* Backdrop */}
             <div
                 className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
@@ -172,7 +175,7 @@ export default function ExperienceDetail({
             />
 
             {/* Sheet */}
-            <div className={`relative z-10 w-full sm:max-w-md h-[92vh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl ${isClosing ? "animate-sheet-down" : "animate-sheet-up"} overflow-hidden`}>
+            <div className={`relative z-10 w-full sm:max-w-md h-[92dvh] sm:h-[92vh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl ${isClosing ? "animate-sheet-down" : "animate-sheet-up"} overflow-hidden`}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
                     <div className="flex-1 min-w-0">
@@ -315,7 +318,7 @@ export default function ExperienceDetail({
 
                 {/* Delete Confirmation Popup */}
                 {deleteTargetId && createPortal(
-                    <div className="fixed inset-0 z-[300] flex items-center justify-center">
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                         <div
                             className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
                             onClick={() => {
@@ -357,7 +360,7 @@ export default function ExperienceDetail({
 
                 {/* Edit Transaction Popup */}
                 {editTarget && createPortal(
-                    <div className="fixed inset-0 z-[300] flex items-center justify-center">
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                         <div
                             className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
                             onClick={() => {

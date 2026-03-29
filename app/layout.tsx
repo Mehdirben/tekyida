@@ -13,6 +13,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  interactiveWidget: "resizes-content",
+  viewportFit: "cover",
   themeColor: "#1B1B4B",
 };
 

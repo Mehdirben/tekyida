@@ -21,6 +21,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import { triggerHaptic } from "@/lib/haptics";
 
 function UnsyncedBadge() {
@@ -74,6 +75,8 @@ export default function ExperienceList({
     const { offlineMutation, isItemPending } = useSync();
 
     useBodyScrollLock(Boolean(deleteTarget || editTarget));
+    const keyboardInset = useKeyboardInset();
+    const keyboardOffsetStyle = keyboardInset > 0 ? { paddingBottom: `${keyboardInset + 12}px` } : undefined;
 
     useEffect(() => {
         if (adding && nameRef.current) nameRef.current.focus();
@@ -312,7 +315,7 @@ export default function ExperienceList({
 
             {/* Delete Confirmation Popup */}
             {deleteTarget && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
                         onClick={() => {
@@ -355,7 +358,7 @@ export default function ExperienceList({
 
             {/* Edit Experience Popup */}
             {editTarget && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
                         onClick={() => {
