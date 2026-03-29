@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageToggle from "@/components/ui/LanguageToggle";
 import { useTranslation } from "@/i18n/LanguageContext";
+import { triggerHaptic } from "@/lib/haptics";
 
 export default function Header() {
     const { t } = useTranslation();
@@ -56,7 +57,10 @@ export default function Header() {
                     {/* Mobile hamburger */}
                     <button
                         className="md:hidden p-2 text-(--text-secondary) hover:text-(--text-primary) cursor-pointer transition-colors"
-                        onClick={() => setMobileOpen(!mobileOpen)}
+                        onClick={() => {
+                            setMobileOpen(!mobileOpen);
+                            triggerHaptic("selection");
+                        }}
                         aria-label="Toggle menu"
                     >
                         {mobileOpen ? <X size={22} /> : <Menu size={22} />}
@@ -71,7 +75,10 @@ export default function Header() {
                                 <a
                                     key={link.href}
                                     href={link.href}
-                                    onClick={() => setMobileOpen(false)}
+                                    onClick={() => {
+                                        setMobileOpen(false);
+                                        triggerHaptic("selection");
+                                    }}
                                     className="text-sm text-(--text-secondary) hover:text-(--text-primary) transition-colors font-medium py-2 px-3 rounded-xl hover:bg-white/15 dark:hover:bg-white/5"
                                 >
                                     {link.label}
