@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
     ArrowDownLeft,
@@ -61,7 +61,10 @@ export default function ExperienceDetail({
         api.transactions.list,
         { experienceId }
     );
-    const transactions = rawTransactions ?? [];
+    const transactions = useMemo(() => {
+        const txs = rawTransactions ?? [];
+        return [...txs].sort((a, b) => (b.date ?? b.createdAt) - (a.date ?? a.createdAt));
+    }, [rawTransactions]);
     const createTransaction = useMutation(api.transactions.create);
     const deleteTransaction = useMutation(api.transactions.remove);
     const updateTransaction = useMutation(api.transactions.update);
