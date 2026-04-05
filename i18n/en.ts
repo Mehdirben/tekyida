@@ -141,6 +141,7 @@ const en = {
     "experience.noContact": "No contact",
     "experience.transactions": "transactions",
     "experience.closedNotice": "This experience is closed. Reopen it to make changes.",
+    "experience.totalBalance": "Open Experiences Balance",
 
     // Transaction
     "transaction.add": "Add Transaction",

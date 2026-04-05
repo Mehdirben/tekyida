@@ -143,6 +143,7 @@ const fr: Record<TranslationKey, string> = {
     "experience.noContact": "Aucun contact",
     "experience.transactions": "transactions",
     "experience.closedNotice": "Cette expérience est clôturée. Rouvrez-la pour faire des modifications.",
+    "experience.totalBalance": "Solde Expériences Ouvertes",
 
     // Transaction
     "transaction.add": "Ajouter une Transaction",

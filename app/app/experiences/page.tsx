@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -9,6 +9,7 @@ import Logo from "@/components/ui/Logo";
 import SyncIndicator from "@/components/app/SyncIndicator";
 import NotebookSwitcher from "@/components/app/NotebookSwitcher";
 import ExperienceList from "@/components/app/ExperienceList";
+import ExperienceBalanceCard from "@/components/app/ExperienceBalanceCard";
 import ExperienceDetail from "@/components/app/ExperienceDetail";
 import { AmountsVisibilityProvider } from "@/contexts/AmountsVisibilityContext";
 import { useSync } from "@/contexts/SyncContext";
@@ -88,6 +89,14 @@ export default function ExperiencesPage() {
     const safeNotebooks = notebooks ?? [];
     const safeContacts = contacts ?? [];
 
+    // Total balance of open (not closed) experiences
+    const openExperiencesBalance = useMemo(() => {
+        if (!experiences) return 0;
+        return experiences
+            .filter((e) => !e.closed)
+            .reduce((sum, e) => sum + e.balance, 0);
+    }, [experiences]);
+
     const handleCreateNotebook = async (name: string) => {
         const id = await offlineMutation(
             "notebooks:create",
@@ -165,6 +174,13 @@ export default function ExperiencesPage() {
                         isItemPending={isItemPending}
                     />
                 </div>
+
+                {/* Open Experiences Balance Card */}
+                {resolvedActiveId && experiences !== undefined && experiences.length > 0 && (
+                    <div className="mb-6 animate-slide-up delay-100">
+                        <ExperienceBalanceCard balance={openExperiencesBalance} />
+                    </div>
+                )}
 
                 {/* Experience List */}
                 {resolvedActiveId && experiences !== undefined && (
