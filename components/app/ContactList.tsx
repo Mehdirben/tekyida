@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { UserPlus, User, Phone, ChevronRight, Trash2, Pencil, X, CloudOff } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
@@ -23,6 +23,7 @@ interface Contact {
     phone?: string;
     balance: number;
     transactionCount: number;
+    lastTransactionDate?: number;
 }
 
 interface ContactListProps {
@@ -37,6 +38,15 @@ export default function ContactList({
     onSelectContact,
 }: ContactListProps) {
     const { t } = useTranslation();
+
+    // Sort contacts by most recent transaction date (newest first)
+    const sortedContacts = useMemo(() => {
+        return [...contacts].sort((a, b) => {
+            const dateA = a.lastTransactionDate ?? 0;
+            const dateB = b.lastTransactionDate ?? 0;
+            return dateB - dateA;
+        });
+    }, [contacts]);
     const [adding, setAdding] = useState(false);
     const [newName, setNewName] = useState("");
     const [newPhone, setNewPhone] = useState("");
@@ -148,7 +158,7 @@ export default function ContactList({
                 </div>
             )}
 
-            {contacts.map((contact) => (
+            {sortedContacts.map((contact) => (
                 <div
                     key={contact._id}
                     role="button"

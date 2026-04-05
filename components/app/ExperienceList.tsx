@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
     Compass,
@@ -35,6 +35,7 @@ interface ExperienceSummary {
     balance: number;
     transactionCount: number;
     contactId?: Id<"contacts">;
+    lastTransactionDate?: number;
 }
 
 interface Contact {
@@ -57,6 +58,15 @@ export default function ExperienceList({
 }: ExperienceListProps) {
     const { t } = useTranslation();
     const { mask } = useAmountsVisibility();
+
+    // Sort experiences by most recent transaction date (newest first)
+    const sortedExperiences = useMemo(() => {
+        return [...experiences].sort((a, b) => {
+            const dateA = a.lastTransactionDate ?? 0;
+            const dateB = b.lastTransactionDate ?? 0;
+            return dateB - dateA;
+        });
+    }, [experiences]);
     const [adding, setAdding] = useState(false);
     const [newName, setNewName] = useState("");
     const [newContactId, setNewContactId] = useState<string>("");
@@ -194,7 +204,7 @@ export default function ExperienceList({
             )}
 
             {/* Experience Cards */}
-            {experiences.map((exp) => {
+            {sortedExperiences.map((exp) => {
                 const contactName = getContactName(exp.contactId);
                 return (
                     <div

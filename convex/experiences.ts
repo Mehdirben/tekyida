@@ -25,10 +25,20 @@ export const list = query({
 
                     const balance = transactions.reduce((sum, t) => sum + t.amount, 0);
 
+                    // Find the most recent transaction date
+                    let lastTransactionDate: number | undefined;
+                    if (transactions.length > 0) {
+                        lastTransactionDate = transactions.reduce((latest, t) => {
+                            const txDate = t.date ?? t.createdAt;
+                            return txDate > latest ? txDate : latest;
+                        }, 0);
+                    }
+
                     return {
                         ...experience,
                         balance,
                         transactionCount: transactions.length,
+                        lastTransactionDate,
                     };
                 })
         );

@@ -28,6 +28,15 @@ export const list = query({
                     const directTransactions = allTransactions.filter((t) => !t.experienceId);
                     const directBalance = directTransactions.reduce((sum, t) => sum + t.amount, 0);
 
+                    // Find the most recent transaction date (across all transactions including experience ones)
+                    let lastTransactionDate: number | undefined;
+                    if (allTransactions.length > 0) {
+                        lastTransactionDate = allTransactions.reduce((latest, t) => {
+                            const txDate = t.date ?? t.createdAt;
+                            return txDate > latest ? txDate : latest;
+                        }, 0);
+                    }
+
                     // Fetch experiences linked to this contact
                     const experiences = await ctx.db
                         .query("experiences")
@@ -46,9 +55,9 @@ export const list = query({
                             const expBalance = expTx.reduce((sum, t) => sum + t.amount, 0);
 
                             // Find the date of the last transaction
-                            let lastTransactionDate: number | undefined;
+                            let expLastTransactionDate: number | undefined;
                             if (expTx.length > 0) {
-                                lastTransactionDate = expTx.reduce((latest, t) => {
+                                expLastTransactionDate = expTx.reduce((latest, t) => {
                                     const txDate = t.date ?? t.createdAt;
                                     return txDate > latest ? txDate : latest;
                                 }, 0);
@@ -60,7 +69,7 @@ export const list = query({
                                 closed: exp.closed,
                                 balance: expBalance,
                                 transactionCount: expTx.length,
-                                lastTransactionDate,
+                                lastTransactionDate: expLastTransactionDate,
                             };
                         })
                     );
@@ -72,6 +81,7 @@ export const list = query({
                         ...contact,
                         balance: directBalance + experienceBalance,
                         transactionCount: directTransactions.length,
+                        lastTransactionDate,
                         experiences: experienceSummaries,
                     };
                 })

@@ -23,6 +23,7 @@ interface ExperienceSummary {
     balance: number;
     transactionCount: number;
     contactId?: Id<"contacts">;
+    lastTransactionDate?: number;
 }
 
 export default function ExperiencesPage() {
