@@ -168,8 +168,11 @@ export default function TransactionList({
         });
     };
 
-    const balance =
+    const directBalance =
         transactions?.reduce((sum, t) => sum + t.amount, 0) ?? 0;
+    const experienceBalance =
+        experiences?.reduce((sum, e) => sum + e.balance, 0) ?? 0;
+    const balance = directBalance + experienceBalance;
 
     return createPortal(
         <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
