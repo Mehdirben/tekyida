@@ -194,38 +194,53 @@ async function contactRemove(
 
 async function transactionCreate(args: Record<string, unknown>): Promise<string> {
     const id = tempId();
-    const contactId = args.contactId as string;
+    const contactId = args.contactId as string | undefined;
+    const experienceId = args.experienceId as string | undefined;
     const notebookId = args.notebookId as string;
     const amount = args.amount as number;
+    const txDate = (args.date as number) ?? Date.now();
 
-    // Add to transactions list
-    const key = queryCache.cacheKey("transactions.list", { contactId });
-    const list = await readList(key);
-    list.unshift({
+    const txRecord = {
         _id: id,
         _creationTime: Date.now(),
         userId: "local",
         notebookId,
         contactId,
+        experienceId,
         amount,
         description: args.description,
-        date: args.date ?? Date.now(),
+        date: txDate,
         createdAt: Date.now(),
-    });
-    await queryCache.set(key, list);
+    };
 
-    // Update contact balance & transactionCount
-    const ctKey = queryCache.cacheKey("contacts.list", { notebookId });
-    const contacts = await readList(ctKey);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ctIdx = contacts.findIndex((c: any) => c._id === contactId);
-    if (ctIdx !== -1) {
-        contacts[ctIdx] = {
-            ...contacts[ctIdx],
-            balance: (contacts[ctIdx].balance ?? 0) + amount,
-            transactionCount: (contacts[ctIdx].transactionCount ?? 0) + 1,
-        };
-        await queryCache.set(ctKey, contacts);
+    // Add to the correct transactions list cache
+    if (experienceId) {
+        const key = queryCache.cacheKey("transactions.list", { experienceId });
+        const list = await readList(key);
+        list.unshift(txRecord);
+        await queryCache.set(key, list);
+
+        // Update experience balance, transactionCount & lastTransactionDate
+        await updateExperienceSummary(experienceId, notebookId, amount, 1, txDate);
+    } else if (contactId) {
+        const key = queryCache.cacheKey("transactions.list", { contactId });
+        const list = await readList(key);
+        list.unshift(txRecord);
+        await queryCache.set(key, list);
+
+        // Update contact balance & transactionCount
+        const ctKey = queryCache.cacheKey("contacts.list", { notebookId });
+        const contacts = await readList(ctKey);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ctIdx = contacts.findIndex((c: any) => c._id === contactId);
+        if (ctIdx !== -1) {
+            contacts[ctIdx] = {
+                ...contacts[ctIdx],
+                balance: (contacts[ctIdx].balance ?? 0) + amount,
+                transactionCount: (contacts[ctIdx].transactionCount ?? 0) + 1,
+            };
+            await queryCache.set(ctKey, contacts);
+        }
     }
 
     // Update notebook balance
@@ -249,10 +264,18 @@ async function transactionUpdate(
     ctx?: OptimisticContext
 ): Promise<void> {
     const contactId = ctx?.contactId;
+    const experienceId = ctx?.experienceId;
     const notebookId = ctx?.notebookId;
-    if (!contactId) return;
 
-    const key = queryCache.cacheKey("transactions.list", { contactId });
+    // Determine which cache list this transaction lives in
+    let key: string | null = null;
+    if (experienceId) {
+        key = queryCache.cacheKey("transactions.list", { experienceId });
+    } else if (contactId) {
+        key = queryCache.cacheKey("transactions.list", { contactId });
+    }
+    if (!key) return;
+
     const list = await readList(key);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const idx = list.findIndex((t: any) => t._id === args.id);
@@ -271,17 +294,22 @@ async function transactionUpdate(
     await queryCache.set(key, list);
 
     if (notebookId) {
-        // Update contact balance
-        const ctKey = queryCache.cacheKey("contacts.list", { notebookId });
-        const contacts = await readList(ctKey);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ctIdx = contacts.findIndex((c: any) => c._id === contactId);
-        if (ctIdx !== -1) {
-            contacts[ctIdx] = {
-                ...contacts[ctIdx],
-                balance: (contacts[ctIdx].balance ?? 0) + diff,
-            };
-            await queryCache.set(ctKey, contacts);
+        if (experienceId) {
+            // Update experience balance in the experiences.list cache
+            await updateExperienceSummary(experienceId, notebookId, diff, 0);
+        } else if (contactId) {
+            // Update contact balance
+            const ctKey = queryCache.cacheKey("contacts.list", { notebookId });
+            const contacts = await readList(ctKey);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const ctIdx = contacts.findIndex((c: any) => c._id === contactId);
+            if (ctIdx !== -1) {
+                contacts[ctIdx] = {
+                    ...contacts[ctIdx],
+                    balance: (contacts[ctIdx].balance ?? 0) + diff,
+                };
+                await queryCache.set(ctKey, contacts);
+            }
         }
 
         // Update notebook balance
@@ -304,10 +332,18 @@ async function transactionRemove(
     ctx?: OptimisticContext
 ): Promise<void> {
     const contactId = ctx?.contactId;
+    const experienceId = ctx?.experienceId;
     const notebookId = ctx?.notebookId;
-    if (!contactId) return;
 
-    const key = queryCache.cacheKey("transactions.list", { contactId });
+    // Determine which cache list this transaction lives in
+    let key: string | null = null;
+    if (experienceId) {
+        key = queryCache.cacheKey("transactions.list", { experienceId });
+    } else if (contactId) {
+        key = queryCache.cacheKey("transactions.list", { contactId });
+    }
+    if (!key) return;
+
     const list = await readList(key);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tx = list.find((t: any) => t._id === args.id);
@@ -318,18 +354,23 @@ async function transactionRemove(
     await queryCache.set(key, list.filter((t: any) => t._id !== args.id));
 
     if (notebookId) {
-        // Update contact balance & transactionCount
-        const ctKey = queryCache.cacheKey("contacts.list", { notebookId });
-        const contacts = await readList(ctKey);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ctIdx = contacts.findIndex((c: any) => c._id === contactId);
-        if (ctIdx !== -1) {
-            contacts[ctIdx] = {
-                ...contacts[ctIdx],
-                balance: (contacts[ctIdx].balance ?? 0) - amount,
-                transactionCount: Math.max(0, (contacts[ctIdx].transactionCount ?? 0) - 1),
-            };
-            await queryCache.set(ctKey, contacts);
+        if (experienceId) {
+            // Update experience balance & transactionCount in the experiences.list cache
+            await updateExperienceSummary(experienceId, notebookId, -amount, -1);
+        } else if (contactId) {
+            // Update contact balance & transactionCount
+            const ctKey = queryCache.cacheKey("contacts.list", { notebookId });
+            const contacts = await readList(ctKey);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const ctIdx = contacts.findIndex((c: any) => c._id === contactId);
+            if (ctIdx !== -1) {
+                contacts[ctIdx] = {
+                    ...contacts[ctIdx],
+                    balance: (contacts[ctIdx].balance ?? 0) - amount,
+                    transactionCount: Math.max(0, (contacts[ctIdx].transactionCount ?? 0) - 1),
+                };
+                await queryCache.set(ctKey, contacts);
+            }
         }
 
         // Update notebook balance
@@ -412,5 +453,35 @@ async function experienceSetClosed(
     if (idx !== -1) {
         list[idx] = { ...list[idx], closed: closed ?? true };
         await queryCache.set(key, list);
+    }
+}
+
+// ─── Shared helpers ─────────────────────────────────────────────
+
+/** Update an experience's summary (balance, transactionCount, lastTransactionDate) in the experiences.list cache */
+async function updateExperienceSummary(
+    experienceId: string,
+    notebookId: string,
+    balanceDiff: number,
+    countDiff: number,
+    newTxDate?: number
+): Promise<void> {
+    const expKey = queryCache.cacheKey("experiences.list", { notebookId });
+    const experiences = await readList(expKey);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const expIdx = experiences.findIndex((e: any) => e._id === experienceId);
+    if (expIdx !== -1) {
+        const exp = experiences[expIdx];
+        const updatedExp = {
+            ...exp,
+            balance: (exp.balance ?? 0) + balanceDiff,
+            transactionCount: Math.max(0, (exp.transactionCount ?? 0) + countDiff),
+        };
+        // Update lastTransactionDate if a new transaction date is provided and is more recent
+        if (newTxDate !== undefined) {
+            updatedExp.lastTransactionDate = Math.max(exp.lastTransactionDate ?? 0, newTxDate);
+        }
+        experiences[expIdx] = updatedExp;
+        await queryCache.set(expKey, experiences);
     }
 }
