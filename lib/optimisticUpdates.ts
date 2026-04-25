@@ -450,10 +450,55 @@ async function experienceSetClosed(
     const list = await readList(key);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const idx = list.findIndex((e: any) => e._id === args.id);
-    if (idx !== -1) {
-        list[idx] = { ...list[idx], closed: closed ?? true };
-        await queryCache.set(key, list);
+    if (idx === -1) return;
+
+    const experience = list[idx];
+    const isClosed = closed ?? true;
+    list[idx] = { ...experience, closed: isClosed };
+    await queryCache.set(key, list);
+
+    // Update contacts.list cache: closed experiences show as summary cards in the contact view
+    const contactId = experience.contactId as string | undefined;
+    if (!contactId) return;
+
+    const ctKey = queryCache.cacheKey("contacts.list", { notebookId });
+    const contacts = await readList(ctKey);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ctIdx = contacts.findIndex((c: any) => c._id === contactId);
+    if (ctIdx === -1) return;
+
+    const contact = contacts[ctIdx];
+    const expSummary = {
+        _id: experience._id,
+        name: experience.name,
+        closed: true,
+        balance: experience.balance ?? 0,
+        transactionCount: experience.transactionCount ?? 0,
+        lastTransactionDate: experience.lastTransactionDate,
+    };
+
+    if (isClosed) {
+        // Closing: add experience summary to contact and include its balance
+        const existingExperiences = contact.experiences ?? [];
+        contacts[ctIdx] = {
+            ...contact,
+            experiences: [...existingExperiences, expSummary],
+            balance: (contact.balance ?? 0) + (experience.balance ?? 0),
+        };
+    } else {
+        // Reopening: remove experience summary from contact and subtract its balance
+        const existingExperiences = contact.experiences ?? [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const removedExp = existingExperiences.find((e: any) => e._id === experience._id);
+        const removedBalance = removedExp?.balance ?? experience.balance ?? 0;
+        contacts[ctIdx] = {
+            ...contact,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            experiences: existingExperiences.filter((e: any) => e._id !== experience._id),
+            balance: (contact.balance ?? 0) - removedBalance,
+        };
     }
+    await queryCache.set(ctKey, contacts);
 }
 
 // ─── Shared helpers ─────────────────────────────────────────────
