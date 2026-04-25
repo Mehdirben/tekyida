@@ -9,6 +9,9 @@ import * as queryCache from "@/lib/queryCache";
  * When offline (useQuery returns undefined), serves the last cached result.
  * Automatically re-reads from cache when optimistic updates modify it.
  *
+ * When the browser goes offline, cached data (which includes optimistic updates)
+ * takes priority over stale live data from the Convex WebSocket.
+ *
  * Usage:
  *   const data = useCachedQuery("notebooks.list", api.notebooks.list, {});
  *   const data = useCachedQuery("contacts.list", api.contacts.list, { notebookId });
@@ -22,10 +25,26 @@ export function useCachedQuery<T>(
 ): T | undefined {
     const liveData = useQuery(funcRef, args === "skip" ? "skip" : args);
     const [cachedData, setCachedData] = useState<T | undefined>(undefined);
+    const [isOnline, setIsOnline] = useState(() =>
+        typeof navigator !== "undefined" ? navigator.onLine : true
+    );
     const cacheKeyRef = useRef<string | null>(null);
     const initialLoadDone = useRef(false);
 
     const key = args === "skip" ? null : queryCache.cacheKey(name, args);
+
+    // Track online/offline status
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener("online", handleOnline);
+        window.addEventListener("offline", handleOffline);
+        return () => {
+            window.removeEventListener("online", handleOnline);
+            window.removeEventListener("offline", handleOffline);
+        };
+    }, []);
 
     // Read from cache
     const readCache = useCallback(() => {
@@ -65,14 +84,18 @@ export function useCachedQuery<T>(
         return unsub;
     }, [key, readCache]);
 
-    // When live data arrives, update the cache
+    // When live data arrives while online, update the cache
     useEffect(() => {
-        if (liveData !== undefined && key) {
+        if (liveData !== undefined && key && isOnline) {
             setCachedData(liveData as T);
             queryCache.set(key, liveData);
         }
-    }, [liveData, key]);
+    }, [liveData, key, isOnline]);
 
-    // Return live data if available, otherwise cached data
+    // When online: prefer live data (real-time from Convex)
+    // When offline: prefer cached data (includes optimistic updates)
+    if (!isOnline) {
+        return cachedData;
+    }
     return liveData !== undefined ? (liveData as T) : cachedData;
 }
