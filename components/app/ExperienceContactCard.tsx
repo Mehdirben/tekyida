@@ -70,11 +70,11 @@ export default function ExperienceContactCard({
                             {new Date(experience.lastTransactionDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
                         </span>
                     )}
-                    <span className={`text-[11px] font-bold ${balanceColor}`}>
-                        {mask(`${experience.balance >= 0 ? "+" : ""}${experience.balance.toFixed(2)} MAD`)}
-                    </span>
                 </div>
             </div>
+            <span className={`text-sm font-bold shrink-0 ${balanceColor}`}>
+                {mask(`${experience.balance >= 0 ? "+" : ""}${experience.balance.toFixed(2)}`)}
+            </span>
             <ChevronRight size={14} className="text-(--text-tertiary) shrink-0" />
         </div>
     );
