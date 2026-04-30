@@ -39,9 +39,13 @@ export default function ContactList({
 }: ContactListProps) {
     const { t } = useTranslation();
 
-    // Sort contacts by most recent transaction date (newest first)
     const sortedContacts = useMemo(() => {
         return [...contacts].sort((a, b) => {
+            const aHasBalance = a.balance !== 0;
+            const bHasBalance = b.balance !== 0;
+            if (aHasBalance !== bHasBalance) {
+                return aHasBalance ? -1 : 1;
+            }
             const dateA = a.lastTransactionDate ?? 0;
             const dateB = b.lastTransactionDate ?? 0;
             return dateB - dateA;
