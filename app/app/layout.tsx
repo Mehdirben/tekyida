@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useConvexAuth } from "convex/react";
 import { Loader2 } from "lucide-react";
@@ -13,26 +13,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { t } = useTranslation();
     const [wasAuthenticated, setWasAuthenticated] = useState(false);
     const [timedOut, setTimedOut] = useState(false);
+    const prevAuthenticatedRef = useRef(false);
 
     useEffect(() => {
-        // Track authentication state in localStorage for offline resilience
-        // (survives browser close, unlike sessionStorage)
         if (isAuthenticated) {
+            prevAuthenticatedRef.current = true;
             setWasAuthenticated(true);
             try { localStorage.setItem("tekyida-authed", "1"); } catch {}
+        } else if (prevAuthenticatedRef.current && navigator.onLine) {
+            setWasAuthenticated(false);
+            prevAuthenticatedRef.current = false;
+            try { localStorage.removeItem("tekyida-authed"); } catch {}
         }
     }, [isAuthenticated]);
 
     useEffect(() => {
-        // Check if previously authenticated (for offline case)
         try {
             if (localStorage.getItem("tekyida-authed") === "1") {
                 setWasAuthenticated(true);
+                prevAuthenticatedRef.current = true;
             }
         } catch {}
     }, []);
 
-    // If auth is still loading after 3s and we're offline, stop waiting
     useEffect(() => {
         if (!isLoading || wasAuthenticated) return;
         const timer = setTimeout(() => {
@@ -44,20 +47,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }, [isLoading, wasAuthenticated]);
 
     useEffect(() => {
-        // Only redirect if definitely not authenticated AND online
         if (!isLoading && !isAuthenticated && !wasAuthenticated && navigator.onLine) {
             router.push("/login");
         }
     }, [isLoading, isAuthenticated, wasAuthenticated, router]);
 
-    // If offline and timed out with no prior auth, redirect to login
     useEffect(() => {
         if (timedOut && !wasAuthenticated && !isAuthenticated) {
             router.push("/login");
         }
     }, [timedOut, wasAuthenticated, isAuthenticated, router]);
 
-    // Show loading only when still determining auth and not previously authenticated
     if ((isLoading || !isAuthenticated) && !wasAuthenticated && !timedOut) {
         return (
             <>
