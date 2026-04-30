@@ -32,8 +32,8 @@ export default function BottomNav() {
     ];
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-70 pb-[env(safe-area-inset-bottom)]">
-            <div className="flex justify-center px-4 mb-5">
+        <nav className="fixed bottom-0 left-0 right-0 z-70 pb-[max(env(safe-area-inset-bottom),20px)]">
+            <div className="flex justify-center px-4">
                 <div
                     className="inline-flex items-center gap-2 p-1.5 rounded-full"
                     style={{
