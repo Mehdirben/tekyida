@@ -13,6 +13,8 @@ import {
     CloudOff,
     Lock,
     Unlock,
+    Eye,
+    EyeOff,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
@@ -55,7 +57,9 @@ export default function ExperienceDetail({
     const keyboardOffsetStyle = keyboardInset > 0 ? { paddingBottom: `${keyboardInset + 12}px` } : undefined;
 
     const { t } = useTranslation();
-    const { mask } = useAmountsVisibility();
+    const { hidden: globalHidden } = useAmountsVisibility();
+    const [localHidden, setLocalHidden] = useState(globalHidden);
+    const localMask = (value: string) => (localHidden ? "••••••" : value);
     const rawTransactions = useCachedQuery<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[]>(
         "transactions.list",
         api.transactions.list,
@@ -215,15 +219,27 @@ export default function ExperienceDetail({
                                     : "text-(--text-secondary)"
                                 }`}
                         >
-                            {mask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
+                            {localMask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
                         </p>
                     </div>
-                    <button
-                        onClick={handleAnimatedClose}
-                        className="p-2 rounded-xl liquid-glass hover:bg-white/10 transition-all cursor-pointer"
-                    >
-                        <X size={18} />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            onClick={() => {
+                                setLocalHidden((prev) => !prev);
+                                triggerHaptic("selection");
+                            }}
+                            className="p-2 rounded-xl liquid-glass hover:bg-white/10 transition-all cursor-pointer"
+                            aria-label={localHidden ? "Show amounts" : "Hide amounts"}
+                        >
+                            {localHidden ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                        <button
+                            onClick={handleAnimatedClose}
+                            className="p-2 rounded-xl liquid-glass hover:bg-white/10 transition-all cursor-pointer"
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Closed Notice */}
@@ -290,7 +306,7 @@ export default function ExperienceDetail({
                                             : "text-danger-500"
                                             }`}
                                     >
-                                        {mask(`${tx.amount > 0 ? "+" : ""}${tx.amount.toFixed(2)}`)}
+                                        {localMask(`${tx.amount > 0 ? "+" : ""}${tx.amount.toFixed(2)}`)}
                                     </span>
                                     {!closed && (
                                         <>

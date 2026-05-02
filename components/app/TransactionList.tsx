@@ -12,6 +12,8 @@ import {
     X,
     Receipt,
     CloudOff,
+    Eye,
+    EyeOff,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
@@ -62,7 +64,9 @@ export default function TransactionList({
     const keyboardOffsetStyle = keyboardInset > 0 ? { paddingBottom: `${keyboardInset + 12}px` } : undefined;
 
     const { t } = useTranslation();
-    const { mask } = useAmountsVisibility();
+    const { hidden: globalHidden } = useAmountsVisibility();
+    const [localHidden, setLocalHidden] = useState(globalHidden);
+    const localMask = (value: string) => (localHidden ? "••••••" : value);
     const router = useRouter();
     const rawTransactions = useCachedQuery<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[]>("transactions.list", api.transactions.list, { contactId });
     // For offline-created contacts (temp_ IDs), there are no server transactions yet — treat undefined as empty
@@ -196,15 +200,27 @@ export default function TransactionList({
                                     : "text-(--text-secondary)"
                                 }`}
                         >
-                            {mask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
+                            {localMask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
                         </p>
                     </div>
-                    <button
-                        onClick={handleAnimatedClose}
-                        className="p-2 rounded-xl liquid-glass hover:bg-white/10 transition-all cursor-pointer"
-                    >
-                        <X size={18} />
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            onClick={() => {
+                                setLocalHidden((prev) => !prev);
+                                triggerHaptic("selection");
+                            }}
+                            className="p-2 rounded-xl liquid-glass hover:bg-white/10 transition-all cursor-pointer"
+                            aria-label={localHidden ? "Show amounts" : "Hide amounts"}
+                        >
+                            {localHidden ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                        <button
+                            onClick={handleAnimatedClose}
+                            className="p-2 rounded-xl liquid-glass hover:bg-white/10 transition-all cursor-pointer"
+                        >
+                            <X size={18} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Transaction List — merged timeline of transactions + experience cards sorted by date */}
@@ -227,7 +243,7 @@ export default function TransactionList({
                             transactions={transactions}
                             experiences={experiences}
                             formatDate={formatDate}
-                            mask={mask}
+                            mask={localMask}
                             isItemPending={isItemPending}
                             openEditTx={openEditTx}
                             setDeleteTargetId={setDeleteTargetId}
@@ -509,6 +525,7 @@ function TimelineMerged({
                             key={exp._id}
                             experience={exp}
                             onSelect={() => onExperienceClick(exp._id)}
+                            mask={mask}
                         />
                     );
                 }

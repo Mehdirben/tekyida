@@ -18,14 +18,17 @@ interface ExperienceSummary {
 interface ExperienceContactCardProps {
     experience: ExperienceSummary;
     onSelect: (experience: ExperienceSummary) => void;
+    mask?: (value: string) => string;
 }
 
 export default function ExperienceContactCard({
     experience,
     onSelect,
+    mask: maskProp,
 }: ExperienceContactCardProps) {
     const { t } = useTranslation();
-    const { mask } = useAmountsVisibility();
+    const { mask: globalMask } = useAmountsVisibility();
+    const mask = maskProp ?? globalMask;
 
     const balanceColor =
         experience.balance > 0
