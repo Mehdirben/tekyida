@@ -211,35 +211,29 @@ export default function ExperienceDetail({
                                 {closed ? t("experience.closed") : t("experience.open")}
                             </span>
                         </div>
-                        <p
-                            className={`text-sm font-semibold mt-0.5 ${balance > 0
-                                ? "text-accent-500"
-                                : balance < 0
-                                    ? "text-danger-500"
-                                    : "text-(--text-secondary)"
-                                }`}
-                        >
-                            {localMask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
                         <button
                             onClick={() => {
                                 setLocalHidden((prev) => !prev);
                                 triggerHaptic("selection");
                             }}
-                            className="p-2 rounded-xl liquid-glass hover:bg-white/10 transition-all cursor-pointer"
+                            className={`flex items-center gap-1.5 text-sm font-semibold mt-0.5 cursor-pointer group ${balance > 0
+                                ? "text-accent-500"
+                                : balance < 0
+                                    ? "text-danger-500"
+                                    : "text-(--text-secondary)"
+                                }`}
                             aria-label={localHidden ? "Show amounts" : "Hide amounts"}
                         >
-                            {localHidden ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
-                        <button
-                            onClick={handleAnimatedClose}
-                            className="p-2 rounded-xl liquid-glass hover:bg-white/10 transition-all cursor-pointer"
-                        >
-                            <X size={18} />
+                            {localMask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
+                            {localHidden ? <EyeOff size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" /> : <Eye size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" />}
                         </button>
                     </div>
+                    <button
+                        onClick={handleAnimatedClose}
+                        className="p-2 rounded-xl liquid-glass hover:bg-white/10 transition-all cursor-pointer"
+                    >
+                        <X size={18} />
+                    </button>
                 </div>
 
                 {/* Closed Notice */}
