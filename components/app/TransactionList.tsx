@@ -16,7 +16,7 @@ import {
     EyeOff,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
-import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
+import { useLocalAmountsVisibility } from "@/hooks/useLocalAmountsVisibility";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -64,9 +64,7 @@ export default function TransactionList({
     const keyboardOffsetStyle = keyboardInset > 0 ? { paddingBottom: `${keyboardInset + 12}px` } : undefined;
 
     const { t } = useTranslation();
-    const { hidden: globalHidden } = useAmountsVisibility();
-    const [localHidden, setLocalHidden] = useState(globalHidden);
-    const localMask = (value: string) => (localHidden ? "••••••" : value);
+    const { localHidden, localMask, toggleLocal } = useLocalAmountsVisibility();
     const router = useRouter();
     const rawTransactions = useCachedQuery<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[]>("transactions.list", api.transactions.list, { contactId });
     // For offline-created contacts (temp_ IDs), there are no server transactions yet — treat undefined as empty
@@ -193,10 +191,7 @@ export default function TransactionList({
                     <div className="flex-1 min-w-0">
                         <h2 className="text-lg font-bold truncate">{contactName}</h2>
                         <button
-                            onClick={() => {
-                                setLocalHidden((prev) => !prev);
-                                triggerHaptic("selection");
-                            }}
+                            onClick={toggleLocal}
                             className={`flex items-center gap-1.5 text-sm font-semibold mt-0.5 cursor-pointer group ${balance > 0
                                 ? "text-accent-500"
                                 : balance < 0
