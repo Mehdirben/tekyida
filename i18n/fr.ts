@@ -191,6 +191,9 @@ const fr: Record<TranslationKey, string> = {
     "settings.install": "Installer",
     "settings.installed": "Application Installée",
     "settings.installHint": "Utilisez l'option \"Ajouter à l'écran d'accueil\" de votre navigateur.",
+    "settings.amountsOnLoad": "Montants au chargement",
+    "settings.alwaysHidden": "Masqués",
+    "settings.rememberLast": "Dernier état",
     "settings.signOut": "Déconnexion",
     "settings.signOutConfirm": "Êtes-vous sûr de vouloir vous déconnecter ?",
 

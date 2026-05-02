@@ -189,6 +189,9 @@ const en = {
     "settings.install": "Install",
     "settings.installed": "App Installed",
     "settings.installHint": "Use your browser's \"Add to Home Screen\" option.",
+    "settings.amountsOnLoad": "Amounts on Load",
+    "settings.alwaysHidden": "Hidden",
+    "settings.rememberLast": "Remember",
     "settings.signOut": "Sign Out",
     "settings.signOutConfirm": "Are you sure you want to sign out?",
 

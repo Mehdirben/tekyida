@@ -6,6 +6,7 @@ import { Mail, Lock, LogOut, Eye, EyeOff, Download, CheckCircle, WifiOff, Loader
 import Button from "@/components/ui/Button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageToggle from "@/components/ui/LanguageToggle";
+import AmountsLoadBehaviorToggle from "@/components/ui/AmountsLoadBehaviorToggle";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useSync } from "@/contexts/SyncContext";
@@ -340,8 +341,19 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
-                {/* Install App Section */}
+                {/* Amounts on Load Section */}
                 <section className="liquid-glass-card p-6 animate-slide-up delay-400">
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
+                        {t("settings.amountsOnLoad")}
+                    </h2>
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{t("settings.amountsOnLoad")}</span>
+                        <AmountsLoadBehaviorToggle />
+                    </div>
+                </section>
+
+                {/* Install App Section */}
+                <section className="liquid-glass-card p-6 animate-slide-up delay-500">
                     <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.installApp")}
                     </h2>
@@ -370,7 +382,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Sign Out Section */}
-                <section className="liquid-glass-card p-6 animate-slide-up delay-500">
+                <section className="liquid-glass-card p-6 animate-slide-up delay-600">
                     <Button
                         variant="danger"
                         size="md"
