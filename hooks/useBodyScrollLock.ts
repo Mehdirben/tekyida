@@ -38,6 +38,10 @@ export function useBodyScrollLock(locked: boolean) {
         html.style.overscrollBehavior = "none";
 
         return () => {
+            // Disable smooth scrolling temporarily to prevent page scroll transitions
+            const prevScrollBehavior = html.style.scrollBehavior;
+            html.style.scrollBehavior = "auto";
+
             body.style.position = previousBody.position;
             body.style.top = previousBody.top;
             body.style.left = previousBody.left;
@@ -50,6 +54,10 @@ export function useBodyScrollLock(locked: boolean) {
             html.style.overscrollBehavior = previousHtml.overscrollBehavior;
 
             window.scrollTo(0, scrollY);
+
+            // Force layout reflow to ensure the instant scroll is applied before restoring smooth scroll
+            void html.offsetHeight;
+            html.style.scrollBehavior = prevScrollBehavior;
         };
     }, [locked]);
 }
