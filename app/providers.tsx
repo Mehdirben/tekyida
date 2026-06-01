@@ -34,6 +34,23 @@ export function Providers({ children }: { children: React.ReactNode }) {
         };
     }, []);
 
+    useEffect(() => {
+        if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+            const registerSW = () => {
+                navigator.serviceWorker.register("/sw.js").catch((err) => {
+                    console.error("Service worker registration failed:", err);
+                });
+            };
+
+            if (document.readyState === "complete") {
+                registerSW();
+            } else {
+                window.addEventListener("load", registerSW);
+                return () => window.removeEventListener("load", registerSW);
+            }
+        }
+    }, []);
+
     return (
         <ConvexClientProvider>
             <ThemeProvider>

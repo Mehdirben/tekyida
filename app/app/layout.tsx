@@ -14,19 +14,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { t } = useTranslation();
     const [timedOut, setTimedOut] = useState(false);
     
-    // Initialize wasAuthenticated and ref directly from localStorage to prevent double renders and cascading renders
-    const [wasAuthenticated, setWasAuthenticated] = useState(() => {
-        if (typeof window !== "undefined") {
-            try {
-                return localStorage.getItem("tekyida-authed") === "1";
-            } catch {}
-        }
-        return false;
-    });
-    
-    const prevAuthenticatedRef = useRef(
-        typeof window !== "undefined" && localStorage.getItem("tekyida-authed") === "1"
-    );
+    // Initialize wasAuthenticated and ref to false (matching server SSR) to prevent hydration mismatches,
+    // and safely update them from localStorage in a useEffect after client mount.
+    const [wasAuthenticated, setWasAuthenticated] = useState(false);
+    const prevAuthenticatedRef = useRef(false);
+
+    useEffect(() => {
+        try {
+            const isAuthed = localStorage.getItem("tekyida-authed") === "1";
+            if (isAuthed) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
+                setWasAuthenticated(true);
+                prevAuthenticatedRef.current = true;
+            }
+        } catch {}
+    }, []);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -36,7 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             }, 0);
             try { localStorage.setItem("tekyida-authed", "1"); } catch {}
             return () => clearTimeout(timer);
-        } else if (prevAuthenticatedRef.current && navigator.onLine) {
+        } else if (!isLoading && prevAuthenticatedRef.current && navigator.onLine) {
             const timer = setTimeout(() => {
                 setWasAuthenticated(false);
             }, 0);
@@ -44,7 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             try { localStorage.removeItem("tekyida-authed"); } catch {}
             return () => clearTimeout(timer);
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, isLoading]);
 
     useEffect(() => {
         if (!isLoading || wasAuthenticated) return;

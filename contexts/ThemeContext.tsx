@@ -8,6 +8,7 @@ import {
     useCallback,
     type ReactNode,
 } from "react";
+import { useServerInsertedHTML } from "next/navigation";
 
 type Theme = "light" | "dark" | "system";
 
@@ -29,6 +30,17 @@ function getSystemTheme(): "light" | "dark" {
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setThemeState] = useState<Theme>("system");
     const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
+
+    useServerInsertedHTML(() => {
+        return (
+            <script
+                id="theme-initializer"
+                dangerouslySetInnerHTML={{
+                    __html: `(function(){try{var t=localStorage.getItem('tekyida-theme')||'system';var d=t==='system'?window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light':t;document.documentElement.classList.add(d)}catch(e){}})()`,
+                }}
+            />
+        );
+    });
 
     const applyTheme = useCallback((t: Theme) => {
         const resolved = t === "system" ? getSystemTheme() : t;
