@@ -253,7 +253,7 @@ export default function ExperienceList({
                                     {exp.transactionCount} {t("experience.transactions")}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
+                            <div className="flex items-center gap-0.5 shrink-0">
                                 <span
                                     role="button"
                                     tabIndex={0}
@@ -268,15 +268,14 @@ export default function ExperienceList({
                                             handleToggleClosed(exp);
                                         }
                                     }}
-                                    className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-all shrink-0 ${
+                                    className={`p-1.5 rounded-lg active:bg-white/10 transition-all cursor-pointer shrink-0 ${
                                         exp.closed
                                             ? "bg-warning-500/15 text-warning-500"
                                             : "bg-accent-500/15 text-accent-500"
                                     }`}
                                     title={exp.closed ? t("experience.reopen") : t("experience.close")}
                                 >
-                                    {exp.closed ? <Lock size={9} /> : <Unlock size={9} />}
-                                    {exp.closed ? t("experience.closed") : t("experience.open")}
+                                    {exp.closed ? <Lock size={13} /> : <Unlock size={13} />}
                                 </span>
                                 <span
                                     role="button"
