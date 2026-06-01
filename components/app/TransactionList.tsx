@@ -86,6 +86,16 @@ export default function TransactionList({
     const [editIsPositive, setEditIsPositive] = useState(true);
     const [editDescription, setEditDescription] = useState("");
     const [editDate, setEditDate] = useState("");
+    const [isEditClosing, setIsEditClosing] = useState(false);
+
+    const handleCloseEdit = useCallback(() => {
+        triggerHaptic("light");
+        setIsEditClosing(true);
+        setTimeout(() => {
+            setEditTarget(null);
+            setIsEditClosing(false);
+        }, 250);
+    }, []);
 
     const handleAnimatedClose = useCallback(() => {
         triggerHaptic("light");
@@ -157,7 +167,7 @@ export default function TransactionList({
             },
             { contactId, notebookId }
         );
-        setEditTarget(null);
+        handleCloseEdit();
     };
 
     const formatDate = (ts: number) => {
@@ -290,20 +300,14 @@ export default function TransactionList({
                 {editTarget && createPortal(
                     <div className="fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                         <div
-                            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
-                            onClick={() => {
-                                triggerHaptic("light");
-                                setEditTarget(null);
-                            }}
+                            className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${isEditClosing ? "animate-fade-out" : "animate-fade-in"}`}
+                            onClick={handleCloseEdit}
                         />
-                        <div className="relative z-10 w-[85%] max-w-xs liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
+                        <div className={`relative z-10 w-[85%] max-w-xs liquid-glass-heavy rounded-2xl shadow-2xl overflow-hidden ${isEditClosing ? "animate-scale-out" : "animate-scale-in"}`}>
                             <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-(--border)">
                                 <h3 className="text-sm font-bold">{t("transaction.edit")}</h3>
                                 <button
-                                    onClick={() => {
-                                        triggerHaptic("light");
-                                        setEditTarget(null);
-                                    }}
+                                    onClick={handleCloseEdit}
                                     className="p-1 rounded-lg active:bg-white/10 transition-all cursor-pointer"
                                 >
                                     <X size={14} />
@@ -341,7 +345,7 @@ export default function TransactionList({
                                     onChange={(e) => setEditDescription(e.target.value)}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleEditTx();
-                                        if (e.key === "Escape") setEditTarget(null);
+                                        if (e.key === "Escape") handleCloseEdit();
                                     }}
                                     placeholder={t("transaction.description")}
                                     className="glass-input py-2 text-sm resize-none"
@@ -356,10 +360,7 @@ export default function TransactionList({
                             </div>
                             <div className="flex border-t border-(--border)">
                                 <button
-                                    onClick={() => {
-                                        triggerHaptic("light");
-                                        setEditTarget(null);
-                                    }}
+                                    onClick={handleCloseEdit}
                                     className="flex-1 py-3 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
                                 >
                                     {t("common.cancel")}
