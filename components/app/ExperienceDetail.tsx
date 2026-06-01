@@ -182,10 +182,23 @@ export default function ExperienceDetail({
             {/* Sheet */}
             <div className={`relative z-10 w-full sm:max-w-md h-[92dvh] sm:h-[92vh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl ${isClosing ? "animate-sheet-down" : "animate-sheet-up"} overflow-hidden`}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-bold truncate">{experienceName}</h2>
+                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border) gap-2">
+                    <div className="flex-1 min-w-0 pr-3">
+                        <h2 className="text-lg font-bold whitespace-normal break-words">{experienceName}</h2>
+                        <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                            <button
+                                onClick={toggleLocal}
+                                className={`flex items-center gap-1.5 text-sm font-semibold cursor-pointer group ${balance > 0
+                                    ? "text-accent-500"
+                                    : balance < 0
+                                        ? "text-danger-500"
+                                        : "text-(--text-secondary)"
+                                    }`}
+                                aria-label={localHidden ? "Show amounts" : "Hide amounts"}
+                            >
+                                {localMask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
+                                {localHidden ? <EyeOff size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" /> : <Eye size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" />}
+                            </button>
                             <span
                                 role="button"
                                 tabIndex={0}
@@ -199,7 +212,7 @@ export default function ExperienceDetail({
                                         onToggleClosed();
                                     }
                                 }}
-                                className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-all ${
+                                className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-all shrink-0 ${
                                     closed
                                         ? "bg-warning-500/15 text-warning-500"
                                         : "bg-accent-500/15 text-accent-500"
@@ -209,23 +222,10 @@ export default function ExperienceDetail({
                                 {closed ? t("experience.closed") : t("experience.open")}
                             </span>
                         </div>
-                        <button
-                            onClick={toggleLocal}
-                            className={`flex items-center gap-1.5 text-sm font-semibold mt-0.5 cursor-pointer group ${balance > 0
-                                ? "text-accent-500"
-                                : balance < 0
-                                    ? "text-danger-500"
-                                    : "text-(--text-secondary)"
-                                }`}
-                            aria-label={localHidden ? "Show amounts" : "Hide amounts"}
-                        >
-                            {localMask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
-                            {localHidden ? <EyeOff size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" /> : <Eye size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" />}
-                        </button>
                     </div>
                     <button
                         onClick={handleAnimatedClose}
-                        className="p-2 rounded-xl liquid-glass hover:bg-white/10 transition-all cursor-pointer"
+                        className="p-2 rounded-xl liquid-glass hover:bg-white/10 transition-all cursor-pointer shrink-0"
                     >
                         <X size={18} />
                     </button>
@@ -280,7 +280,7 @@ export default function ExperienceDetail({
                                         {formatDate(tx.date ?? tx.createdAt)}
                                     </p>
                                     {tx.description && (
-                                        <p className="text-sm text-(--text-primary) truncate mt-0.5">
+                                        <p className="text-sm text-(--text-primary) whitespace-normal break-words mt-0.5">
                                             {tx.description}
                                         </p>
                                     )}
@@ -416,16 +416,16 @@ export default function ExperienceDetail({
                                         step="0.01"
                                     />
                                 </div>
-                                <input
-                                    type="text"
+                                <textarea
                                     value={editDescription}
                                     onChange={(e) => setEditDescription(e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleEditTx();
+                                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleEditTx();
                                         if (e.key === "Escape") setEditTarget(null);
                                     }}
                                     placeholder={t("transaction.description")}
-                                    className="glass-input py-2 text-sm"
+                                    className="glass-input py-2 text-sm resize-none"
+                                    rows={4}
                                 />
                                 <input
                                     type="datetime-local"
@@ -488,16 +488,16 @@ export default function ExperienceDetail({
                                         step="0.01"
                                     />
                                 </div>
-                                <input
-                                    type="text"
+                                <textarea
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
                                     onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleAdd();
+                                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleAdd();
                                         if (e.key === "Escape") setAdding(false);
                                     }}
                                     placeholder={t("transaction.description")}
-                                    className="glass-input py-2.5 text-sm"
+                                    className="glass-input py-2.5 text-sm resize-none"
+                                    rows={4}
                                 />
                                 <input
                                     type="datetime-local"

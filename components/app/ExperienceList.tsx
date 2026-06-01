@@ -229,7 +229,7 @@ export default function ExperienceList({
                                 <Compass size={18} className="text-primary-500" />
                             </div>
                             <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                                <p className="font-semibold text-sm truncate">{exp.name}</p>
+                                <p className="font-semibold text-sm whitespace-normal break-words flex-1">{exp.name}</p>
                                 {isItemPending(exp._id) && <UnsyncedBadge />}
                                 {exp.closed && (
                                     <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-warning-500/15 text-warning-500 shrink-0">
