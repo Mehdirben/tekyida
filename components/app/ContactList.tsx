@@ -183,8 +183,8 @@ export default function ContactList({
                         <User size={18} className="text-primary-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                            <p className="font-semibold text-sm whitespace-normal break-words flex-1">{contact.name}</p>
+                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                            <p className="font-semibold text-sm whitespace-normal break-words flex-1 min-w-0">{contact.name}</p>
                             {isItemPending(contact._id) && <UnsyncedBadge />}
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">

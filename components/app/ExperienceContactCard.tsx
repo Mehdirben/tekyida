@@ -56,9 +56,7 @@ export default function ExperienceContactCard({
                 <Compass size={14} className="text-primary-500" />
             </div>
             <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-semibold whitespace-normal break-words flex-1">{experience.name}</p>
-                </div>
+                <p className="text-xs font-semibold whitespace-normal break-words">{experience.name}</p>
                 <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[10px] text-(--text-tertiary)">
                         {experience.transactionCount} {t("experience.transactions")}

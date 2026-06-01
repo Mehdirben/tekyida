@@ -228,8 +228,8 @@ export default function ExperienceList({
                             <div className="p-2 rounded-xl liquid-glass shrink-0">
                                 <Compass size={18} className="text-primary-500" />
                             </div>
-                            <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                                <p className="font-semibold text-sm whitespace-normal break-words flex-1">{exp.name}</p>
+                            <div className="flex-1 min-w-0 flex flex-wrap items-center gap-1.5">
+                                <p className="font-semibold text-sm whitespace-normal break-words flex-1 min-w-0">{exp.name}</p>
                                 {isItemPending(exp._id) && <UnsyncedBadge />}
                             </div>
                             <span className={`text-sm font-bold shrink-0 ${balanceColor(exp.balance)}`}>
