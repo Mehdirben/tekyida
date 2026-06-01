@@ -11,10 +11,10 @@ import {
     Lock,
     Unlock,
     ChevronRight,
-    ChevronDown,
     CloudOff,
     User,
 } from "lucide-react";
+import Select from "@/components/ui/Select";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { useMutation } from "convex/react";
@@ -68,6 +68,21 @@ export default function ExperienceList({
             return dateB - dateA;
         });
     }, [experiences]);
+
+    const contactOptions = useMemo(() => {
+        return [
+            { value: "", label: t("experience.noContact") },
+            ...contacts.map((c) => ({ value: c._id, label: c.name })),
+        ];
+    }, [contacts, t]);
+
+    const newContactOptions = useMemo(() => {
+        return [
+            { value: "", label: t("experience.contactOptional") },
+            ...contacts.map((c) => ({ value: c._id, label: c.name })),
+        ];
+    }, [contacts, t]);
+
     const [adding, setAdding] = useState(false);
     const [newName, setNewName] = useState("");
     const [newContactId, setNewContactId] = useState<string>("");
@@ -383,7 +398,7 @@ export default function ExperienceList({
                         className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${isEditClosing ? "animate-fade-out" : "animate-fade-in"}`}
                         onClick={handleCloseEdit}
                     />
-                    <div className={`relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl overflow-hidden ${isEditClosing ? "animate-scale-out" : "animate-scale-in"}`}>
+                    <div className={`relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl ${isEditClosing ? "animate-scale-out" : "animate-scale-in"}`}>
                         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
                             <h3 className="text-base font-bold">{t("experience.edit")}</h3>
                             <button
@@ -406,26 +421,13 @@ export default function ExperienceList({
                                 placeholder={t("experience.name")}
                                 className="glass-input py-2.5 text-sm"
                             />
-                            <div className="relative w-full">
-                                <select
-                                    value={editContactId}
-                                    onChange={(e) => setEditContactId(e.target.value)}
-                                    className="glass-input py-2.5 pr-10 text-sm appearance-none"
-                                >
-                                    <option value="">{t("experience.noContact")}</option>
-                                    {contacts.map((c) => (
-                                        <option key={c._id} value={c._id}>
-                                            {c.name}
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown
-                                    size={16}
-                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-(--text-tertiary) pointer-events-none"
-                                />
-                            </div>
+                            <Select
+                                options={contactOptions}
+                                value={editContactId}
+                                onChange={setEditContactId}
+                            />
                         </div>
-                        <div className="flex border-t border-(--border)">
+                        <div className="flex border-t border-(--border) rounded-b-2xl overflow-hidden">
                             <button
                                 onClick={handleCloseEdit}
                                 className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
@@ -464,24 +466,11 @@ export default function ExperienceList({
                         placeholder={t("experience.name")}
                         className="glass-input py-2.5 text-sm"
                     />
-                    <div className="relative w-full">
-                        <select
-                            value={newContactId}
-                            onChange={(e) => setNewContactId(e.target.value)}
-                            className="glass-input py-2.5 pr-10 text-sm appearance-none"
-                        >
-                            <option value="">{t("experience.contactOptional")}</option>
-                            {contacts.map((c) => (
-                                <option key={c._id} value={c._id}>
-                                    {c.name}
-                                </option>
-                            ))}
-                        </select>
-                        <ChevronDown
-                            size={16}
-                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-(--text-tertiary) pointer-events-none"
-                        />
-                    </div>
+                    <Select
+                        options={newContactOptions}
+                        value={newContactId}
+                        onChange={setNewContactId}
+                    />
                     <div className="flex gap-2">
                         <button
                             onClick={() => {
