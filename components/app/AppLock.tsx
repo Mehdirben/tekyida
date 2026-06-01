@@ -16,6 +16,7 @@ export default function AppLock({ children }: { children: React.ReactNode }) {
 
     const [isLocked, setIsLocked] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [isClosingLock, setIsClosingLock] = useState(false);
     const [pinValue, setPinValue] = useState("");
     const [isError, setIsError] = useState(false);
 
@@ -61,9 +62,13 @@ export default function AppLock({ children }: { children: React.ReactNode }) {
 
         if (computedHash === storedHash) {
             triggerHaptic("medium");
-            setIsLocked(false);
-            setPinValue("");
-            setIsError(false);
+            setIsClosingLock(true);
+            setTimeout(() => {
+                setIsLocked(false);
+                setPinValue("");
+                setIsError(false);
+                setIsClosingLock(false);
+            }, 300);
         } else {
             setIsError(true);
             setPinValue(""); // Reset input to let them try again
@@ -96,7 +101,9 @@ export default function AppLock({ children }: { children: React.ReactNode }) {
     if (isLocked) {
         return (
             <div 
-                className="fixed inset-0 z-[1000] flex flex-col items-center justify-center p-6 animate-fade-in border-b border-(--glass-border) shadow-2xl overflow-y-auto"
+                className={`fixed inset-0 z-[1000] flex flex-col items-center justify-center p-6 border-b border-(--glass-border) shadow-2xl overflow-y-auto ${
+                    isClosingLock ? "animate-fade-out" : "animate-fade-in"
+                }`}
                 style={{
                     background: "var(--glass-bg)",
                     backdropFilter: "blur(32px) saturate(2.2)",
@@ -104,7 +111,11 @@ export default function AppLock({ children }: { children: React.ReactNode }) {
                 }}
             >
                 {/* Unified Lock Block */}
-                <div className="w-full max-w-sm flex flex-col items-center space-y-8 my-auto">
+                <div 
+                    className={`w-full max-w-sm flex flex-col items-center space-y-8 my-auto ${
+                        isClosingLock ? "animate-scale-out" : "animate-scale-in"
+                    }`}
+                >
                     {/* Header */}
                     <div className="flex flex-col items-center text-center space-y-4">
                         <div className="relative p-3.5 rounded-2xl liquid-glass shadow-xl shadow-primary-950/15 dark:shadow-black/35 text-primary-500 dark:text-primary-400 animate-scale-in">

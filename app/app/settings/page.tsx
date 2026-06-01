@@ -30,6 +30,7 @@ export default function SettingsPage() {
     // Security & App Lock states
     const [isLockEnabled, setIsLockEnabled] = useState(false);
     const [showPinSetup, setShowPinSetup] = useState<"setup" | "confirm" | "verify_disable" | "verify_change" | "change_new" | "change_confirm" | null>(null);
+    const [isClosingModal, setIsClosingModal] = useState(false);
     const [setupPin, setSetupPin] = useState("");
     const [modalPin, setModalPin] = useState("");
     const [modalError, setModalError] = useState(false);
@@ -54,6 +55,14 @@ export default function SettingsPage() {
         }
     };
 
+    const closePinSetup = () => {
+        setIsClosingModal(true);
+        setTimeout(() => {
+            setShowPinSetup(null);
+            setIsClosingModal(false);
+        }, 250); // Matches .animate-scale-out duration (250ms)
+    };
+
     // Biometric features have been disabled as they prompt standard browser password managers on some platforms.
 
     const handlePinComplete = async (enteredPin: string) => {
@@ -73,7 +82,7 @@ export default function SettingsPage() {
                 setModalPin("");
                 triggerHaptic("medium");
                 
-                setShowPinSetup(null);
+                closePinSetup();
                 setSecuritySuccess(t("lock.pinSuccess"));
                 setTimeout(() => setSecuritySuccess(""), 4000);
             } else {
@@ -92,7 +101,7 @@ export default function SettingsPage() {
                     localStorage.removeItem("tekyida-lock-pin-hash");
                     localStorage.removeItem("tekyida-lock-pin-salt");
                     setIsLockEnabled(false);
-                    setShowPinSetup(null);
+                    closePinSetup();
                     setModalPin("");
                     triggerHaptic("medium");
                 } else {
@@ -100,7 +109,7 @@ export default function SettingsPage() {
                     setModalPin("");
                 }
             } else {
-                setShowPinSetup(null);
+                closePinSetup();
             }
         } else if (showPinSetup === "verify_change") {
             const storedHash = localStorage.getItem("tekyida-lock-pin-hash");
@@ -117,7 +126,7 @@ export default function SettingsPage() {
                     setModalPin("");
                 }
             } else {
-                setShowPinSetup(null);
+                closePinSetup();
             }
         } else if (showPinSetup === "change_new") {
             setSetupPin(enteredPin);
@@ -130,7 +139,7 @@ export default function SettingsPage() {
                 const hash = await hashPin(enteredPin, salt);
                 localStorage.setItem("tekyida-lock-pin-hash", hash);
                 localStorage.setItem("tekyida-lock-pin-salt", salt);
-                setShowPinSetup(null);
+                closePinSetup();
                 setModalPin("");
                 triggerHaptic("medium");
                 setSecuritySuccess(t("lock.pinSuccess"));
@@ -251,14 +260,14 @@ export default function SettingsPage() {
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === "Escape" && showPinSetup) {
+            if (e.key === "Escape" && showPinSetup && !isClosingModal) {
                 triggerHaptic("light");
-                setShowPinSetup(null);
+                closePinSetup();
             }
         };
         window.addEventListener("keydown", handleEscape);
         return () => window.removeEventListener("keydown", handleEscape);
-    }, [showPinSetup]);
+    }, [showPinSetup, isClosingModal]);
 
     const handleSignOut = async () => {
         try { localStorage.removeItem("tekyida-authed"); } catch { }
@@ -585,8 +594,16 @@ export default function SettingsPage() {
 
             {/* PIN Setup & Verify Overlay Modal */}
             {showPinSetup && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/10 dark:bg-black/30 backdrop-blur-md px-4 py-6 animate-fade-in">
-                    <div className="liquid-glass-card p-6 sm:p-8 w-full max-w-sm flex flex-col justify-between items-center text-center shadow-2xl relative animate-scale-in">
+                <div 
+                    className={`fixed inset-0 z-[1000] flex items-center justify-center bg-black/10 dark:bg-black/30 backdrop-blur-md px-4 py-6 ${
+                        isClosingModal ? "animate-fade-out" : "animate-fade-in"
+                    }`}
+                >
+                    <div 
+                        className={`liquid-glass-card p-6 sm:p-8 w-full max-w-sm flex flex-col justify-between items-center text-center shadow-2xl relative ${
+                            isClosingModal ? "animate-scale-out" : "animate-scale-in"
+                        }`}
+                    >
                         {/* Header */}
                         <div className="flex flex-col items-center mt-2 space-y-3">
                             <div className="relative p-3 rounded-2xl liquid-glass text-primary-500 dark:text-primary-400">
@@ -620,7 +637,7 @@ export default function SettingsPage() {
                                 type="button"
                                 onClick={() => {
                                     triggerHaptic("light");
-                                    setShowPinSetup(null);
+                                    closePinSetup();
                                 }}
                                 className="text-xs font-semibold text-(--text-tertiary) hover:text-(--text-primary) px-4 py-2 rounded-full hover:bg-white/10 dark:hover:bg-white/5 transition-colors cursor-pointer"
                             >
