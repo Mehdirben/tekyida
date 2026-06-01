@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Delete, Fingerprint } from "lucide-react";
+import { Delete } from "lucide-react";
 import { triggerHaptic } from "@/lib/haptics";
 
 interface PinPadProps {
@@ -10,8 +10,6 @@ interface PinPadProps {
     onComplete?: (pin: string) => void;
     error?: boolean;
     onClearError?: () => void;
-    showBiometricButton?: boolean;
-    onBiometricClick?: () => void;
     title?: string;
 }
 
@@ -21,8 +19,6 @@ export default function PinPad({
     onComplete,
     error = false,
     onClearError,
-    showBiometricButton = false,
-    onBiometricClick,
     title,
 }: PinPadProps) {
     const maxDigits = 6;
@@ -101,59 +97,28 @@ export default function PinPad({
 
             {/* Keypad Grid (3 columns) */}
             <div className="grid grid-cols-3 gap-y-4 gap-x-6 justify-items-center w-full px-4 sm:px-6">
-                {[
-                    { num: 1, letters: "" },
-                    { num: 2, letters: "A B C" },
-                    { num: 3, letters: "D E F" },
-                    { num: 4, letters: "G H I" },
-                    { num: 5, letters: "J K L" },
-                    { num: 6, letters: "M N O" },
-                    { num: 7, letters: "P Q R S" },
-                    { num: 8, letters: "T U V" },
-                    { num: 9, letters: "W X Y Z" },
-                ].map(({ num, letters }) => (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                     <button
                         key={num}
                         type="button"
                         onClick={() => handleKeyPress(num)}
-                        className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex flex-col items-center justify-center glass-btn bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 hover:border-white/45 hover:bg-white/15 dark:hover:bg-white/10 select-none active:scale-[0.88] transition-all duration-150 cursor-pointer pt-0.5 shadow-lg shadow-black/10 dark:shadow-black/30"
+                        className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center glass-btn bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 hover:border-white/45 hover:bg-white/15 dark:hover:bg-white/10 select-none active:scale-[0.88] transition-all duration-150 cursor-pointer shadow-lg shadow-black/10 dark:shadow-black/30"
                     >
                         <span className="text-3xl font-light text-(--text-primary)">{num}</span>
-                        {letters ? (
-                            <span className="text-[8.5px] font-bold tracking-widest text-(--text-tertiary) -mt-0.5 uppercase opacity-85 scale-90">
-                                {letters}
-                            </span>
-                        ) : (
-                            <span className="h-[10px]" /> // Spacer to keep numbers aligned
-                        )}
                     </button>
                 ))}
 
                 {/* Bottom Row */}
-                {/* 10. Left: Biometric trigger OR placeholder */}
-                {showBiometricButton ? (
-                    <button
-                        type="button"
-                        onClick={() => {
-                            triggerHaptic("medium");
-                            onBiometricClick?.();
-                        }}
-                        className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-primary-500 dark:text-primary-400 glass-btn bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 hover:border-white/45 hover:bg-white/15 dark:hover:bg-white/10 select-none active:scale-[0.88] transition-all duration-150 cursor-pointer shadow-lg shadow-black/10 dark:shadow-black/30"
-                    >
-                        <Fingerprint size={32} className="animate-pulse" />
-                    </button>
-                ) : (
-                    <div className="w-18 h-18 sm:w-20 sm:h-20" /> // Spacer
-                )}
+                {/* 10. Left: Spacer to maintain grid alignment */}
+                <div className="w-18 h-18 sm:w-20 sm:h-20" />
 
                 {/* 11. Center: 0 */}
                 <button
                     type="button"
                     onClick={() => handleKeyPress(0)}
-                    className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex flex-col items-center justify-center glass-btn bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 hover:border-white/45 hover:bg-white/15 dark:hover:bg-white/10 select-none active:scale-[0.88] transition-all duration-150 cursor-pointer pt-0.5 shadow-lg shadow-black/10 dark:shadow-black/30"
+                    className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center glass-btn bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 hover:border-white/45 hover:bg-white/15 dark:hover:bg-white/10 select-none active:scale-[0.88] transition-all duration-150 cursor-pointer shadow-lg shadow-black/10 dark:shadow-black/30"
                 >
                     <span className="text-3xl font-light text-(--text-primary)">0</span>
-                    <span className="h-[10px] text-[8.5px] font-bold text-(--text-tertiary) -mt-0.5">+</span>
                 </button>
 
                 {/* 12. Right: Delete (Backspace) */}

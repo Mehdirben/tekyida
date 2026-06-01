@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, LogOut, Eye, EyeOff, Download, CheckCircle, WifiOff, Loader2, Shield, Fingerprint } from "lucide-react";
+import { Mail, Lock, LogOut, Eye, EyeOff, Download, CheckCircle, WifiOff, Loader2, Shield } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageToggle from "@/components/ui/LanguageToggle";
@@ -29,9 +29,7 @@ export default function SettingsPage() {
 
     // Security & App Lock states
     const [isLockEnabled, setIsLockEnabled] = useState(false);
-    const [isBioEnabled, setIsBioEnabled] = useState(false);
-    const [hasBiometrics, setHasBiometrics] = useState(false);
-    const [showPinSetup, setShowPinSetup] = useState<"setup" | "confirm" | "verify_disable" | "verify_change" | "change_new" | "change_confirm" | "ask_bio" | null>(null);
+    const [showPinSetup, setShowPinSetup] = useState<"setup" | "confirm" | "verify_disable" | "verify_change" | "change_new" | "change_confirm" | null>(null);
     const [setupPin, setSetupPin] = useState("");
     const [modalPin, setModalPin] = useState("");
     const [modalError, setModalError] = useState(false);
@@ -39,24 +37,7 @@ export default function SettingsPage() {
 
     useEffect(() => {
         const lockEnabled = localStorage.getItem("tekyida-lock-enabled") === "true";
-        const bioEnabled = localStorage.getItem("tekyida-lock-bio-enabled") === "true";
         setIsLockEnabled(lockEnabled);
-        setIsBioEnabled(bioEnabled);
-
-        const checkBioAvailability = async () => {
-            const isPWA =
-                window.matchMedia("(display-mode: standalone)").matches ||
-                (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-
-            if (
-                isPWA &&
-                window.PublicKeyCredential &&
-                await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
-            ) {
-                setHasBiometrics(true);
-            }
-        };
-        void checkBioAvailability();
     }, []);
 
     const handleLockToggleClick = () => {
@@ -73,12 +54,7 @@ export default function SettingsPage() {
         }
     };
 
-    const handleBioToggle = () => {
-        const nextState = !isBioEnabled;
-        setIsBioEnabled(nextState);
-        localStorage.setItem("tekyida-lock-bio-enabled", nextState ? "true" : "false");
-        triggerHaptic("selection");
-    };
+    // Biometric features have been disabled as they prompt standard browser password managers on some platforms.
 
     const handlePinComplete = async (enteredPin: string) => {
         if (showPinSetup === "setup") {
@@ -97,13 +73,9 @@ export default function SettingsPage() {
                 setModalPin("");
                 triggerHaptic("medium");
                 
-                if (hasBiometrics) {
-                    setShowPinSetup("ask_bio");
-                } else {
-                    setShowPinSetup(null);
-                    setSecuritySuccess(t("lock.pinSuccess"));
-                    setTimeout(() => setSecuritySuccess(""), 4000);
-                }
+                setShowPinSetup(null);
+                setSecuritySuccess(t("lock.pinSuccess"));
+                setTimeout(() => setSecuritySuccess(""), 4000);
             } else {
                 setModalError(true);
                 setModalPin("");
@@ -116,10 +88,10 @@ export default function SettingsPage() {
                 if (computedHash === storedHash) {
                     localStorage.removeItem("tekyida-lock-enabled");
                     localStorage.removeItem("tekyida-lock-bio-enabled");
+                    localStorage.removeItem("tekyida-lock-bio-cred-id");
                     localStorage.removeItem("tekyida-lock-pin-hash");
                     localStorage.removeItem("tekyida-lock-pin-salt");
                     setIsLockEnabled(false);
-                    setIsBioEnabled(false);
                     setShowPinSetup(null);
                     setModalPin("");
                     triggerHaptic("medium");
@@ -505,39 +477,10 @@ export default function SettingsPage() {
                             <>
                                 <div className="h-px bg-(--border) w-full" />
                                 
-                                {/* Biometric Unlock Toggle */}
-                                {hasBiometrics && (
-                                    <>
-                                        <div className="flex items-center justify-between gap-4">
-                                            <div className="flex-1 min-w-0">
-                                                <span className="text-sm font-medium block">{t("settings.biometrics")}</span>
-                                                <span className="text-xs text-(--text-tertiary) block mt-0.5 leading-snug">
-                                                    {t("settings.biometricsDesc")}
-                                                </span>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={handleBioToggle}
-                                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none cursor-pointer ${
-                                                    isBioEnabled ? "bg-primary-500" : "bg-(--text-tertiary)/25"
-                                                }`}
-                                            >
-                                                <span
-                                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                                                        isBioEnabled ? "translate-x-5" : "translate-x-0"
-                                                    }`}
-                                                />
-                                            </button>
-                                        </div>
-                                        <div className="h-px bg-(--border) w-full" />
-                                    </>
-                                )}
-
                                 {/* Change PIN Button */}
-                                <div className="flex justify-start">
+                                <div className="pt-1 flex justify-center">
                                     <Button
-                                        variant="glass"
-                                        size="sm"
+                                        size="md"
                                         onClick={() => {
                                             triggerHaptic("selection");
                                             setModalPin("");
@@ -636,7 +579,7 @@ export default function SettingsPage() {
                         {/* Header */}
                         <div className="flex flex-col items-center mt-2 space-y-3">
                             <div className="relative p-3 rounded-2xl liquid-glass text-primary-500 dark:text-primary-400">
-                                {showPinSetup === "ask_bio" ? <Fingerprint size={28} /> : <Shield size={28} />}
+                                <Shield size={28} />
                             </div>
                             <h2 className="text-base font-bold tracking-tight text-(--text-primary)">
                                 {showPinSetup === "setup" && t("lock.setPin")}
@@ -645,73 +588,34 @@ export default function SettingsPage() {
                                 {showPinSetup === "verify_change" && t("lock.enterCurrentPin")}
                                 {showPinSetup === "change_new" && t("lock.enterNewPin")}
                                 {showPinSetup === "change_confirm" && t("lock.confirmPin")}
-                                {showPinSetup === "ask_bio" && t("settings.biometrics")}
                             </h2>
                         </div>
 
                         {/* Content / Pad */}
                         <div className="w-full flex-1 flex items-center justify-center my-6">
-                            {showPinSetup === "ask_bio" ? (
-                                <div className="space-y-6 w-full">
-                                    <p className="text-xs font-semibold text-(--text-secondary) leading-relaxed">
-                                        {t("settings.biometricsDesc")}
-                                    </p>
-                                    <div className="flex justify-center gap-3">
-                                        <Button
-                                            variant="glass"
-                                            size="sm"
-                                            onClick={() => {
-                                                triggerHaptic("light");
-                                                setShowPinSetup(null);
-                                                setSecuritySuccess(t("lock.pinSuccess"));
-                                                setTimeout(() => setSecuritySuccess(""), 4000);
-                                            }}
-                                        >
-                                            {t("common.cancel")}
-                                        </Button>
-                                        <Button
-                                            variant="primary"
-                                            size="sm"
-                                            onClick={() => {
-                                                triggerHaptic("medium");
-                                                localStorage.setItem("tekyida-lock-bio-enabled", "true");
-                                                setIsBioEnabled(true);
-                                                setShowPinSetup(null);
-                                                setSecuritySuccess(t("lock.pinSuccess"));
-                                                setTimeout(() => setSecuritySuccess(""), 4000);
-                                            }}
-                                        >
-                                            {t("common.confirm")}
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <PinPad
-                                    value={modalPin}
-                                    onChange={setModalPin}
-                                    onComplete={handlePinComplete}
-                                    error={modalError}
-                                    onClearError={() => setModalError(false)}
-                                    title={modalError ? t("lock.invalidPin") : undefined}
-                                />
-                            )}
+                            <PinPad
+                                value={modalPin}
+                                onChange={setModalPin}
+                                onComplete={handlePinComplete}
+                                error={modalError}
+                                onClearError={() => setModalError(false)}
+                                title={modalError ? t("lock.invalidPin") : undefined}
+                            />
                         </div>
 
                         {/* Cancel / Close button for Setup Modal */}
-                        {showPinSetup !== "ask_bio" && (
-                            <div className="flex justify-center w-full mt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        triggerHaptic("light");
-                                        setShowPinSetup(null);
-                                    }}
-                                    className="text-xs font-semibold text-(--text-tertiary) hover:text-(--text-primary) px-4 py-2 rounded-full hover:bg-white/10 dark:hover:bg-white/5 transition-colors cursor-pointer"
-                                >
-                                    {t("common.cancel")}
-                                </button>
-                            </div>
-                        )}
+                        <div className="flex justify-center w-full mt-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    triggerHaptic("light");
+                                    setShowPinSetup(null);
+                                }}
+                                className="text-xs font-semibold text-(--text-tertiary) hover:text-(--text-primary) px-4 py-2 rounded-full hover:bg-white/10 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                            >
+                                {t("common.cancel")}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
