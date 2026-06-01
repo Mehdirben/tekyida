@@ -11,6 +11,7 @@ import {
     Lock,
     Unlock,
     ChevronRight,
+    ChevronDown,
     CloudOff,
     User,
 } from "lucide-react";
@@ -405,18 +406,24 @@ export default function ExperienceList({
                                 placeholder={t("experience.name")}
                                 className="glass-input py-2.5 text-sm"
                             />
-                            <select
-                                value={editContactId}
-                                onChange={(e) => setEditContactId(e.target.value)}
-                                className="glass-input py-2.5 text-sm"
-                            >
-                                <option value="">{t("experience.noContact")}</option>
-                                {contacts.map((c) => (
-                                    <option key={c._id} value={c._id}>
-                                        {c.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="relative w-full">
+                                <select
+                                    value={editContactId}
+                                    onChange={(e) => setEditContactId(e.target.value)}
+                                    className="glass-input py-2.5 pr-10 text-sm appearance-none"
+                                >
+                                    <option value="">{t("experience.noContact")}</option>
+                                    {contacts.map((c) => (
+                                        <option key={c._id} value={c._id}>
+                                            {c.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown
+                                    size={16}
+                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-(--text-tertiary) pointer-events-none"
+                                />
+                            </div>
                         </div>
                         <div className="flex border-t border-(--border)">
                             <button
@@ -457,18 +464,24 @@ export default function ExperienceList({
                         placeholder={t("experience.name")}
                         className="glass-input py-2.5 text-sm"
                     />
-                    <select
-                        value={newContactId}
-                        onChange={(e) => setNewContactId(e.target.value)}
-                        className="glass-input py-2.5 text-sm"
-                    >
-                        <option value="">{t("experience.contactOptional")}</option>
-                        {contacts.map((c) => (
-                            <option key={c._id} value={c._id}>
-                                {c.name}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="relative w-full">
+                        <select
+                            value={newContactId}
+                            onChange={(e) => setNewContactId(e.target.value)}
+                            className="glass-input py-2.5 pr-10 text-sm appearance-none"
+                        >
+                            <option value="">{t("experience.contactOptional")}</option>
+                            {contacts.map((c) => (
+                                <option key={c._id} value={c._id}>
+                                    {c.name}
+                                </option>
+                            ))}
+                        </select>
+                        <ChevronDown
+                            size={16}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-(--text-tertiary) pointer-events-none"
+                        />
+                    </div>
                     <div className="flex gap-2">
                         <button
                             onClick={() => {
