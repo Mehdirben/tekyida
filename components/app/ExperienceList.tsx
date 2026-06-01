@@ -231,12 +231,6 @@ export default function ExperienceList({
                             <div className="flex-1 min-w-0 flex items-center gap-1.5">
                                 <p className="font-semibold text-sm whitespace-normal break-words flex-1">{exp.name}</p>
                                 {isItemPending(exp._id) && <UnsyncedBadge />}
-                                {exp.closed && (
-                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-warning-500/15 text-warning-500 shrink-0">
-                                        <Lock size={9} />
-                                        {t("experience.closed")}
-                                    </span>
-                                )}
                             </div>
                             <span className={`text-sm font-bold shrink-0 ${balanceColor(exp.balance)}`}>
                                 {formatBalance(exp.balance)}
@@ -259,7 +253,7 @@ export default function ExperienceList({
                                     {exp.transactionCount} {t("experience.transactions")}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-0.5 shrink-0">
+                            <div className="flex items-center gap-1.5 shrink-0">
                                 <span
                                     role="button"
                                     tabIndex={0}
@@ -274,10 +268,15 @@ export default function ExperienceList({
                                             handleToggleClosed(exp);
                                         }
                                     }}
-                                    className="p-1.5 rounded-lg text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
+                                    className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-all shrink-0 ${
+                                        exp.closed
+                                            ? "bg-warning-500/15 text-warning-500"
+                                            : "bg-accent-500/15 text-accent-500"
+                                    }`}
                                     title={exp.closed ? t("experience.reopen") : t("experience.close")}
                                 >
-                                    {exp.closed ? <Unlock size={13} /> : <Lock size={13} />}
+                                    {exp.closed ? <Lock size={9} /> : <Unlock size={9} />}
+                                    {exp.closed ? t("experience.closed") : t("experience.open")}
                                 </span>
                                 <span
                                     role="button"

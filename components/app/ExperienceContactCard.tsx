@@ -1,6 +1,5 @@
 "use client";
-
-import { Compass, ChevronRight, Lock } from "lucide-react";
+import { Compass, ChevronRight, Lock, Unlock } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -58,11 +57,7 @@ export default function ExperienceContactCard({
             </div>
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                    <p className="text-xs font-semibold truncate">{experience.name}</p>
-                    <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold bg-warning-500/15 text-warning-500">
-                        <Lock size={8} />
-                        {t("experience.closed")}
-                    </span>
+                    <p className="text-xs font-semibold whitespace-normal break-words flex-1">{experience.name}</p>
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[10px] text-(--text-tertiary)">
