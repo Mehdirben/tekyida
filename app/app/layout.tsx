@@ -6,35 +6,45 @@ import { useConvexAuth } from "convex/react";
 import { Loader2 } from "lucide-react";
 import BottomNav from "@/components/app/BottomNav";
 import { useTranslation } from "@/i18n/LanguageContext";
+import AppLock from "@/components/app/AppLock";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading } = useConvexAuth();
     const router = useRouter();
     const { t } = useTranslation();
-    const [wasAuthenticated, setWasAuthenticated] = useState(false);
     const [timedOut, setTimedOut] = useState(false);
-    const prevAuthenticatedRef = useRef(false);
+    
+    // Initialize wasAuthenticated and ref directly from localStorage to prevent double renders and cascading renders
+    const [wasAuthenticated, setWasAuthenticated] = useState(() => {
+        if (typeof window !== "undefined") {
+            try {
+                return localStorage.getItem("tekyida-authed") === "1";
+            } catch {}
+        }
+        return false;
+    });
+    
+    const prevAuthenticatedRef = useRef(
+        typeof window !== "undefined" && localStorage.getItem("tekyida-authed") === "1"
+    );
 
     useEffect(() => {
         if (isAuthenticated) {
             prevAuthenticatedRef.current = true;
-            setWasAuthenticated(true);
+            const timer = setTimeout(() => {
+                setWasAuthenticated(true);
+            }, 0);
             try { localStorage.setItem("tekyida-authed", "1"); } catch {}
+            return () => clearTimeout(timer);
         } else if (prevAuthenticatedRef.current && navigator.onLine) {
-            setWasAuthenticated(false);
+            const timer = setTimeout(() => {
+                setWasAuthenticated(false);
+            }, 0);
             prevAuthenticatedRef.current = false;
             try { localStorage.removeItem("tekyida-authed"); } catch {}
+            return () => clearTimeout(timer);
         }
     }, [isAuthenticated]);
-
-    useEffect(() => {
-        try {
-            if (localStorage.getItem("tekyida-authed") === "1") {
-                setWasAuthenticated(true);
-                prevAuthenticatedRef.current = true;
-            }
-        } catch {}
-    }, []);
 
     useEffect(() => {
         if (!isLoading || wasAuthenticated) return;
@@ -73,12 +83,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <>
+        <AppLock>
             <div className="mesh-gradient" />
             <div className="relative z-[60] min-h-screen flex flex-col pb-24">
                 {children}
+                <BottomNav />
             </div>
-            <BottomNav />
-        </>
+        </AppLock>
     );
 }

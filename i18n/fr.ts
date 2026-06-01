@@ -197,6 +197,28 @@ const fr: Record<TranslationKey, string> = {
     "settings.signOut": "Déconnexion",
     "settings.signOutConfirm": "Êtes-vous sûr de vouloir vous déconnecter ?",
 
+    // Security Settings
+    "settings.security": "Sécurité",
+    "settings.appLock": "Verrouillage de l'App",
+    "settings.appLockDesc": "Protégez vos données avec un code PIN à 6 chiffres.",
+    "settings.changePin": "Modifier le code PIN",
+    "settings.biometrics": "Déverrouillage Biométrique",
+    "settings.biometricsDesc": "Utilisez Face ID ou Touch ID pour un accès rapide.",
+    
+    // Lock Screen & Modal prompts
+    "lock.title": "Tekyida est Verrouillé",
+    "lock.subtitle": "Scannez Face ID / Touch ID pour déverrouiller et continuer.",
+    "lock.enterPin": "Saisissez votre code PIN à 6 chiffres",
+    "lock.setPin": "Créez un code PIN à 6 chiffres",
+    "lock.confirmPin": "Confirmez le code PIN",
+    "lock.pinsDoNotMatch": "Les codes PIN ne correspondent pas. Réessayez.",
+    "lock.invalidPin": "Code PIN incorrect. Réessayez.",
+    "lock.pinSuccess": "Code PIN configuré avec succès.",
+    "lock.useBiometrics": "Déverrouiller avec la biométrie",
+    "lock.signOut": "Se déconnecter & Se reconnecter",
+    "lock.enterCurrentPin": "Saisissez le code PIN actuel",
+    "lock.enterNewPin": "Saisissez le nouveau code PIN à 6 chiffres",
+
     // Sync
     "sync.offline": "Hors-ligne",
     "sync.pending": "{count} en attente",

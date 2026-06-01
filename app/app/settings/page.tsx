@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, LogOut, Eye, EyeOff, Download, CheckCircle, WifiOff, Loader2 } from "lucide-react";
+import { Mail, Lock, LogOut, Eye, EyeOff, Download, CheckCircle, WifiOff, Loader2, Shield, Fingerprint } from "lucide-react";
 import Button from "@/components/ui/Button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageToggle from "@/components/ui/LanguageToggle";
@@ -13,6 +13,8 @@ import { useSync } from "@/contexts/SyncContext";
 import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { triggerHaptic } from "@/lib/haptics";
+import PinPad from "@/components/ui/PinPad";
+import { hashPin, generateSalt } from "@/lib/crypto";
 
 interface BeforeInstallPromptEvent extends Event {
     prompt: () => Promise<void>;
@@ -24,6 +26,149 @@ export default function SettingsPage() {
     const { signOut } = useAuthActions();
     const router = useRouter();
     const { isOnline } = useSync();
+
+    // Security & App Lock states
+    const [isLockEnabled, setIsLockEnabled] = useState(false);
+    const [isBioEnabled, setIsBioEnabled] = useState(false);
+    const [hasBiometrics, setHasBiometrics] = useState(false);
+    const [showPinSetup, setShowPinSetup] = useState<"setup" | "confirm" | "verify_disable" | "verify_change" | "change_new" | "change_confirm" | "ask_bio" | null>(null);
+    const [setupPin, setSetupPin] = useState("");
+    const [modalPin, setModalPin] = useState("");
+    const [modalError, setModalError] = useState(false);
+    const [securitySuccess, setSecuritySuccess] = useState("");
+
+    useEffect(() => {
+        const lockEnabled = localStorage.getItem("tekyida-lock-enabled") === "true";
+        const bioEnabled = localStorage.getItem("tekyida-lock-bio-enabled") === "true";
+        setIsLockEnabled(lockEnabled);
+        setIsBioEnabled(bioEnabled);
+
+        const checkBioAvailability = async () => {
+            const isPWA =
+                window.matchMedia("(display-mode: standalone)").matches ||
+                (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+
+            if (
+                isPWA &&
+                window.PublicKeyCredential &&
+                await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+            ) {
+                setHasBiometrics(true);
+            }
+        };
+        void checkBioAvailability();
+    }, []);
+
+    const handleLockToggleClick = () => {
+        triggerHaptic("selection");
+        if (isLockEnabled) {
+            setModalPin("");
+            setModalError(false);
+            setShowPinSetup("verify_disable");
+        } else {
+            setSetupPin("");
+            setModalPin("");
+            setModalError(false);
+            setShowPinSetup("setup");
+        }
+    };
+
+    const handleBioToggle = () => {
+        const nextState = !isBioEnabled;
+        setIsBioEnabled(nextState);
+        localStorage.setItem("tekyida-lock-bio-enabled", nextState ? "true" : "false");
+        triggerHaptic("selection");
+    };
+
+    const handlePinComplete = async (enteredPin: string) => {
+        if (showPinSetup === "setup") {
+            setSetupPin(enteredPin);
+            setModalPin("");
+            setShowPinSetup("confirm");
+            triggerHaptic("medium");
+        } else if (showPinSetup === "confirm") {
+            if (enteredPin === setupPin) {
+                const salt = generateSalt();
+                const hash = await hashPin(enteredPin, salt);
+                localStorage.setItem("tekyida-lock-pin-hash", hash);
+                localStorage.setItem("tekyida-lock-pin-salt", salt);
+                localStorage.setItem("tekyida-lock-enabled", "true");
+                setIsLockEnabled(true);
+                setModalPin("");
+                triggerHaptic("medium");
+                
+                if (hasBiometrics) {
+                    setShowPinSetup("ask_bio");
+                } else {
+                    setShowPinSetup(null);
+                    setSecuritySuccess(t("lock.pinSuccess"));
+                    setTimeout(() => setSecuritySuccess(""), 4000);
+                }
+            } else {
+                setModalError(true);
+                setModalPin("");
+            }
+        } else if (showPinSetup === "verify_disable") {
+            const storedHash = localStorage.getItem("tekyida-lock-pin-hash");
+            const storedSalt = localStorage.getItem("tekyida-lock-pin-salt");
+            if (storedHash && storedSalt) {
+                const computedHash = await hashPin(enteredPin, storedSalt);
+                if (computedHash === storedHash) {
+                    localStorage.removeItem("tekyida-lock-enabled");
+                    localStorage.removeItem("tekyida-lock-bio-enabled");
+                    localStorage.removeItem("tekyida-lock-pin-hash");
+                    localStorage.removeItem("tekyida-lock-pin-salt");
+                    setIsLockEnabled(false);
+                    setIsBioEnabled(false);
+                    setShowPinSetup(null);
+                    setModalPin("");
+                    triggerHaptic("medium");
+                } else {
+                    setModalError(true);
+                    setModalPin("");
+                }
+            } else {
+                setShowPinSetup(null);
+            }
+        } else if (showPinSetup === "verify_change") {
+            const storedHash = localStorage.getItem("tekyida-lock-pin-hash");
+            const storedSalt = localStorage.getItem("tekyida-lock-pin-salt");
+            if (storedHash && storedSalt) {
+                const computedHash = await hashPin(enteredPin, storedSalt);
+                if (computedHash === storedHash) {
+                    setSetupPin("");
+                    setModalPin("");
+                    setShowPinSetup("change_new");
+                    triggerHaptic("medium");
+                } else {
+                    setModalError(true);
+                    setModalPin("");
+                }
+            } else {
+                setShowPinSetup(null);
+            }
+        } else if (showPinSetup === "change_new") {
+            setSetupPin(enteredPin);
+            setModalPin("");
+            setShowPinSetup("change_confirm");
+            triggerHaptic("medium");
+        } else if (showPinSetup === "change_confirm") {
+            if (enteredPin === setupPin) {
+                const salt = generateSalt();
+                const hash = await hashPin(enteredPin, salt);
+                localStorage.setItem("tekyida-lock-pin-hash", hash);
+                localStorage.setItem("tekyida-lock-pin-salt", salt);
+                setShowPinSetup(null);
+                setModalPin("");
+                triggerHaptic("medium");
+                setSecuritySuccess(t("lock.pinSuccess"));
+                setTimeout(() => setSecuritySuccess(""), 4000);
+            } else {
+                setModalError(true);
+                setModalPin("");
+            }
+        }
+    };
 
     const [email, setEmail] = useState("");
     const [confirmEmail, setConfirmEmail] = useState("");
@@ -319,6 +464,95 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
+                {/* Security Section (App Lock) */}
+                <section className="liquid-glass-card p-6 animate-slide-up delay-175">
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
+                        {t("settings.security")}
+                    </h2>
+                    
+                    {securitySuccess && (
+                        <div className="mb-4 p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 text-xs text-center flex items-center justify-center gap-2">
+                            <CheckCircle size={14} />
+                            {securitySuccess}
+                        </div>
+                    )}
+
+                    <div className="space-y-5">
+                        {/* App Lock PIN toggle */}
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                                <span className="text-sm font-medium block">{t("settings.appLock")}</span>
+                                <span className="text-xs text-(--text-tertiary) block mt-0.5 leading-snug">
+                                    {t("settings.appLockDesc")}
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleLockToggleClick}
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none cursor-pointer ${
+                                    isLockEnabled ? "bg-primary-500" : "bg-(--text-tertiary)/25"
+                                }`}
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                        isLockEnabled ? "translate-x-5" : "translate-x-0"
+                                    }`}
+                                />
+                            </button>
+                        </div>
+
+                        {isLockEnabled && (
+                            <>
+                                <div className="h-px bg-(--border) w-full" />
+                                
+                                {/* Biometric Unlock Toggle */}
+                                {hasBiometrics && (
+                                    <>
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div className="flex-1 min-w-0">
+                                                <span className="text-sm font-medium block">{t("settings.biometrics")}</span>
+                                                <span className="text-xs text-(--text-tertiary) block mt-0.5 leading-snug">
+                                                    {t("settings.biometricsDesc")}
+                                                </span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleBioToggle}
+                                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none cursor-pointer ${
+                                                    isBioEnabled ? "bg-primary-500" : "bg-(--text-tertiary)/25"
+                                                }`}
+                                            >
+                                                <span
+                                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                                        isBioEnabled ? "translate-x-5" : "translate-x-0"
+                                                    }`}
+                                                />
+                                            </button>
+                                        </div>
+                                        <div className="h-px bg-(--border) w-full" />
+                                    </>
+                                )}
+
+                                {/* Change PIN Button */}
+                                <div className="flex justify-start">
+                                    <Button
+                                        variant="glass"
+                                        size="sm"
+                                        onClick={() => {
+                                            triggerHaptic("selection");
+                                            setModalPin("");
+                                            setModalError(false);
+                                            setShowPinSetup("verify_change");
+                                        }}
+                                    >
+                                        {t("settings.changePin")}
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </section>
+
                 {/* Appearance Section */}
                 <section className="liquid-glass-card p-6 animate-slide-up delay-200">
                     <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
@@ -394,6 +628,93 @@ export default function SettingsPage() {
                     </Button>
                 </section>
             </div>
+
+            {/* PIN Setup & Verify Overlay Modal */}
+            {showPinSetup && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/10 dark:bg-black/30 backdrop-blur-md px-4 py-6 animate-fade-in">
+                    <div className="liquid-glass-card p-6 sm:p-8 w-full max-w-sm flex flex-col justify-between items-center text-center shadow-2xl relative animate-scale-in">
+                        {/* Header */}
+                        <div className="flex flex-col items-center mt-2 space-y-3">
+                            <div className="relative p-3 rounded-2xl liquid-glass text-primary-500 dark:text-primary-400">
+                                {showPinSetup === "ask_bio" ? <Fingerprint size={28} /> : <Shield size={28} />}
+                            </div>
+                            <h2 className="text-base font-bold tracking-tight text-(--text-primary)">
+                                {showPinSetup === "setup" && t("lock.setPin")}
+                                {showPinSetup === "confirm" && t("lock.confirmPin")}
+                                {showPinSetup === "verify_disable" && t("lock.enterCurrentPin")}
+                                {showPinSetup === "verify_change" && t("lock.enterCurrentPin")}
+                                {showPinSetup === "change_new" && t("lock.enterNewPin")}
+                                {showPinSetup === "change_confirm" && t("lock.confirmPin")}
+                                {showPinSetup === "ask_bio" && t("settings.biometrics")}
+                            </h2>
+                        </div>
+
+                        {/* Content / Pad */}
+                        <div className="w-full flex-1 flex items-center justify-center my-6">
+                            {showPinSetup === "ask_bio" ? (
+                                <div className="space-y-6 w-full">
+                                    <p className="text-xs font-semibold text-(--text-secondary) leading-relaxed">
+                                        {t("settings.biometricsDesc")}
+                                    </p>
+                                    <div className="flex justify-center gap-3">
+                                        <Button
+                                            variant="glass"
+                                            size="sm"
+                                            onClick={() => {
+                                                triggerHaptic("light");
+                                                setShowPinSetup(null);
+                                                setSecuritySuccess(t("lock.pinSuccess"));
+                                                setTimeout(() => setSecuritySuccess(""), 4000);
+                                            }}
+                                        >
+                                            {t("common.cancel")}
+                                        </Button>
+                                        <Button
+                                            variant="primary"
+                                            size="sm"
+                                            onClick={() => {
+                                                triggerHaptic("medium");
+                                                localStorage.setItem("tekyida-lock-bio-enabled", "true");
+                                                setIsBioEnabled(true);
+                                                setShowPinSetup(null);
+                                                setSecuritySuccess(t("lock.pinSuccess"));
+                                                setTimeout(() => setSecuritySuccess(""), 4000);
+                                            }}
+                                        >
+                                            {t("common.confirm")}
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <PinPad
+                                    value={modalPin}
+                                    onChange={setModalPin}
+                                    onComplete={handlePinComplete}
+                                    error={modalError}
+                                    onClearError={() => setModalError(false)}
+                                    title={modalError ? t("lock.invalidPin") : undefined}
+                                />
+                            )}
+                        </div>
+
+                        {/* Cancel / Close button for Setup Modal */}
+                        {showPinSetup !== "ask_bio" && (
+                            <div className="flex justify-center w-full mt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        triggerHaptic("light");
+                                        setShowPinSetup(null);
+                                    }}
+                                    className="text-xs font-semibold text-(--text-tertiary) hover:text-(--text-primary) px-4 py-2 rounded-full hover:bg-white/10 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                                >
+                                    {t("common.cancel")}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </main>
     );
 }
