@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
     Compass,
@@ -74,6 +74,17 @@ export default function ExperienceList({
     const [editTarget, setEditTarget] = useState<ExperienceSummary | null>(null);
     const [editName, setEditName] = useState("");
     const [editContactId, setEditContactId] = useState<string>("");
+    const [isEditClosing, setIsEditClosing] = useState(false);
+
+    const handleCloseEdit = useCallback(() => {
+        triggerHaptic("light");
+        setIsEditClosing(true);
+        setTimeout(() => {
+            setEditTarget(null);
+            setIsEditClosing(false);
+        }, 250);
+    }, []);
+
     const nameRef = useRef<HTMLInputElement>(null);
     const editNameRef = useRef<HTMLInputElement>(null);
 
@@ -146,7 +157,7 @@ export default function ExperienceList({
             },
             { notebookId }
         );
-        setEditTarget(null);
+        handleCloseEdit();
     };
 
     const handleToggleClosed = async (exp: ExperienceSummary) => {
@@ -368,20 +379,14 @@ export default function ExperienceList({
             {editTarget && createPortal(
                 <div className="fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                     <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
-                        onClick={() => {
-                            triggerHaptic("light");
-                            setEditTarget(null);
-                        }}
+                        className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${isEditClosing ? "animate-fade-out" : "animate-fade-in"}`}
+                        onClick={handleCloseEdit}
                     />
-                    <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
+                    <div className={`relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl overflow-hidden ${isEditClosing ? "animate-scale-out" : "animate-scale-in"}`}>
                         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
                             <h3 className="text-base font-bold">{t("experience.edit")}</h3>
                             <button
-                                onClick={() => {
-                                    triggerHaptic("light");
-                                    setEditTarget(null);
-                                }}
+                                onClick={handleCloseEdit}
                                 className="p-1.5 rounded-lg active:bg-white/10 transition-all cursor-pointer"
                             >
                                 <X size={16} />
@@ -395,7 +400,7 @@ export default function ExperienceList({
                                 onChange={(e) => setEditName(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") handleEdit();
-                                    if (e.key === "Escape") setEditTarget(null);
+                                    if (e.key === "Escape") handleCloseEdit();
                                 }}
                                 placeholder={t("experience.name")}
                                 className="glass-input py-2.5 text-sm"
@@ -415,10 +420,7 @@ export default function ExperienceList({
                         </div>
                         <div className="flex border-t border-(--border)">
                             <button
-                                onClick={() => {
-                                    triggerHaptic("light");
-                                    setEditTarget(null);
-                                }}
+                                onClick={handleCloseEdit}
                                 className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
                             >
                                 {t("common.cancel")}
