@@ -48,7 +48,7 @@ export default function NotebookSwitcher({
 
     useBodyScrollLock(Boolean(deleteTarget));
 
-    // Close dropdown on outside click or page scroll
+    // Close dropdown on outside click, page scroll, or escape key
     useEffect(() => {
         function handleClick(e: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -64,11 +64,21 @@ export default function NotebookSwitcher({
             setNewName("");
             setEditingId(null);
         }
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === "Escape") {
+                setOpen(false);
+                setAdding(false);
+                setNewName("");
+                setEditingId(null);
+            }
+        }
         if (open) {
             document.addEventListener("mousedown", handleClick);
+            document.addEventListener("keydown", handleKeyDown);
             window.addEventListener("scroll", handleScroll, { capture: true, passive: true });
             return () => {
                 document.removeEventListener("mousedown", handleClick);
+                document.removeEventListener("keydown", handleKeyDown);
                 window.removeEventListener("scroll", handleScroll, { capture: true });
             };
         }

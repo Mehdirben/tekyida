@@ -249,6 +249,17 @@ export default function SettingsPage() {
         }
     };
 
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === "Escape" && showPinSetup) {
+                triggerHaptic("light");
+                setShowPinSetup(null);
+            }
+        };
+        window.addEventListener("keydown", handleEscape);
+        return () => window.removeEventListener("keydown", handleEscape);
+    }, [showPinSetup]);
+
     const handleSignOut = async () => {
         try { localStorage.removeItem("tekyida-authed"); } catch { }
         await signOut();

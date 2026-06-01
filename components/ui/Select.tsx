@@ -31,16 +31,25 @@ export default function Select({
 
     const selectedOption = options.find((opt) => opt.value === value);
 
-    // Close on click outside
+    // Close on click outside and escape key
     useEffect(() => {
         function handleClick(e: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
                 setOpen(false);
             }
         }
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === "Escape") {
+                setOpen(false);
+            }
+        }
         if (open) {
             document.addEventListener("mousedown", handleClick);
-            return () => document.removeEventListener("mousedown", handleClick);
+            document.addEventListener("keydown", handleKeyDown);
+            return () => {
+                document.removeEventListener("mousedown", handleClick);
+                document.removeEventListener("keydown", handleKeyDown);
+            };
         }
     }, [open]);
 
@@ -51,6 +60,7 @@ export default function Select({
             const spaceBelow = window.innerHeight - rect.bottom;
             const spaceAbove = rect.top;
             if (spaceBelow < 220 && spaceAbove > spaceBelow) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setOpenUpward(true);
             } else {
                 setOpenUpward(false);

@@ -42,6 +42,7 @@ export default function PinPad({
         }
     }, [error, onClearError]);
 
+
     const handleKeyPress = (num: number) => {
         if (value.length >= maxDigits) return;
         
@@ -64,6 +65,29 @@ export default function PinPad({
         const newValue = value.slice(0, -1);
         onChange(newValue);
     };
+
+    // Listen to physical keyboard events
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const activeTag = document.activeElement?.tagName.toLowerCase();
+            if (activeTag === "input" || activeTag === "textarea") {
+                return;
+            }
+
+            if (e.key >= "0" && e.key <= "9") {
+                const num = parseInt(e.key, 10);
+                handleKeyPress(num);
+            } else if (e.key === "Backspace" || e.key === "Delete") {
+                handleDelete();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value]);
 
     return (
         <div className="flex flex-col items-center justify-center w-full max-w-sm mx-auto select-none">
