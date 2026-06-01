@@ -8,84 +8,109 @@ export const list = query({
         const userId = await getAuthUserId(ctx);
         if (!userId) return [];
 
-        const contacts = await ctx.db
-            .query("contacts")
-            .withIndex("by_notebook", (q) => q.eq("notebookId", args.notebookId))
-            .order("desc")
-            .collect();
+        // Verify notebook belongs to user before querying
+        const notebook = await ctx.db.get(args.notebookId);
+        if (!notebook || notebook.userId !== userId) return [];
 
-        // Filter to current user's contacts and compute balance
-        const result = await Promise.all(
-            contacts
-                .filter((c) => c.userId === userId)
-                .map(async (contact) => {
-                    const allTransactions = await ctx.db
-                        .query("transactions")
-                        .withIndex("by_contact", (q) => q.eq("contactId", contact._id))
-                        .collect();
+        // Batch-fetch all data for this notebook in 3 queries (eliminates N+1)
+        const [contacts, allTransactions, allExperiences] = await Promise.all([
+            ctx.db
+                .query("contacts")
+                .withIndex("by_notebook", (q) => q.eq("notebookId", args.notebookId))
+                .order("desc")
+                .collect(),
+            ctx.db
+                .query("transactions")
+                .withIndex("by_notebook", (q) => q.eq("notebookId", args.notebookId))
+                .collect(),
+            ctx.db
+                .query("experiences")
+                .withIndex("by_notebook", (q) => q.eq("notebookId", args.notebookId))
+                .collect(),
+        ]);
 
-                    // Only count non-experience transactions for the contact's own balance
-                    const directTransactions = allTransactions.filter((t) => !t.experienceId);
-                    const directBalance = directTransactions.reduce((sum, t) => sum + t.amount, 0);
+        // Group transactions by contactId and experienceId in memory
+        const txByContact = new Map<string, typeof allTransactions>();
+        const txByExperience = new Map<string, typeof allTransactions>();
+        for (const t of allTransactions) {
+            if (t.contactId) {
+                const key = t.contactId as string;
+                if (!txByContact.has(key)) txByContact.set(key, []);
+                txByContact.get(key)!.push(t);
+            }
+            if (t.experienceId) {
+                const key = t.experienceId as string;
+                if (!txByExperience.has(key)) txByExperience.set(key, []);
+                txByExperience.get(key)!.push(t);
+            }
+        }
 
-                    // Find the most recent transaction date (across all transactions including experience ones)
-                    let lastTransactionDate: number | undefined;
-                    if (allTransactions.length > 0) {
-                        lastTransactionDate = allTransactions.reduce((latest, t) => {
+        // Group experiences by contactId
+        const expByContact = new Map<string, typeof allExperiences>();
+        for (const e of allExperiences) {
+            if (e.contactId) {
+                const key = e.contactId as string;
+                if (!expByContact.has(key)) expByContact.set(key, []);
+                expByContact.get(key)!.push(e);
+            }
+        }
+
+        // Build results for user's contacts
+        const result = contacts
+            .filter((c) => c.userId === userId)
+            .map((contact) => {
+                const contactTx = txByContact.get(contact._id as string) ?? [];
+
+                // Only count non-experience transactions for the contact's own balance
+                const directTransactions = contactTx.filter((t) => !t.experienceId);
+                const directBalance = directTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+                // Find the most recent transaction date (across all transactions including experience ones)
+                let lastTransactionDate: number | undefined;
+                if (contactTx.length > 0) {
+                    lastTransactionDate = contactTx.reduce((latest, t) => {
+                        const txDate = t.date ?? t.createdAt;
+                        return txDate > latest ? txDate : latest;
+                    }, 0);
+                }
+
+                // Process closed experiences linked to this contact
+                const contactExperiences = expByContact.get(contact._id as string) ?? [];
+                const closedExperiences = contactExperiences.filter((e) => e.closed);
+
+                const experienceSummaries = closedExperiences.map((exp) => {
+                    const expTx = txByExperience.get(exp._id as string) ?? [];
+                    const expBalance = expTx.reduce((sum, t) => sum + t.amount, 0);
+
+                    let expLastTransactionDate: number | undefined;
+                    if (expTx.length > 0) {
+                        expLastTransactionDate = expTx.reduce((latest, t) => {
                             const txDate = t.date ?? t.createdAt;
                             return txDate > latest ? txDate : latest;
                         }, 0);
                     }
 
-                    // Fetch experiences linked to this contact
-                    const experiences = await ctx.db
-                        .query("experiences")
-                        .withIndex("by_contact", (q) => q.eq("contactId", contact._id))
-                        .collect();
-
-                    // Only show CLOSED experiences as summary cards
-                    const closedExperiences = experiences.filter((e) => e.closed);
-
-                    const experienceSummaries = await Promise.all(
-                        closedExperiences.map(async (exp) => {
-                            const expTx = await ctx.db
-                                .query("transactions")
-                                .withIndex("by_experience", (q) => q.eq("experienceId", exp._id))
-                                .collect();
-                            const expBalance = expTx.reduce((sum, t) => sum + t.amount, 0);
-
-                            // Find the date of the last transaction
-                            let expLastTransactionDate: number | undefined;
-                            if (expTx.length > 0) {
-                                expLastTransactionDate = expTx.reduce((latest, t) => {
-                                    const txDate = t.date ?? t.createdAt;
-                                    return txDate > latest ? txDate : latest;
-                                }, 0);
-                            }
-
-                            return {
-                                _id: exp._id,
-                                name: exp.name,
-                                closed: exp.closed,
-                                balance: expBalance,
-                                transactionCount: expTx.length,
-                                lastTransactionDate: expLastTransactionDate,
-                            };
-                        })
-                    );
-
-                    // Total balance = direct transactions + closed experience totals
-                    const experienceBalance = experienceSummaries.reduce((sum, e) => sum + e.balance, 0);
-
                     return {
-                        ...contact,
-                        balance: directBalance + experienceBalance,
-                        transactionCount: directTransactions.length,
-                        lastTransactionDate,
-                        experiences: experienceSummaries,
+                        _id: exp._id,
+                        name: exp.name,
+                        closed: exp.closed,
+                        balance: expBalance,
+                        transactionCount: expTx.length,
+                        lastTransactionDate: expLastTransactionDate,
                     };
-                })
-        );
+                });
+
+                // Total balance = direct transactions + closed experience totals
+                const experienceBalance = experienceSummaries.reduce((sum, e) => sum + e.balance, 0);
+
+                return {
+                    ...contact,
+                    balance: directBalance + experienceBalance,
+                    transactionCount: directTransactions.length,
+                    lastTransactionDate,
+                    experiences: experienceSummaries,
+                };
+            });
 
         return result;
     },
@@ -101,6 +126,9 @@ export const create = mutation({
         const userId = await getAuthUserId(ctx);
         if (!userId) throw new Error("Not authenticated");
 
+        const name = args.name.trim();
+        if (!name || name.length > 200) throw new Error("Invalid contact name");
+
         // Verify notebook belongs to user
         const notebook = await ctx.db.get(args.notebookId);
         if (!notebook || notebook.userId !== userId) {
@@ -110,8 +138,8 @@ export const create = mutation({
         return await ctx.db.insert("contacts", {
             userId,
             notebookId: args.notebookId,
-            name: args.name,
-            phone: args.phone,
+            name,
+            phone: args.phone?.trim(),
             createdAt: Date.now(),
         });
     },
@@ -137,6 +165,15 @@ export const remove = mutation({
             await ctx.db.delete(t._id);
         }
 
+        // Cascade: unlink experiences that reference this contact
+        const experiences = await ctx.db
+            .query("experiences")
+            .withIndex("by_contact", (q) => q.eq("contactId", args.id))
+            .collect();
+        for (const e of experiences) {
+            await ctx.db.patch(e._id, { contactId: undefined });
+        }
+
         await ctx.db.delete(args.id);
     },
 });
@@ -151,14 +188,17 @@ export const update = mutation({
         const userId = await getAuthUserId(ctx);
         if (!userId) throw new Error("Not authenticated");
 
+        const name = args.name.trim();
+        if (!name || name.length > 200) throw new Error("Invalid contact name");
+
         const contact = await ctx.db.get(args.id);
         if (!contact || contact.userId !== userId) {
             throw new Error("Contact not found");
         }
 
         await ctx.db.patch(args.id, {
-            name: args.name,
-            phone: args.phone,
+            name,
+            phone: args.phone?.trim(),
         });
     },
 });

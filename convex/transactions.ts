@@ -47,6 +47,14 @@ export const create = mutation({
         const userId = await getAuthUserId(ctx);
         if (!userId) throw new Error("Not authenticated");
 
+        // Validate inputs
+        if (!isFinite(args.amount) || args.amount === 0) {
+            throw new Error("Invalid amount");
+        }
+        if (args.description !== undefined && args.description.trim().length > 500) {
+            throw new Error("Description too long");
+        }
+
         // Verify notebook belongs to user
         const notebook = await ctx.db.get(args.notebookId);
         if (!notebook || notebook.userId !== userId) {
@@ -122,6 +130,14 @@ export const update = mutation({
         const transaction = await ctx.db.get(args.id);
         if (!transaction || transaction.userId !== userId) {
             throw new Error("Transaction not found");
+        }
+
+        // Validate inputs
+        if (!isFinite(args.amount) || args.amount === 0) {
+            throw new Error("Invalid amount");
+        }
+        if (args.description !== undefined && args.description.trim().length > 500) {
+            throw new Error("Description too long");
         }
 
         // Block if linked to a closed experience

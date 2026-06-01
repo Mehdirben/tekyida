@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Logo from "@/components/ui/Logo";
 import { useTranslation } from "@/i18n/LanguageContext";
@@ -133,10 +134,12 @@ export default function HeroSection() {
 
                 {/* CTA */}
                 <div>
-                    <Button size="lg" onClick={() => (window.location.href = "/app")}>
-                        {t("hero.cta.primary")}
-                        <ArrowRight size={16} />
-                    </Button>
+                    <Link href="/app">
+                        <Button size="lg">
+                            {t("hero.cta.primary")}
+                            <ArrowRight size={16} />
+                        </Button>
+                    </Link>
                 </div>
             </div>
         </section>

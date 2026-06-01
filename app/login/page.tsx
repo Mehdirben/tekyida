@@ -39,10 +39,14 @@ export default function LoginPage() {
         setError("");
         setLoading(true);
 
-        signIn("password", { email, password, flow: "signIn" }).catch(() => {
-            setError(t("login.error") || "Invalid email or password.");
-            setLoading(false);
-        });
+        signIn("password", { email, password, flow: "signIn" })
+            .then(() => {
+                setLoading(false);
+            })
+            .catch(() => {
+                setError(t("login.error") || "Invalid email or password.");
+                setLoading(false);
+            });
     };
 
     return (
@@ -179,12 +183,6 @@ export default function LoginPage() {
                                         <label className="block text-xs font-semibold text-(--text-secondary)">
                                             {t("login.password")}
                                         </label>
-                                        <button
-                                            type="button"
-                                            className="text-[11px] text-primary-500 hover:text-primary-400 font-medium transition-colors cursor-pointer"
-                                        >
-                                            {t("login.forgotPassword")}
-                                        </button>
                                     </div>
                                     <div className="relative">
                                         <Lock

@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useState } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
 import Logo from "@/components/ui/Logo";
 import SyncIndicator from "@/components/app/SyncIndicator";
@@ -11,40 +9,23 @@ import QuickStats from "@/components/app/QuickStats";
 import EmptyState from "@/components/app/EmptyState";
 import ContactList from "@/components/app/ContactList";
 import TransactionList from "@/components/app/TransactionList";
-import { AmountsVisibilityProvider } from "@/contexts/AmountsVisibilityContext";
-import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
+import { useActiveNotebook } from "@/hooks/useActiveNotebook";
+import { api } from "@/convex/_generated/api";
 import CacheWarmer from "@/components/app/CacheWarmer";
 
 export default function DashboardPage() {
-    const notebooks = useCachedQuery<{ _id: Id<"notebooks">; name: string; contactCount: number; balance: number }[]>("notebooks.list", api.notebooks.list, {});
-    const createNotebook = useMutation(api.notebooks.create);
-    const updateNotebook = useMutation(api.notebooks.update);
-    const deleteNotebook = useMutation(api.notebooks.remove);
-    const { offlineMutation, isItemPending } = useSync();
-
-    const [activeNotebookId, setActiveNotebookIdRaw] = useState<Id<"notebooks"> | undefined>(() => {
-        if (typeof window === "undefined") return undefined;
-        const saved = localStorage.getItem("tekyida-active-notebook");
-        return saved ? (saved as Id<"notebooks">) : undefined;
-    });
-
-    const setActiveNotebookId = useCallback((id: Id<"notebooks"> | undefined) => {
-        setActiveNotebookIdRaw(id);
-        if (id) {
-            localStorage.setItem("tekyida-active-notebook", id);
-        } else {
-            localStorage.removeItem("tekyida-active-notebook");
-        }
-    }, []);
-
-    // Auto-select first notebook when loaded
-    const resolvedActiveId =
-        activeNotebookId && notebooks?.some((n) => n._id === activeNotebookId)
-            ? activeNotebookId
-            : notebooks?.[0]?._id;
-
-    const activeNotebook = notebooks?.find((n) => n._id === resolvedActiveId);
+    const {
+        notebooks,
+        safeNotebooks,
+        resolvedActiveId,
+        setActiveNotebookId,
+        handleCreateNotebook,
+        handleEditNotebook,
+        handleDeleteNotebook,
+        isItemPending,
+        isOffline,
+    } = useActiveNotebook();
 
     // Get contacts for active notebook
     const contacts = useCachedQuery<{ _id: Id<"contacts">; name: string; phone?: string; balance: number; transactionCount: number; experiences: { _id: Id<"experiences">; name: string; closed: boolean; balance: number; transactionCount: number; lastTransactionDate?: number }[] }[]>(
@@ -67,43 +48,13 @@ export default function DashboardPage() {
         contacts?.reduce((sum, c) => (c.balance > 0 ? sum + c.balance : sum), 0) ?? 0;
     const netBalance = moneyOwed - moneyGiven;
 
-    const handleCreateNotebook = async (name: string) => {
-        const id = await offlineMutation(
-            "notebooks:create",
-            createNotebook,
-            { name }
-        );
-        if (id) setActiveNotebookId(id as Id<"notebooks">);
-    };
-
-    const handleEditNotebook = async (id: string, name: string) => {
-        await offlineMutation(
-            "notebooks:update",
-            updateNotebook,
-            { id: id as Id<"notebooks">, name }
-        );
-    };
-
-    const handleDeleteNotebook = async (id: string) => {
-        await offlineMutation(
-            "notebooks:remove",
-            deleteNotebook,
-            { id: id as Id<"notebooks"> }
-        );
-        if (resolvedActiveId === id) {
-            setActiveNotebookId(undefined);
-        }
-    };
-
     // Wait for data before rendering — prevents flash from 0 to loaded values
-    const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
-    const safeNotebooks = notebooks ?? [];
     const dataReady = !!notebooks && (safeNotebooks.length === 0 || contacts !== undefined);
 
     if (!dataReady && !isOffline) return null;
 
     return (
-        <AmountsVisibilityProvider>
+        <>
             {/* Invisible: pre-caches contacts & transactions for ALL notebooks */}
             <CacheWarmer notebookIds={safeNotebooks.map((n) => n._id)} />
             <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
@@ -178,6 +129,6 @@ export default function DashboardPage() {
                     />
                 )}
             </main>
-        </AmountsVisibilityProvider>
+        </>
     );
 }

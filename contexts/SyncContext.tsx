@@ -24,8 +24,7 @@ interface SyncContextValue {
     /** Whether the browser is online */
     isOnline: boolean;
     /** Wraps a Convex mutation call — queues it if offline */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    offlineMutation: (functionPath: string, mutationFn: (args: any) => Promise<any>, args: Record<string, unknown>, optimisticCtx?: OptimisticContext) => Promise<any>;
+    offlineMutation: <Args extends Record<string, unknown>, Ret>(functionPath: string, mutationFn: (args: Args) => Promise<Ret>, args: Args, optimisticCtx?: OptimisticContext) => Promise<Ret>;
     /** Force flush the queue now */
     flushQueue: () => Promise<void>;
     /** Check if an item is pending sync (by its _id) */
@@ -33,24 +32,6 @@ interface SyncContextValue {
 }
 
 const SyncContext = createContext<SyncContextValue | undefined>(undefined);
-
-// Map of Convex API function paths to their mutation references
-const MUTATION_MAP: Record<string, readonly [string, string]> = {
-    "notebooks:create": ["notebooks", "create"],
-    "notebooks:update": ["notebooks", "update"],
-    "notebooks:remove": ["notebooks", "remove"],
-    "contacts:create": ["contacts", "create"],
-    "contacts:update": ["contacts", "update"],
-    "contacts:remove": ["contacts", "remove"],
-    "transactions:create": ["transactions", "create"],
-    "transactions:update": ["transactions", "update"],
-    "transactions:remove": ["transactions", "remove"],
-    "experiences:create": ["experiences", "create"],
-    "experiences:update": ["experiences", "update"],
-    "experiences:remove": ["experiences", "remove"],
-    "experiences:close": ["experiences", "close"],
-    "experiences:reopen": ["experiences", "reopen"],
-};
 
 export function SyncProvider({ children }: { children: ReactNode }) {
     const [isOnline, setIsOnline] = useState(true);
@@ -209,13 +190,12 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     }, [isOnline, pendingCount, flushQueue]);
 
     // The main wrapper: try mutation, queue if offline/failed, always apply optimistic update
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const offlineMutation = useCallback(async (
+    const offlineMutation = useCallback(async <Args extends Record<string, unknown>, Ret>(
         functionPath: string,
-        mutationFn: (args: any) => Promise<any>,
-        args: Record<string, unknown>,
+        mutationFn: (args: Args) => Promise<Ret>,
+        args: Args,
         optimisticCtx?: OptimisticContext
-    ): Promise<any> => {
+    ): Promise<Ret> => {
         // Apply optimistic update to cache (always, for instant UI feedback)
         const generatedTempId = await applyOptimisticUpdate(functionPath, args, optimisticCtx);
 
@@ -228,7 +208,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
                 tempId: generatedTempId,
             });
             await refreshCount();
-            return generatedTempId;
+            return generatedTempId as unknown as Ret;
         }
 
         try {
@@ -250,7 +230,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
                     tempId: generatedTempId,
                 });
                 await refreshCount();
-                return generatedTempId;
+                return generatedTempId as unknown as Ret;
             }
             // Otherwise rethrow (validation error, auth error, etc.)
             throw err;

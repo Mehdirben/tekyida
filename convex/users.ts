@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { query, action, internalQuery, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { modifyAccountCredentials } from "@convex-dev/auth/server";
+import { modifyAccountCredentials, retrieveAccount } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 
 export const currentEmail = query({
@@ -22,10 +22,24 @@ export const getUserEmail = internalQuery({
     },
 });
 
+/** Check if an email is already used by another user */
+export const isEmailTaken = internalQuery({
+    args: {
+        email: v.string(),
+        excludeUserId: v.id("users"),
+    },
+    handler: async (ctx, args) => {
+        const existingUser = await ctx.db
+            .query("users")
+            .filter((q) => q.eq(q.field("email"), args.email))
+            .first();
+        return existingUser !== null && existingUser._id !== args.excludeUserId;
+    },
+});
+
 export const updateUserEmail = internalMutation({
     args: {
         userId: v.id("users"),
-        oldEmail: v.string(),
         newEmail: v.string(),
     },
     handler: async (ctx, args) => {
@@ -50,6 +64,7 @@ export const updateUserEmail = internalMutation({
 
 export const changePassword = action({
     args: {
+        currentPassword: v.string(),
         newPassword: v.string(),
     },
     handler: async (ctx, args) => {
@@ -64,6 +79,19 @@ export const changePassword = action({
         const email = await ctx.runQuery(internal.users.getUserEmail, { userId });
         if (!email) {
             throw new Error("Could not determine user email");
+        }
+
+        // Verify the current password before allowing change
+        try {
+            await retrieveAccount(ctx, {
+                provider: "password",
+                account: {
+                    id: email,
+                    secret: args.currentPassword,
+                },
+            });
+        } catch {
+            throw new Error("Current password is incorrect.");
         }
 
         await modifyAccountCredentials(ctx, {
@@ -95,10 +123,18 @@ export const changeEmail = action({
             throw new Error("Could not determine current email");
         }
 
+        // Check if the new email is already taken by another user
+        const taken = await ctx.runQuery(internal.users.isEmailTaken, {
+            email: args.newEmail,
+            excludeUserId: userId,
+        });
+        if (taken) {
+            throw new Error("Email address is already in use.");
+        }
+
         // Update email in users table and authAccounts table
         await ctx.runMutation(internal.users.updateUserEmail, {
             userId,
-            oldEmail: currentEmail,
             newEmail: args.newEmail,
         });
     },

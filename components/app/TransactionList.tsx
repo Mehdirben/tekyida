@@ -42,7 +42,6 @@ interface TransactionListProps {
     notebookId: Id<"notebooks">;
     onClose: () => void;
     experiences?: ExperienceForContact[];
-    onSelectExperience?: (exp: ExperienceForContact) => void;
 }
 
 function toLocalDatetime(ts: number) {
@@ -57,7 +56,6 @@ export default function TransactionList({
     notebookId,
     onClose,
     experiences,
-    onSelectExperience,
 }: TransactionListProps) {
     useBodyScrollLock(true);
     const keyboardInset = useKeyboardInset();

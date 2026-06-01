@@ -37,6 +37,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const saved = localStorage.getItem("tekyida-lang") as Language | null;
         if (saved && (saved === "en" || saved === "fr")) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLangState(saved);
             document.documentElement.lang = saved;
         }

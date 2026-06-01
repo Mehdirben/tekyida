@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, LogOut, Eye, EyeOff, Download, CheckCircle, WifiOff, Loader2, Shield } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -55,13 +55,13 @@ export default function SettingsPage() {
         }
     };
 
-    const closePinSetup = () => {
+    const closePinSetup = useCallback(() => {
         setIsClosingModal(true);
         setTimeout(() => {
             setShowPinSetup(null);
             setIsClosingModal(false);
         }, 250); // Matches .animate-scale-out duration (250ms)
-    };
+    }, []);
 
     // Biometric features have been disabled as they prompt standard browser password managers on some platforms.
 
@@ -96,8 +96,6 @@ export default function SettingsPage() {
                 const computedHash = await hashPin(enteredPin, storedSalt);
                 if (computedHash === storedHash) {
                     localStorage.removeItem("tekyida-lock-enabled");
-                    localStorage.removeItem("tekyida-lock-bio-enabled");
-                    localStorage.removeItem("tekyida-lock-bio-cred-id");
                     localStorage.removeItem("tekyida-lock-pin-hash");
                     localStorage.removeItem("tekyida-lock-pin-salt");
                     setIsLockEnabled(false);
@@ -153,6 +151,8 @@ export default function SettingsPage() {
 
     const [email, setEmail] = useState("");
     const [confirmEmail, setConfirmEmail] = useState("");
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showNewPassword, setShowNewPassword] = useState(false);
@@ -210,6 +210,10 @@ export default function SettingsPage() {
         setPasswordError("");
         setPasswordSuccess("");
 
+        if (!currentPassword) {
+            setPasswordError(t("settings.currentPasswordRequired"));
+            return;
+        }
         if (!newPassword || newPassword.length < 6) {
             setPasswordError(t("settings.passwordTooShort"));
             return;
@@ -221,12 +225,18 @@ export default function SettingsPage() {
 
         setPasswordLoading(true);
         try {
-            await changePassword({ newPassword });
+            await changePassword({ currentPassword, newPassword });
             setPasswordSuccess(t("settings.passwordChanged"));
+            setCurrentPassword("");
             setNewPassword("");
             setConfirmPassword("");
-        } catch {
-            setPasswordError(t("settings.passwordChangeError"));
+        } catch (err) {
+            const msg = (err as Error)?.message ?? "";
+            if (msg.includes("incorrect")) {
+                setPasswordError(t("settings.currentPasswordWrong"));
+            } else {
+                setPasswordError(t("settings.passwordChangeError"));
+            }
         } finally {
             setPasswordLoading(false);
         }
@@ -267,7 +277,7 @@ export default function SettingsPage() {
         };
         window.addEventListener("keydown", handleEscape);
         return () => window.removeEventListener("keydown", handleEscape);
-    }, [showPinSetup, isClosingModal]);
+    }, [showPinSetup, isClosingModal, closePinSetup]);
 
     const handleSignOut = async () => {
         try { localStorage.removeItem("tekyida-authed"); } catch { }
@@ -375,6 +385,35 @@ export default function SettingsPage() {
                         {t("settings.password")}
                     </h2>
                     <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-semibold text-(--text-secondary) mb-1.5 ml-1">
+                                {t("settings.currentPassword")}
+                            </label>
+                            <div className="relative">
+                                <Lock
+                                    size={16}
+                                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-(--text-tertiary)"
+                                />
+                                <input
+                                    type={showCurrentPassword ? "text" : "password"}
+                                    className="glass-input pl-10 pr-10"
+                                    placeholder="••••••••"
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    disabled={!isOnline}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowCurrentPassword(!showCurrentPassword);
+                                        triggerHaptic("selection");
+                                    }}
+                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-(--text-tertiary) hover:text-(--text-primary) transition-colors cursor-pointer"
+                                >
+                                    {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+                        </div>
                         <div>
                             <label className="block text-xs font-semibold text-(--text-secondary) mb-1.5 ml-1">
                                 {t("settings.newPassword")}

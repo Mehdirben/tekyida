@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 import Button from "@/components/ui/Button";
 import { useTranslation } from "@/i18n/LanguageContext";
 
@@ -22,10 +23,12 @@ export default function CTASection() {
                         <p className="text-(--text-secondary) text-base sm:text-lg max-w-lg mx-auto mb-8">
                             {t("cta.subtitle")}
                         </p>
-                        <Button size="lg" onClick={() => (window.location.href = "/app")}>
-                            {t("cta.button")}
-                            <ArrowRight size={16} />
-                        </Button>
+                        <Link href="/app">
+                            <Button size="lg">
+                                {t("cta.button")}
+                                <ArrowRight size={16} />
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </div>

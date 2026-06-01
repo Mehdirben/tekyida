@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import Logo from "@/components/ui/Logo";
 import Button from "@/components/ui/Button";
@@ -15,6 +16,7 @@ export default function Header() {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 
@@ -49,9 +51,11 @@ export default function Header() {
                     <div className="hidden md:flex items-center gap-2">
                         <LanguageToggle />
                         <ThemeToggle />
-                        <Button size="sm" onClick={() => (window.location.href = "/app")}>
-                            {t("nav.getStarted")}
-                        </Button>
+                        <Link href="/app">
+                            <Button size="sm">
+                                {t("nav.getStarted")}
+                            </Button>
+                        </Link>
                     </div>
 
                     {/* Mobile hamburger */}
@@ -88,13 +92,11 @@ export default function Header() {
                         <div className="flex items-center gap-2 pt-3 border-t border-(--border)">
                             <LanguageToggle />
                             <ThemeToggle />
-                            <Button
-                                size="sm"
-                                className="ml-auto"
-                                onClick={() => (window.location.href = "/app")}
-                            >
-                                {t("nav.getStarted")}
-                            </Button>
+                            <Link href="/app" className="ml-auto">
+                                <Button size="sm">
+                                    {t("nav.getStarted")}
+                                </Button>
+                            </Link>
                         </div>
                     </div>
                 )}

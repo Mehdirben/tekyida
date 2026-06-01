@@ -1,5 +1,5 @@
 "use client";
-import { Compass, ChevronRight, Lock, Unlock } from "lucide-react";
+import { Compass, ChevronRight } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import type { Id } from "@/convex/_generated/dataModel";

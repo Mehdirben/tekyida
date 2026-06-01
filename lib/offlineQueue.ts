@@ -19,8 +19,12 @@ export interface QueuedMutation {
     tempId?: string;
 }
 
+let dbPromise: Promise<IDBDatabase> | null = null;
+
 function openDB(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
+    if (dbPromise) return dbPromise;
+
+    dbPromise = new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
         request.onupgradeneeded = () => {
             const db = request.result;
@@ -32,8 +36,13 @@ function openDB(): Promise<IDBDatabase> {
             }
         };
         request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        request.onerror = () => {
+            dbPromise = null; // Allow retry on failure
+            reject(request.error);
+        };
     });
+
+    return dbPromise;
 }
 
 /** Add a mutation to the offline queue */

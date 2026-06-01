@@ -57,6 +57,9 @@ export const create = mutation({
         const userId = await getAuthUserId(ctx);
         if (!userId) throw new Error("Not authenticated");
 
+        const name = args.name.trim();
+        if (!name || name.length > 200) throw new Error("Invalid experience name");
+
         const notebook = await ctx.db.get(args.notebookId);
         if (!notebook || notebook.userId !== userId) {
             throw new Error("Notebook not found");
@@ -72,7 +75,7 @@ export const create = mutation({
         return await ctx.db.insert("experiences", {
             userId,
             notebookId: args.notebookId,
-            name: args.name,
+            name,
             contactId: args.contactId,
             closed: false,
             createdAt: Date.now(),
@@ -90,6 +93,9 @@ export const update = mutation({
         const userId = await getAuthUserId(ctx);
         if (!userId) throw new Error("Not authenticated");
 
+        const name = args.name.trim();
+        if (!name || name.length > 200) throw new Error("Invalid experience name");
+
         const experience = await ctx.db.get(args.id);
         if (!experience || experience.userId !== userId) {
             throw new Error("Experience not found");
@@ -103,7 +109,7 @@ export const update = mutation({
         }
 
         await ctx.db.patch(args.id, {
-            name: args.name,
+            name,
             contactId: args.contactId,
         });
     },

@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import BottomNav from "@/components/app/BottomNav";
 import { useTranslation } from "@/i18n/LanguageContext";
 import AppLock from "@/components/app/AppLock";
+import { AmountsVisibilityProvider } from "@/contexts/AmountsVisibilityContext";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading } = useConvexAuth();
@@ -86,11 +87,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <AppLock>
-            <div className="mesh-gradient" />
-            <div className="relative z-[60] min-h-screen flex flex-col pb-24">
-                {children}
-                <BottomNav />
-            </div>
+            <AmountsVisibilityProvider>
+                <div className="mesh-gradient" />
+                <div className="relative z-[60] min-h-screen flex flex-col pb-24">
+                    {children}
+                    <BottomNav />
+                </div>
+            </AmountsVisibilityProvider>
         </AppLock>
     );
 }

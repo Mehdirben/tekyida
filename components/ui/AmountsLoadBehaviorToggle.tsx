@@ -14,6 +14,7 @@ export default function AmountsLoadBehaviorToggle() {
     useEffect(() => {
         const stored = localStorage.getItem("tekyida-amounts-load-behavior");
         if (stored === "remember") {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setBehaviorState("remember");
         }
     }, []);

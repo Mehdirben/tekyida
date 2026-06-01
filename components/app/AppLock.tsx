@@ -84,8 +84,6 @@ export default function AppLock({ children }: { children: React.ReactNode }) {
         try {
             localStorage.removeItem("tekyida-authed");
             localStorage.removeItem("tekyida-lock-enabled");
-            localStorage.removeItem("tekyida-lock-bio-enabled");
-            localStorage.removeItem("tekyida-lock-bio-cred-id");
             localStorage.removeItem("tekyida-lock-pin-hash");
             localStorage.removeItem("tekyida-lock-pin-salt");
         } catch {}

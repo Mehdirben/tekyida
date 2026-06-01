@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -11,9 +11,9 @@ import NotebookSwitcher from "@/components/app/NotebookSwitcher";
 import ExperienceList from "@/components/app/ExperienceList";
 import ExperienceBalanceCard from "@/components/app/ExperienceBalanceCard";
 import ExperienceDetail from "@/components/app/ExperienceDetail";
-import { AmountsVisibilityProvider } from "@/contexts/AmountsVisibilityContext";
 import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
+import { useActiveNotebook } from "@/hooks/useActiveNotebook";
 import CacheWarmer from "@/components/app/CacheWarmer";
 
 interface ExperienceSummary {
@@ -27,34 +27,22 @@ interface ExperienceSummary {
 }
 
 export default function ExperiencesPage() {
-    const notebooks = useCachedQuery<{ _id: Id<"notebooks">; name: string; contactCount: number; balance: number }[]>("notebooks.list", api.notebooks.list, {});
-    const createNotebook = useMutation(api.notebooks.create);
-    const updateNotebook = useMutation(api.notebooks.update);
-    const deleteNotebook = useMutation(api.notebooks.remove);
+    const {
+        notebooks,
+        safeNotebooks,
+        resolvedActiveId,
+        setActiveNotebookId,
+        handleCreateNotebook,
+        handleEditNotebook,
+        handleDeleteNotebook,
+        isItemPending,
+        isOffline,
+    } = useActiveNotebook();
+
     const closeExperience = useMutation(api.experiences.close);
     const reopenExperience = useMutation(api.experiences.reopen);
-    const { offlineMutation, isItemPending } = useSync();
+    const { offlineMutation } = useSync();
     const router = useRouter();
-
-    const [activeNotebookId, setActiveNotebookIdRaw] = useState<Id<"notebooks"> | undefined>(() => {
-        if (typeof window === "undefined") return undefined;
-        const saved = localStorage.getItem("tekyida-active-notebook");
-        return saved ? (saved as Id<"notebooks">) : undefined;
-    });
-
-    const setActiveNotebookId = useCallback((id: Id<"notebooks"> | undefined) => {
-        setActiveNotebookIdRaw(id);
-        if (id) {
-            localStorage.setItem("tekyida-active-notebook", id);
-        } else {
-            localStorage.removeItem("tekyida-active-notebook");
-        }
-    }, []);
-
-    const resolvedActiveId =
-        activeNotebookId && notebooks?.some((n) => n._id === activeNotebookId)
-            ? activeNotebookId
-            : notebooks?.[0]?._id;
 
     // Get contacts for the active notebook (for linking experiences)
     const contacts = useCachedQuery<{ _id: Id<"contacts">; name: string }[]>(
@@ -82,12 +70,12 @@ export default function ExperiencesPage() {
             const match = experiences.find((e) => e._id === openId);
             if (match) {
                 handledOpenRef.current = openId;
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setSelectedExperience(match);
             }
         }
     }, [openId, experiences]);
 
-    const safeNotebooks = notebooks ?? [];
     const safeContacts = contacts ?? [];
 
     // Total balance of open (not closed) experiences
@@ -97,34 +85,6 @@ export default function ExperiencesPage() {
             .filter((e) => !e.closed)
             .reduce((sum, e) => sum + e.balance, 0);
     }, [experiences]);
-
-    const handleCreateNotebook = async (name: string) => {
-        const id = await offlineMutation(
-            "notebooks:create",
-            createNotebook,
-            { name }
-        );
-        if (id) setActiveNotebookId(id as Id<"notebooks">);
-    };
-
-    const handleEditNotebook = async (id: string, name: string) => {
-        await offlineMutation(
-            "notebooks:update",
-            updateNotebook,
-            { id: id as Id<"notebooks">, name }
-        );
-    };
-
-    const handleDeleteNotebook = async (id: string) => {
-        await offlineMutation(
-            "notebooks:remove",
-            deleteNotebook,
-            { id: id as Id<"notebooks"> }
-        );
-        if (resolvedActiveId === id) {
-            setActiveNotebookId(undefined);
-        }
-    };
 
     const handleToggleClosed = async () => {
         if (!selectedExperience) return;
@@ -147,13 +107,12 @@ export default function ExperiencesPage() {
         }
     };
 
-    const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
     const dataReady = !!notebooks && (safeNotebooks.length === 0 || experiences !== undefined);
 
     if (!dataReady && !isOffline) return null;
 
     return (
-        <AmountsVisibilityProvider>
+        <>
             <CacheWarmer notebookIds={safeNotebooks.map((n) => n._id)} />
             <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
                 {/* Header */}
@@ -211,6 +170,6 @@ export default function ExperiencesPage() {
                     />
                 )}
             </main>
-        </AmountsVisibilityProvider>
+        </>
     );
 }

@@ -59,6 +59,7 @@ export function useCachedQuery<T>(
     // Load cached data on mount / when key changes
     useEffect(() => {
         if (!key) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setCachedData(undefined);
             cacheKeyRef.current = null;
             initialLoadDone.current = false;
@@ -87,6 +88,7 @@ export function useCachedQuery<T>(
     // When live data arrives while online, update the cache
     useEffect(() => {
         if (liveData !== undefined && key && isOnline) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setCachedData(liveData as T);
             queryCache.set(key, liveData);
         }

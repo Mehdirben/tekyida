@@ -62,6 +62,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const saved = localStorage.getItem("tekyida-theme") as Theme | null;
         const initial = saved || "system";
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setThemeState(initial);
         applyTheme(initial);
 

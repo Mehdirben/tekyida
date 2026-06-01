@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Delete } from "lucide-react";
 import { triggerHaptic } from "@/lib/haptics";
 
@@ -23,6 +23,10 @@ export default function PinPad({
 }: PinPadProps) {
     const maxDigits = 6;
     const [shakeActive, setShakeActive] = useState(false);
+    const valueRef = useRef(value);
+    useEffect(() => {
+        valueRef.current = value;
+    }, [value]);
 
     // Watch for error trigger to play shake animation
     useEffect(() => {
@@ -43,11 +47,11 @@ export default function PinPad({
     }, [error, onClearError]);
 
 
-    const handleKeyPress = (num: number) => {
-        if (value.length >= maxDigits) return;
+    const handleKeyPress = useCallback((num: number) => {
+        if (valueRef.current.length >= maxDigits) return;
         
         triggerHaptic("selection");
-        const newValue = value + num.toString();
+        const newValue = valueRef.current + num.toString();
         onChange(newValue);
         
         if (newValue.length === maxDigits && onComplete) {
@@ -56,38 +60,37 @@ export default function PinPad({
                 onComplete(newValue);
             }, 100);
         }
-    };
+    }, [onChange, onComplete]);
 
-    const handleDelete = () => {
-        if (value.length === 0) return;
+    const handleDelete = useCallback(() => {
+        if (valueRef.current.length === 0) return;
         
         triggerHaptic("light");
-        const newValue = value.slice(0, -1);
+        const newValue = valueRef.current.slice(0, -1);
         onChange(newValue);
-    };
+    }, [onChange]);
 
     // Listen to physical keyboard events
+    const handleKeyDown = useCallback((e: KeyboardEvent) => {
+        const activeTag = document.activeElement?.tagName.toLowerCase();
+        if (activeTag === "input" || activeTag === "textarea") {
+            return;
+        }
+
+        if (e.key >= "0" && e.key <= "9") {
+            const num = parseInt(e.key, 10);
+            handleKeyPress(num);
+        } else if (e.key === "Backspace" || e.key === "Delete") {
+            handleDelete();
+        }
+    }, [handleKeyPress, handleDelete]);
+
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            const activeTag = document.activeElement?.tagName.toLowerCase();
-            if (activeTag === "input" || activeTag === "textarea") {
-                return;
-            }
-
-            if (e.key >= "0" && e.key <= "9") {
-                const num = parseInt(e.key, 10);
-                handleKeyPress(num);
-            } else if (e.key === "Backspace" || e.key === "Delete") {
-                handleDelete();
-            }
-        };
-
         window.addEventListener("keydown", handleKeyDown);
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [value]);
+    }, [handleKeyDown]);
 
     return (
         <div className="flex flex-col items-center justify-center w-full max-w-sm mx-auto select-none">
