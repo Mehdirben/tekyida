@@ -291,7 +291,7 @@ export default function NotebookSwitcher({
             >
                 {/* Notebook list */}
                 <div className="max-h-60 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
-                    <div className="pt-2 pb-2">
+                    <div className="pt-2 after:content-[''] after:block after:h-2">
                         {displayNotebooks.length === 0 ? (
                             <p className="text-xs text-(--text-tertiary) text-center py-6 px-4">
                                 {t("dashboard.empty.title")}
