@@ -31,7 +31,7 @@ export default function AmountsLoadBehaviorToggle() {
     ];
 
     return (
-        <div className="flex items-center liquid-glass rounded-full p-0.5">
+        <div className="flex items-center liquid-glass rounded-full p-0.5 shrink-0">
             {options.map(({ value, icon: Icon, label }) => (
                 <button
                     key={value}
@@ -42,8 +42,8 @@ export default function AmountsLoadBehaviorToggle() {
                             : "text-(--text-tertiary) hover:text-(--text-primary)"
                         }`}
                 >
-                    <Icon size={12} strokeWidth={2.2} />
-                    <span>{label}</span>
+                    <Icon size={12} strokeWidth={2.2} className="shrink-0" />
+                    <span className="whitespace-nowrap">{label}</span>
                 </button>
             ))}
         </div>

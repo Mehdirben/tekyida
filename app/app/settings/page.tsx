@@ -303,7 +303,7 @@ export default function SettingsPage() {
                             <span className="text-sm font-semibold text-(--text-tertiary)">{t("settings.offlineUnavailable")}</span>
                         </div>
                     )}
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
+                    <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.email")}
                     </h2>
                     {currentEmailData && (
@@ -381,7 +381,7 @@ export default function SettingsPage() {
                             <span className="text-sm font-semibold text-(--text-tertiary)">{t("settings.offlineUnavailable")}</span>
                         </div>
                     )}
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
+                    <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.password")}
                     </h2>
                     <div className="space-y-4">
@@ -497,7 +497,7 @@ export default function SettingsPage() {
 
                 {/* Security Section (App Lock) */}
                 <section className="liquid-glass-card p-6 animate-slide-up delay-175">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
+                    <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.security")}
                     </h2>
                     
@@ -557,40 +557,40 @@ export default function SettingsPage() {
 
                 {/* Appearance Section */}
                 <section className="liquid-glass-card p-6 animate-slide-up delay-200">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
+                    <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.appearance")}
                     </h2>
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{t("settings.appearance")}</span>
+                    <div className="flex items-center justify-center sm:justify-between gap-4">
+                        <span className="hidden sm:block text-sm font-medium min-w-0 flex-1">{t("settings.appearance")}</span>
                         <ThemeToggle />
                     </div>
                 </section>
 
                 {/* Language Section */}
                 <section className="liquid-glass-card p-6 animate-slide-up delay-300">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
+                    <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.language")}
                     </h2>
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{t("settings.language")}</span>
+                    <div className="flex items-center justify-center sm:justify-between gap-4">
+                        <span className="hidden sm:block text-sm font-medium min-w-0 flex-1">{t("settings.language")}</span>
                         <LanguageToggle />
                     </div>
                 </section>
 
                 {/* Amounts on Load Section */}
                 <section className="liquid-glass-card p-6 animate-slide-up delay-400">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
+                    <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.amountsOnLoad")}
                     </h2>
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{t("settings.amountsOnLoad")}</span>
+                    <div className="flex items-center justify-center sm:justify-between gap-4">
+                        <span className="hidden sm:block text-sm font-medium min-w-0 flex-1">{t("settings.amountsOnLoad")}</span>
                         <AmountsLoadBehaviorToggle />
                     </div>
                 </section>
 
                 {/* Install App Section */}
                 <section className="liquid-glass-card p-6 animate-slide-up delay-500">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
+                    <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.installApp")}
                     </h2>
                     <div className="flex items-center justify-between gap-4">
