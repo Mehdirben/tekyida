@@ -68,13 +68,12 @@ export const triggerHaptic = (input: HapticInput = "medium"): void => {
 
 /**
  * Initializes global haptic feedback listeners for iOS Safari (WebKit) on iOS 26.5+.
- * When the user touches an interactive element (button, link, or role="button"),
- * it dynamically overlays a transparent `<label>` associated with an `<input type="checkbox" switch>`
- * directly over the touched element before the click event fires.
+ * This solution scans the DOM and uses a MutationObserver to append a static, transparent
+ * `<label>` and `<input type="checkbox" switch>` pair inside all interactive elements (buttons, links, etc.).
  *
- * Because the subsequent click is registered by the browser as a trusted user click directly targeting
- * the label, the browser toggles the switch and fires the native iOS system haptic,
- * after which the click bubbles up normally to execute the original action.
+ * Because these elements are present in the DOM *before* the user touches the screen,
+ * a single tap correctly targets the transparent label, triggers native switch haptics
+ * on iOS, and bubbles up to fire the button's action in one smooth step.
  */
 export const initGlobalHaptics = (): (() => void) => {
     if (typeof window === "undefined") {
@@ -86,37 +85,14 @@ export const initGlobalHaptics = (): (() => void) => {
         return () => {};
     }
 
-    let activeHaptic: {
-        container: HTMLElement;
-        input: HTMLInputElement;
-        label: HTMLLabelElement;
-        originalPosition: string;
-    } | null = null;
-
-    const cleanupActiveHaptic = () => {
-        if (activeHaptic) {
-            const { container, input, label, originalPosition } = activeHaptic;
-            try {
-                if (originalPosition) {
-                    container.style.position = originalPosition;
-                } else {
-                    container.style.removeProperty("position");
-                }
-                input.remove();
-                label.remove();
-            } catch (e) {
-                // Ignore removal errors
-            }
-            activeHaptic = null;
+    const setupHapticElements = (el: HTMLElement) => {
+        // Skip if disabled or already containing haptic elements
+        if (el.hasAttribute("disabled") || (el as any).disabled) {
+            return;
         }
-    };
 
-    const handleTouchStart = (e: TouchEvent) => {
-        cleanupActiveHaptic();
-
-        // Find the closest interactive element being touched
-        const target = (e.target as HTMLElement).closest("button, a, [role='button'], [data-haptic]") as HTMLElement | null;
-        if (!target || target.hasAttribute("disabled") || (target as any).disabled) {
+        const hasHapticInput = el.querySelector("input[id^='global-haptic-']");
+        if (hasHapticInput) {
             return;
         }
 
@@ -127,14 +103,8 @@ export const initGlobalHaptics = (): (() => void) => {
         input.type = "checkbox";
         input.setAttribute("switch", "");
         input.id = id;
-        input.style.position = "absolute";
-        input.style.width = "1px";
-        input.style.height = "1px";
-        input.style.opacity = "0.0001";
-        input.style.left = "0px";
-        input.style.top = "0px";
-        input.style.pointerEvents = "none";
-        input.style.zIndex = "-99999";
+        input.className = "absolute pointer-events-none opacity-0 w-px h-px left-0 top-0";
+        input.style.zIndex = "-1";
         input.readOnly = true;
 
         // Create the transparent label overlay
@@ -151,39 +121,52 @@ export const initGlobalHaptics = (): (() => void) => {
         label.style.setProperty("-webkit-tap-highlight-color", "transparent");
 
         // Ensure container is relative/absolute/fixed so absolute overlay fits it
-        const originalPosition = target.style.position;
-        const computedStyle = window.getComputedStyle(target);
+        const computedStyle = window.getComputedStyle(el);
         if (computedStyle.position === "static") {
-            target.style.position = "relative";
+            el.style.position = "relative";
         }
 
         // Append to interactive element
-        target.appendChild(input);
-        target.appendChild(label);
-
-        activeHaptic = {
-            container: target,
-            input,
-            label,
-            originalPosition,
-        };
+        el.appendChild(input);
+        el.appendChild(label);
     };
 
-    const handleInteractionEnd = () => {
-        // 100ms delay to let the browser process the trusted switch toggle and click propagation
-        setTimeout(cleanupActiveHaptic, 100);
-    };
+    // Scan existing elements
+    document.querySelectorAll("button, a, [role='button'], [data-haptic]").forEach((el) => {
+        setupHapticElements(el as HTMLElement);
+    });
 
-    window.addEventListener("touchstart", handleTouchStart, { passive: true });
-    window.addEventListener("touchend", handleInteractionEnd, { passive: true });
-    window.addEventListener("touchcancel", handleInteractionEnd, { passive: true });
-    window.addEventListener("click", handleInteractionEnd, { capture: true, passive: true });
+    // Observe future elements and subtree changes
+    const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            // If the mutated element's children changed, verify if it is interactive
+            const targetEl = mutation.target as HTMLElement;
+            if (targetEl && targetEl.closest) {
+                const interactiveParent = targetEl.closest("button, a, [role='button'], [data-haptic]") as HTMLElement | null;
+                if (interactiveParent) {
+                    setupHapticElements(interactiveParent);
+                }
+            }
+
+            // Check newly added nodes
+            if (mutation.type === "childList") {
+                mutation.addedNodes.forEach((node) => {
+                    if (node instanceof HTMLElement) {
+                        if (node.matches("button, a, [role='button'], [data-haptic]")) {
+                            setupHapticElements(node);
+                        }
+                        node.querySelectorAll("button, a, [role='button'], [data-haptic]").forEach((child) => {
+                            setupHapticElements(child as HTMLElement);
+                        });
+                    }
+                });
+            }
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
-        window.removeEventListener("touchstart", handleTouchStart);
-        window.removeEventListener("touchend", handleInteractionEnd);
-        window.removeEventListener("touchcancel", handleInteractionEnd);
-        window.removeEventListener("click", handleInteractionEnd, { capture: true });
-        cleanupActiveHaptic();
+        observer.disconnect();
     };
 };
