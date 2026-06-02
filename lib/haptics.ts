@@ -31,7 +31,7 @@ export const triggerHaptic = (input: HapticInput = "medium"): void => {
 
 /**
  * Initializes global haptic feedback listeners for iOS Safari (WebKit) on iOS 26.5+.
- * This solution scans the DOM and uses a MutationObserver to append a static, transparent
+ * This solution scans the DOM and uses a MutationObserver to append a static, nearly-transparent
  * `<label>` and `<input type="checkbox" switch>` pair inside all interactive elements (buttons, links, etc.).
  *
  * Because these elements are present in the DOM *before* the user touches the screen,
@@ -69,15 +69,17 @@ export const initGlobalHaptics = (): (() => void) => {
         input.type = "checkbox";
         input.setAttribute("switch", "");
         input.id = id;
-        input.className = "absolute pointer-events-none opacity-0 w-px h-px left-0 top-0";
+        input.className = "absolute pointer-events-none w-px h-px left-0 top-0";
+        input.style.opacity = "0.0001"; // Non-zero opacity avoids WebKit hit-test optimizations
         input.style.zIndex = "-1";
         input.readOnly = true;
 
         // Create the transparent label overlay
         const label = document.createElement("label");
         label.htmlFor = id;
-        // Removed z-10 to prevent blocking explicitly layered nested interactive elements
-        label.className = "absolute inset-0 cursor-pointer opacity-0";
+        // z-10 ensures the label sits on top of inner SVGs/Text so it reliably catches the physical tap
+        label.className = "absolute inset-0 cursor-pointer z-10";
+        label.style.opacity = "0.0001";
         label.style.setProperty("-webkit-tap-highlight-color", "transparent");
 
         // Ensure container is relative/absolute/fixed so absolute overlay fits it
@@ -85,6 +87,24 @@ export const initGlobalHaptics = (): (() => void) => {
         if (computedStyle.position === "static") {
             el.style.position = "relative";
         }
+
+        // Fix click swallowing: 
+        // When putting interactive elements (<label>/<input>) inside buttons/anchors,
+        // browsers often swallow the click events to prevent double-activations.
+        // We stop propagation of these inner clicks and manually dispatch a click on the parent element.
+        label.addEventListener("click", (e) => {
+            e.stopPropagation();
+        });
+
+        input.addEventListener("click", (e) => {
+            e.stopPropagation();
+            
+            // Re-dispatch the click on the parent element on the next tick 
+            // so the haptic checkbox toggle has fully processed natively.
+            setTimeout(() => {
+                el.click();
+            }, 0);
+        });
 
         // Append to interactive element
         el.appendChild(input);
