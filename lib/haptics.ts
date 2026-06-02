@@ -61,7 +61,7 @@ export const initGlobalHaptics = (): (() => void) => {
 
         hapticInput.disabled = isDisabled;
         if (label) {
-            label.style.pointerEvents = isDisabled ? "none" : "auto";
+            label.style.pointerEvents = isDisabled ? "none" : "";
         }
     };
 
@@ -89,7 +89,10 @@ export const initGlobalHaptics = (): (() => void) => {
         const label = document.createElement("label");
         label.htmlFor = id;
         // z-10 ensures the label sits on top of inner SVGs/Text so it reliably catches the physical tap
-        label.className = "absolute inset-0 cursor-pointer z-10";
+        label.className = "absolute inset-0 block cursor-pointer z-10 w-full h-full";
+        label.style.display = "block";
+        label.style.width = "100%";
+        label.style.height = "100%";
         label.style.opacity = "0.0001";
         label.style.setProperty("-webkit-tap-highlight-color", "transparent");
 
