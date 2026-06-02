@@ -4,8 +4,12 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useQuery } from "convex/react";
 import * as queryCache from "@/lib/queryCache";
 
+// Track hydration globally for this module to avoid hydration mismatches
+// on the first render, while allowing synchronous cache reads thereafter.
+let isHydrated = false;
+
 /**
- * A wrapper around Convex's useQuery that caches results in IndexedDB.
+ * A wrapper around Convex's useQuery that caches results in IndexedDB and memory.
  * When offline (useQuery returns undefined), serves the last cached result.
  * Automatically re-reads from cache when optimistic updates modify it.
  *
@@ -24,14 +28,16 @@ export function useCachedQuery<T>(
     args: Record<string, unknown> | "skip"
 ): T | undefined {
     const liveData = useQuery(funcRef, args === "skip" ? "skip" : args);
-    const [cachedData, setCachedData] = useState<T | undefined>(undefined);
+    const key = args === "skip" ? null : queryCache.cacheKey(name, args);
+
+    const [cachedData, setCachedData] = useState<T | undefined>(() => 
+        (isHydrated && key) ? queryCache.getInMemory<T>(key) : undefined
+    );
     const [isOnline, setIsOnline] = useState(() =>
         typeof navigator !== "undefined" ? navigator.onLine : true
     );
-    const cacheKeyRef = useRef<string | null>(null);
+    const cacheKeyRef = useRef<string | null>(key);
     const initialLoadDone = useRef(false);
-
-    const key = args === "skip" ? null : queryCache.cacheKey(name, args);
 
     // Track online/offline status
     useEffect(() => {
@@ -58,6 +64,8 @@ export function useCachedQuery<T>(
 
     // Load cached data on mount / when key changes
     useEffect(() => {
+        isHydrated = true; // Safe to use synchronous cache for future components
+        
         if (!key) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setCachedData(undefined);
@@ -65,13 +73,21 @@ export function useCachedQuery<T>(
             initialLoadDone.current = false;
             return;
         }
-        // Key changed — clear stale data immediately, then load new cache
-        if (cacheKeyRef.current !== key) {
+        
+        // Key changed — clear stale data immediately only if switching between different keys
+        if (cacheKeyRef.current && cacheKeyRef.current !== key) {
             setCachedData(undefined);
         }
         cacheKeyRef.current = key;
         initialLoadDone.current = false;
-        readCache();
+        
+        // Try to load from synchronous memory cache first
+        const syncData = queryCache.getInMemory<T>(key);
+        if (syncData !== undefined) {
+            setCachedData(syncData);
+        } else {
+            readCache();
+        }
     }, [key, readCache]);
 
     // Subscribe to cache changes (from optimistic updates)
