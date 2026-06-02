@@ -168,6 +168,7 @@ const fr: Record<TranslationKey, string> = {
     "settings.title": "Paramètres",
     "settings.account": "Compte",
     "settings.email": "Adresse email",
+    "settings.newEmail": "Nouvelle adresse email",
     "settings.confirmEmail": "Confirmer l'adresse email",
     "settings.password": "Mot de passe",
     "settings.currentPassword": "Mot de passe actuel",

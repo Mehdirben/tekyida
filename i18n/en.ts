@@ -166,6 +166,7 @@ const en = {
     "settings.title": "Settings",
     "settings.account": "Account",
     "settings.email": "Email address",
+    "settings.newEmail": "New email address",
     "settings.confirmEmail": "Confirm email address",
     "settings.password": "Password",
     "settings.currentPassword": "Current password",

@@ -314,7 +314,7 @@ export default function SettingsPage() {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-xs font-semibold text-(--text-secondary) mb-1.5 ml-1">
-                                {t("settings.email")}
+                                {t("settings.newEmail")}
                             </label>
                             <div className="relative">
                                 <Mail
