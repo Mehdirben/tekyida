@@ -14,6 +14,7 @@ import {
     CloudOff,
     Eye,
     EyeOff,
+    Loader2,
 } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useLocalAmountsVisibility } from "@/hooks/useLocalAmountsVisibility";
@@ -223,8 +224,9 @@ export default function TransactionList({
                 {/* Transaction List — merged timeline of transactions + experience cards sorted by date */}
                 <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 py-4 space-y-2.5">
                     {!transactions ? (
-                        <div className="text-center py-8 text-sm text-(--text-tertiary)">
-                            {t("dashboard.loading")}
+                        <div className="flex flex-col items-center justify-center py-12 gap-3 text-sm text-(--text-secondary)">
+                            <Loader2 size={24} className="animate-spin text-primary-500" />
+                            <span>{t("dashboard.loading")}</span>
                         </div>
                     ) : transactions.length === 0 && !adding && (!experiences || experiences.length === 0) ? (
                         <div className="text-center py-8">
