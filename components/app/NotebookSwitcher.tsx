@@ -88,7 +88,7 @@ export default function NotebookSwitcher({
                     const updated = [...localNotebooks];
                     const [movedItem] = updated.splice(draggedIndex, 1);
                     updated.splice(newIndex, 0, movedItem);
-                    
+
                     const indexDiff = newIndex - draggedIndex;
                     dragStartYRef.current += indexDiff * itemHeight;
 
@@ -105,7 +105,7 @@ export default function NotebookSwitcher({
                 setDraggedIndex(null);
                 dragCurrentIndexRef.current = null;
                 setOffsetY(0);
-                
+
                 const ids = localNotebooks.map((n) => n.id);
                 onReorder?.(ids);
             };
@@ -178,7 +178,7 @@ export default function NotebookSwitcher({
         if (open) {
             document.addEventListener("mousedown", handleClick);
             document.addEventListener("keydown", handleKeyDown);
-            
+
             // Add scroll listener with a small delay to avoid capturing the initial render/focus scroll
             const timer = setTimeout(() => {
                 if (active) {
@@ -290,7 +290,7 @@ export default function NotebookSwitcher({
                 }}
             >
                 {/* Notebook list */}
-                <div className="max-h-64 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
+                <div className="max-h-59 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
                     <div className="pt-2 after:content-[''] after:block after:h-2">
                         {displayNotebooks.length === 0 ? (
                             <p className="text-xs text-(--text-tertiary) text-center py-6 px-4">
@@ -302,11 +302,10 @@ export default function NotebookSwitcher({
                                 return (
                                     <div
                                         key={notebook.id}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 select-none transition-all duration-200 ${
-                                            isDraggingThis
-                                                ? "bg-primary-500/12 text-primary-700 dark:text-primary-300 z-50 shadow-xl"
-                                                : "text-(--text-primary)"
-                                        }`}
+                                        className={`w-full flex items-center gap-3 px-4 py-3 select-none transition-all duration-200 ${isDraggingThis
+                                            ? "bg-primary-500/12 text-primary-700 dark:text-primary-300 z-50 shadow-xl"
+                                            : "text-(--text-primary)"
+                                            }`}
                                         style={{
                                             transform: isDraggingThis ? `translateY(${offsetY}px)` : "none",
                                             zIndex: isDraggingThis ? 50 : 1,
@@ -318,15 +317,14 @@ export default function NotebookSwitcher({
                                         <div
                                             onMouseDown={(e) => handleDragStart(e, index, notebook.id)}
                                             onTouchStart={(e) => handleDragStart(e, index, notebook.id)}
-                                            className="p-1 text-(--text-tertiary) cursor-grab active:cursor-grabbing shrink-0 touch-none"
+                                            className="p-1 -m-1 text-(--text-tertiary) cursor-grab active:cursor-grabbing shrink-0 touch-none"
                                         >
                                             <GripVertical size={16} />
                                         </div>
-                                        <span className={`text-sm truncate flex-1 ${
-                                            isDraggingThis
-                                                ? "font-semibold text-primary-700 dark:text-primary-300"
-                                                : "font-medium text-(--text-primary)"
-                                        }`}>
+                                        <span className={`text-sm truncate flex-1 ${isDraggingThis
+                                            ? "font-semibold text-primary-700 dark:text-primary-300"
+                                            : "font-medium text-(--text-primary)"
+                                            }`}>
                                             {notebook.name}
                                         </span>
                                     </div>
@@ -409,7 +407,7 @@ export default function NotebookSwitcher({
                                                     setDeleteTargetId(notebook.id);
                                                 }}
                                                 className="p-1 rounded-md text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
-                                                >
+                                            >
                                                 <Trash2 size={12} />
                                             </button>
                                         </div>
@@ -480,13 +478,13 @@ export default function NotebookSwitcher({
                                         e.preventDefault();
                                         e.stopPropagation();
                                         triggerHaptic("selection");
-                                        
+
                                         // Lock the current active notebook in hooks state before reordering
                                         // so that shifting the first notebook doesn't change the displayed selection
                                         if (!activeNotebookId && notebooks.length > 0) {
                                             onSelect?.(notebooks[0].id);
                                         }
-                                        
+
                                         setLocalNotebooks(notebooks);
                                         setIsReordering(true);
                                     }}
