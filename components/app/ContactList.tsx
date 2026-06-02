@@ -82,6 +82,26 @@ export default function ContactList({
     const keyboardOffsetStyle = keyboardInset > 0 ? { paddingBottom: `${keyboardInset + 12}px` } : undefined;
 
     useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                if (deleteTarget) {
+                    triggerHaptic("light");
+                    setDeleteTarget(null);
+                } else if (editTarget) {
+                    handleCloseEdit();
+                } else if (adding) {
+                    triggerHaptic("light");
+                    setAdding(false);
+                    setNewName("");
+                    setNewPhone("");
+                }
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [deleteTarget, editTarget, adding, handleCloseEdit]);
+
+    useEffect(() => {
         if (adding && nameRef.current) nameRef.current.focus();
     }, [adding]);
 
@@ -323,7 +343,10 @@ export default function ContactList({
                                 onChange={(e) => setEditName(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") handleEdit();
-                                    if (e.key === "Escape") handleCloseEdit();
+                                    if (e.key === "Escape") {
+                                        e.stopPropagation();
+                                        handleCloseEdit();
+                                    }
                                 }}
                                 placeholder={t("contact.name")}
                                 className="glass-input py-2.5 text-sm"
@@ -334,7 +357,10 @@ export default function ContactList({
                                 onChange={(e) => setEditPhone(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") handleEdit();
-                                    if (e.key === "Escape") handleCloseEdit();
+                                    if (e.key === "Escape") {
+                                        e.stopPropagation();
+                                        handleCloseEdit();
+                                    }
                                 }}
                                 placeholder={t("contact.phone")}
                                 className="glass-input py-2.5 text-sm"
@@ -371,6 +397,7 @@ export default function ContactList({
                         onKeyDown={(e) => {
                             if (e.key === "Enter") handleAdd();
                             if (e.key === "Escape") {
+                                e.stopPropagation();
                                 setAdding(false);
                                 setNewName("");
                                 setNewPhone("");
@@ -386,6 +413,7 @@ export default function ContactList({
                         onKeyDown={(e) => {
                             if (e.key === "Enter") handleAdd();
                             if (e.key === "Escape") {
+                                e.stopPropagation();
                                 setAdding(false);
                                 setNewName("");
                                 setNewPhone("");

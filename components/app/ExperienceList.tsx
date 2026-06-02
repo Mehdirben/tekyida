@@ -116,6 +116,26 @@ export default function ExperienceList({
     const keyboardOffsetStyle = keyboardInset > 0 ? { paddingBottom: `${keyboardInset + 12}px` } : undefined;
 
     useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                if (deleteTarget) {
+                    triggerHaptic("light");
+                    setDeleteTarget(null);
+                } else if (editTarget) {
+                    handleCloseEdit();
+                } else if (adding) {
+                    triggerHaptic("light");
+                    setAdding(false);
+                    setNewName("");
+                    setNewContactId("");
+                }
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [deleteTarget, editTarget, adding, handleCloseEdit]);
+
+    useEffect(() => {
         if (adding && nameRef.current) nameRef.current.focus();
     }, [adding]);
 
@@ -406,7 +426,10 @@ export default function ExperienceList({
                                 onChange={(e) => setEditName(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") handleEdit();
-                                    if (e.key === "Escape") handleCloseEdit();
+                                    if (e.key === "Escape") {
+                                        e.stopPropagation();
+                                        handleCloseEdit();
+                                    }
                                 }}
                                 placeholder={t("experience.name")}
                                 className="glass-input py-2.5 text-sm"
@@ -448,6 +471,7 @@ export default function ExperienceList({
                         onKeyDown={(e) => {
                             if (e.key === "Enter") handleAdd();
                             if (e.key === "Escape") {
+                                e.stopPropagation();
                                 setAdding(false);
                                 setNewName("");
                                 setNewContactId("");

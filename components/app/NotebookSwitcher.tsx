@@ -208,6 +208,17 @@ export default function NotebookSwitcher({
         if (editingId && editInputRef.current) editInputRef.current.focus();
     }, [editingId]);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape" && deleteTargetId) {
+                triggerHaptic("light");
+                setDeleteTargetId(null);
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [deleteTargetId]);
+
     const handleAdd = () => {
         const trimmed = newName.trim();
         if (trimmed) {
@@ -341,7 +352,10 @@ export default function NotebookSwitcher({
                                             onChange={(e) => setEditName(e.target.value)}
                                             onKeyDown={(e) => {
                                                 if (e.key === "Enter") handleEdit();
-                                                if (e.key === "Escape") setEditingId(null);
+                                                if (e.key === "Escape") {
+                                                    e.stopPropagation();
+                                                    setEditingId(null);
+                                                }
                                             }}
                                             className="glass-input py-1.5 text-sm flex-1"
                                         />
@@ -443,6 +457,7 @@ export default function NotebookSwitcher({
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") handleAdd();
                                     if (e.key === "Escape") {
+                                        e.stopPropagation();
                                         setAdding(false);
                                         setNewName("");
                                     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
@@ -103,6 +103,26 @@ export default function TransactionList({
             onClose();
         }, 300);
     }, [onClose]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                if (deleteTargetId) {
+                    triggerHaptic("light");
+                    setDeleteTargetId(null);
+                } else if (editTarget) {
+                    handleCloseEdit();
+                } else if (adding) {
+                    triggerHaptic("light");
+                    setAdding(false);
+                } else {
+                    handleAnimatedClose();
+                }
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [deleteTargetId, editTarget, adding, handleCloseEdit, handleAnimatedClose]);
 
     const handleAdd = async () => {
         const parsedAmount = parseFloat(amount);
@@ -348,7 +368,10 @@ export default function TransactionList({
                                     onChange={(e) => setEditDescription(e.target.value)}
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleEditTx();
-                                        if (e.key === "Escape") handleCloseEdit();
+                                        if (e.key === "Escape") {
+                                            e.stopPropagation();
+                                            handleCloseEdit();
+                                        }
                                     }}
                                     placeholder={t("transaction.description")}
                                     className="glass-input py-2 text-sm resize-none"
@@ -417,7 +440,10 @@ export default function TransactionList({
                                 onChange={(e) => setDescription(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleAdd();
-                                    if (e.key === "Escape") setAdding(false);
+                                    if (e.key === "Escape") {
+                                        e.stopPropagation();
+                                        setAdding(false);
+                                    }
                                 }}
                                 placeholder={t("transaction.description")}
                                 className="glass-input py-2.5 text-sm resize-none"
