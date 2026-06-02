@@ -176,82 +176,81 @@ export default function ContactList({
             {sortedContacts.map((contact) => (
                 <div
                     key={contact._id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => {
-                        triggerHaptic("selection");
-                        onSelectContact(contact);
-                    }}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
+                    className="liquid-glass-card w-full flex items-center overflow-hidden p-0"
+                >
+                    <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
                             triggerHaptic("selection");
                             onSelectContact(contact);
-                        }
-                    }}
-                    className="liquid-glass-card p-4 w-full text-left flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all"
-                >
-                    <div className="p-2 rounded-xl liquid-glass shrink-0">
-                        <User size={18} className="text-primary-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                            <p className="font-semibold text-sm whitespace-normal break-words flex-1 min-w-0">{contact.name}</p>
-                            {isItemPending(contact._id) && <UnsyncedBadge />}
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                                triggerHaptic("selection");
+                                onSelectContact(contact);
+                            }
+                        }}
+                        className="flex-1 flex items-center gap-3 p-4 text-left cursor-pointer active:scale-[0.98] transition-all min-w-0"
+                    >
+                        <div className="p-2 rounded-xl liquid-glass shrink-0">
+                            <User size={18} className="text-primary-500" />
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5">
-                            {contact.phone && (
-                                <span className="inline-flex items-center gap-1 text-[11px] text-(--text-tertiary)">
-                                    <Phone size={10} />
-                                    {contact.phone}
+                        <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                                <p className="font-semibold text-sm whitespace-normal break-words flex-1 min-w-0">{contact.name}</p>
+                                {isItemPending(contact._id) && <UnsyncedBadge />}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                {contact.phone && (
+                                    <span className="inline-flex items-center gap-1 text-[11px] text-(--text-tertiary)">
+                                        <Phone size={10} />
+                                        {contact.phone}
+                                    </span>
+                                )}
+                                <span className={`text-xs font-bold ${balanceColor(contact.balance)}`}>
+                                    {formatBalance(contact.balance)}
                                 </span>
-                            )}
-                            <span className={`text-xs font-bold ${balanceColor(contact.balance)}`}>
-                                {formatBalance(contact.balance)}
-                            </span>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                        <span
-                            role="button"
-                            tabIndex={0}
+                    <div className="flex items-center gap-1 shrink-0 py-4 pr-4 pl-1">
+                        <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
                                 openEdit(contact);
                             }}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                    e.stopPropagation();
-                                    openEdit(contact);
-                                }
-                            }}
-                            className="p-1.5 rounded-lg text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
+                            className="p-1.5 rounded-lg text-(--text-tertiary) hover:bg-white/10 active:bg-white/10 transition-all cursor-pointer"
+                            title={t("contact.edit")}
                         >
                             <Pencil size={14} />
-                        </span>
-                        <span
-                            role="button"
-                            tabIndex={0}
+                        </button>
+                        <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
                                 triggerHaptic("warning");
                                 setDeleteTarget(contact);
                             }}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                    e.stopPropagation();
-                                    setDeleteTarget(contact);
-                                }
-                            }}
-                            className="p-1.5 rounded-lg text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
+                            className="p-1.5 rounded-lg text-danger-500/60 hover:bg-danger-500/10 active:bg-danger-500/10 transition-all cursor-pointer"
+                            title={t("contact.delete")}
                         >
                             <Trash2 size={14} />
-                        </span>
-                        <ChevronRight
-                            size={16}
-                            className="text-(--text-tertiary) transition-colors"
-                        />
+                        </button>
+                        <div
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                triggerHaptic("selection");
+                                onSelectContact(contact);
+                            }}
+                            className="p-1.5 text-(--text-tertiary) cursor-pointer hover:text-(--text-primary) transition-colors"
+                        >
+                            <ChevronRight
+                                size={16}
+                                className="transition-colors"
+                            />
+                        </div>
                     </div>
                 </div>
             ))}

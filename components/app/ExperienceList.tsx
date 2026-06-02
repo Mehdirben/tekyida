@@ -236,112 +236,102 @@ export default function ExperienceList({
                 return (
                     <div
                         key={exp._id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => {
-                            triggerHaptic("selection");
-                            onSelectExperience(exp);
-                        }}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
+                        className="relative liquid-glass-card p-0 overflow-hidden w-full"
+                    >
+                        <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => {
                                 triggerHaptic("selection");
                                 onSelectExperience(exp);
-                            }
-                        }}
-                        className="liquid-glass-card p-4 w-full text-left cursor-pointer active:scale-[0.98] transition-all"
-                    >
-                        {/* Row 1: Icon + Name + Balance */}
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 rounded-xl liquid-glass shrink-0">
-                                <Compass size={18} className="text-primary-500" />
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                    triggerHaptic("selection");
+                                    onSelectExperience(exp);
+                                }
+                            }}
+                            className="w-full text-left p-4 cursor-pointer active:scale-[0.98] transition-all"
+                        >
+                            {/* Row 1: Icon + Name + Balance */}
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="p-2 rounded-xl liquid-glass shrink-0">
+                                    <Compass size={18} className="text-primary-500" />
+                                </div>
+                                <div className="flex-1 min-w-0 flex flex-wrap items-center gap-1.5">
+                                    <p className="font-semibold text-sm whitespace-normal break-words flex-1 min-w-0 text-left">{exp.name}</p>
+                                    {isItemPending(exp._id) && <UnsyncedBadge />}
+                                </div>
+                                <span className={`text-sm font-bold shrink-0 ${balanceColor(exp.balance)} pr-2`}>
+                                    {formatBalance(exp.balance)}
+                                </span>
                             </div>
-                            <div className="flex-1 min-w-0 flex flex-wrap items-center gap-1.5">
-                                <p className="font-semibold text-sm whitespace-normal break-words flex-1 min-w-0">{exp.name}</p>
-                                {isItemPending(exp._id) && <UnsyncedBadge />}
+
+                            {/* Row 2: Metadata left */}
+                            <div className="flex items-center pl-[46px] pr-32">
+                                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                                    {contactName && (
+                                        <>
+                                            <span className="inline-flex items-center gap-1 text-[11px] text-(--text-tertiary)">
+                                                <User size={10} />
+                                                {contactName}
+                                            </span>
+                                            <span className="text-[11px] text-(--text-tertiary)">·</span>
+                                        </>
+                                    )}
+                                    <span className="text-[11px] text-(--text-tertiary)">
+                                        {exp.transactionCount} {t("experience.transactions")}
+                                    </span>
+                                </div>
                             </div>
-                            <span className={`text-sm font-bold shrink-0 ${balanceColor(exp.balance)}`}>
-                                {formatBalance(exp.balance)}
-                            </span>
                         </div>
 
-                        {/* Row 2: Metadata left + Actions right */}
-                        <div className="flex items-center justify-between pl-[46px]">
-                            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                                {contactName && (
-                                    <>
-                                        <span className="inline-flex items-center gap-1 text-[11px] text-(--text-tertiary)">
-                                            <User size={10} />
-                                            {contactName}
-                                        </span>
-                                        <span className="text-[11px] text-(--text-tertiary)">·</span>
-                                    </>
-                                )}
-                                <span className="text-[11px] text-(--text-tertiary)">
-                                    {exp.transactionCount} {t("experience.transactions")}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-0.5 shrink-0">
-                                <span
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                        handleToggleClosed(exp);
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter" || e.key === " ") {
-                                            e.stopPropagation();
-                                            handleToggleClosed(exp);
-                                        }
-                                    }}
-                                    className={`p-1.5 rounded-lg active:bg-white/10 transition-all cursor-pointer shrink-0 ${
-                                        exp.closed
-                                            ? "bg-warning-500/15 text-warning-500"
-                                            : "bg-accent-500/15 text-accent-500"
-                                    }`}
-                                    title={exp.closed ? t("experience.reopen") : t("experience.close")}
-                                >
-                                    {exp.closed ? <Lock size={13} /> : <Unlock size={13} />}
-                                </span>
-                                <span
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                        openEdit(exp);
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter" || e.key === " ") {
-                                            e.stopPropagation();
-                                            openEdit(exp);
-                                        }
-                                    }}
-                                    className="p-1.5 rounded-lg text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
-                                >
-                                    <Pencil size={13} />
-                                </span>
-                                <span
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                        triggerHaptic("warning");
-                                        setDeleteTarget(exp);
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter" || e.key === " ") {
-                                            e.stopPropagation();
-                                            setDeleteTarget(exp);
-                                        }
-                                    }}
-                                    className="p-1.5 rounded-lg text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
-                                >
-                                    <Trash2 size={13} />
-                                </span>
-                                <ChevronRight size={14} className="text-(--text-tertiary) ml-0.5" />
+                        {/* Absolute Sibling Actions Area */}
+                        <div className="absolute bottom-3.5 right-4 z-10 flex items-center gap-0.5">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleClosed(exp);
+                                }}
+                                className={`p-1.5 rounded-lg hover:bg-white/10 active:bg-white/10 transition-all cursor-pointer shrink-0 ${
+                                    exp.closed
+                                        ? "bg-warning-500/15 text-warning-500"
+                                        : "bg-accent-500/15 text-accent-500"
+                                }`}
+                                title={exp.closed ? t("experience.reopen") : t("experience.close")}
+                            >
+                                {exp.closed ? <Lock size={13} /> : <Unlock size={13} />}
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEdit(exp);
+                                }}
+                                className="p-1.5 rounded-lg text-(--text-tertiary) hover:bg-white/10 active:bg-white/10 transition-all cursor-pointer"
+                                title={t("experience.edit")}
+                            >
+                                <Pencil size={13} />
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    triggerHaptic("warning");
+                                    setDeleteTarget(exp);
+                                }}
+                                className="p-1.5 rounded-lg text-danger-500/60 hover:bg-danger-500/10 active:bg-danger-500/10 transition-all cursor-pointer"
+                                title={t("experience.delete")}
+                            >
+                                <Trash2 size={13} />
+                            </button>
+                            <div
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    triggerHaptic("selection");
+                                    onSelectExperience(exp);
+                                }}
+                                className="p-1 text-(--text-tertiary) ml-0.5 cursor-pointer hover:text-(--text-primary) transition-colors"
+                            >
+                                <ChevronRight size={14} className="ml-0.5" />
                             </div>
                         </div>
                     </div>
