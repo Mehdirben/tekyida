@@ -197,7 +197,10 @@ export default function ExperienceDetail({
                         <h2 className="text-lg font-bold whitespace-normal break-words">{experienceName}</h2>
                         <div className="flex flex-wrap items-center gap-2 mt-0.5">
                             <button
-                                onClick={toggleLocal}
+                                onClick={() => {
+                                    toggleLocal();
+                                    triggerHaptic("selection");
+                                }}
                                 className={`flex items-center gap-1.5 text-sm font-semibold cursor-pointer group ${balance > 0
                                     ? "text-accent-500"
                                     : balance < 0
@@ -209,18 +212,10 @@ export default function ExperienceDetail({
                                 {localMask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
                                 {localHidden ? <EyeOff size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" /> : <Eye size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" />}
                             </button>
-                            <span
-                                role="button"
-                                tabIndex={0}
+                            <button
                                 onClick={() => {
                                     triggerHaptic(closed ? "selection" : "warning");
                                     onToggleClosed();
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") {
-                                        triggerHaptic(closed ? "selection" : "warning");
-                                        onToggleClosed();
-                                    }
                                 }}
                                 className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-all shrink-0 ${
                                     closed
@@ -230,7 +225,7 @@ export default function ExperienceDetail({
                             >
                                 {closed ? <Lock size={9} /> : <Unlock size={9} />}
                                 {closed ? t("experience.closed") : t("experience.open")}
-                            </span>
+                            </button>
                         </div>
                     </div>
                     <button

@@ -323,16 +323,16 @@ export default function ExperienceList({
                             >
                                 <Trash2 size={13} />
                             </button>
-                            <div
+                            <button
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     triggerHaptic("selection");
                                     onSelectExperience(exp);
                                 }}
-                                className="p-1 text-(--text-tertiary) ml-0.5 cursor-pointer hover:text-(--text-primary) transition-colors"
+                                className="p-1 text-(--text-tertiary) ml-0.5 hover:text-(--text-primary) transition-colors cursor-pointer"
                             >
                                 <ChevronRight size={14} className="ml-0.5" />
-                            </div>
+                            </button>
                         </div>
                     </div>
                 );

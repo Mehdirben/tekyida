@@ -200,7 +200,10 @@ export default function TransactionList({
                     <div className="flex-1 min-w-0 pr-3">
                         <h2 className="text-lg font-bold whitespace-normal break-words">{contactName}</h2>
                         <button
-                            onClick={toggleLocal}
+                            onClick={() => {
+                                toggleLocal();
+                                triggerHaptic("selection");
+                            }}
                             className={`flex items-center gap-1.5 text-sm font-semibold mt-0.5 cursor-pointer group ${balance > 0
                                 ? "text-accent-500"
                                 : balance < 0

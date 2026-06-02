@@ -238,19 +238,19 @@ export default function ContactList({
                         >
                             <Trash2 size={14} />
                         </button>
-                        <div
+                        <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 triggerHaptic("selection");
                                 onSelectContact(contact);
                             }}
-                            className="p-1.5 text-(--text-tertiary) cursor-pointer hover:text-(--text-primary) transition-colors"
+                            className="p-1.5 text-(--text-tertiary) hover:text-(--text-primary) transition-colors cursor-pointer"
                         >
                             <ChevronRight
                                 size={16}
                                 className="transition-colors"
                             />
-                        </div>
+                        </button>
                     </div>
                 </div>
             ))}
