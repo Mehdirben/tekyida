@@ -10,8 +10,8 @@ const getHapticsInstance = (): WebHaptics | null => {
     if (!hapticsInstance) {
         hapticsInstance = new WebHaptics();
 
-        // iOS 26.5 WebKit Fix: iOS 26.5 WebKit optimizes or prevents haptic clicks on elements set to "display: none".
-        // We preemptively call ensureDOM and replace "display: none" with an off-screen, opacity: 0 layout that remains active in the render tree.
+        // iOS 26.5 WebKit Fix: iOS 26.5 WebKit optimizes or prevents haptic clicks on elements set to "display: none" or placed off-screen.
+        // We preemptively call ensureDOM and keep the element in the active viewport with a tiny, non-zero opacity (0.0001) and z-index so WebKit's visibility check is satisfied while keeping it invisible.
         try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const hapticObj = hapticsInstance as any;
@@ -21,20 +21,26 @@ const getHapticsInstance = (): WebHaptics | null => {
                 if (label) {
                     label.style.display = "block";
                     label.style.position = "fixed";
-                    label.style.left = "-9999px";
-                    label.style.top = "-9999px";
+                    label.style.left = "0px";
+                    label.style.top = "0px";
                     label.style.width = "1px";
                     label.style.height = "1px";
                     label.style.overflow = "hidden";
-                    label.style.opacity = "0";
+                    label.style.opacity = "0.0001";
                     label.style.pointerEvents = "none";
+                    label.style.zIndex = "-99999";
 
                     const input = label.querySelector("input");
                     if (input) {
                         input.style.display = "block";
                         input.style.position = "absolute";
-                        input.style.opacity = "0";
+                        input.style.left = "0px";
+                        input.style.top = "0px";
+                        input.style.width = "1px";
+                        input.style.height = "1px";
+                        input.style.opacity = "0.0001";
                         input.style.pointerEvents = "none";
+                        input.style.zIndex = "-99999";
                     }
                 }
             }
