@@ -317,7 +317,7 @@ export default function NotebookSwitcher({
                                     <div
                                         onMouseDown={(e) => handleDragStart(e, index, notebook.id)}
                                         onTouchStart={(e) => handleDragStart(e, index, notebook.id)}
-                                        className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-grab active:cursor-grabbing shrink-0"
+                                        className="p-1 text-(--text-tertiary) cursor-grab active:cursor-grabbing shrink-0"
                                     >
                                         <GripVertical size={16} />
                                     </div>
