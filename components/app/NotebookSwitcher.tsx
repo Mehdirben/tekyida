@@ -290,132 +290,134 @@ export default function NotebookSwitcher({
                 }}
             >
                 {/* Notebook list */}
-                <div className="max-h-60 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] py-2">
-                    {displayNotebooks.length === 0 ? (
-                        <p className="text-xs text-(--text-tertiary) text-center py-6 px-4">
-                            {t("dashboard.empty.title")}
-                        </p>
-                    ) : isReordering ? (
-                        displayNotebooks.map((notebook, index) => {
-                            const isDraggingThis = draggedId === notebook.id;
-                            return (
-                                <div
-                                    key={notebook.id}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 select-none touch-none transition-all duration-200 ${
-                                        isDraggingThis
-                                            ? "bg-primary-500/12 text-primary-700 dark:text-primary-300"
-                                            : "text-(--text-primary)"
-                                    }`}
-                                    style={{
-                                        transform: isDraggingThis ? `translateY(${offsetY}px)` : "none",
-                                        zIndex: isDraggingThis ? 50 : 1,
-                                        position: "relative",
-                                        boxShadow: isDraggingThis ? "0 8px 24px rgba(0,0,0,0.12)" : "none",
-                                        transition: isDraggingThis ? "none" : "transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)",
-                                    }}
-                                >
+                <div className="max-h-60 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
+                    <div className="py-2">
+                        {displayNotebooks.length === 0 ? (
+                            <p className="text-xs text-(--text-tertiary) text-center py-6 px-4">
+                                {t("dashboard.empty.title")}
+                            </p>
+                        ) : isReordering ? (
+                            displayNotebooks.map((notebook, index) => {
+                                const isDraggingThis = draggedId === notebook.id;
+                                return (
                                     <div
-                                        onMouseDown={(e) => handleDragStart(e, index, notebook.id)}
-                                        onTouchStart={(e) => handleDragStart(e, index, notebook.id)}
-                                        className="p-1 text-(--text-tertiary) cursor-grab active:cursor-grabbing shrink-0"
-                                    >
-                                        <GripVertical size={16} />
-                                    </div>
-                                    <span className={`text-sm truncate flex-1 ${
-                                        isDraggingThis
-                                            ? "font-semibold text-primary-700 dark:text-primary-300"
-                                            : "font-medium text-(--text-primary)"
-                                    }`}>
-                                        {notebook.name}
-                                    </span>
-                                </div>
-                            );
-                        })
-                    ) : (
-                        displayNotebooks.map((notebook) =>
-                            editingId === notebook.id ? (
-                                <div key={notebook.id} className="px-3 py-2 flex items-center gap-2">
-                                    <input
-                                        ref={editInputRef}
-                                        type="text"
-                                        value={editName}
-                                        onChange={(e) => setEditName(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") handleEdit();
-                                            if (e.key === "Escape") setEditingId(null);
-                                        }}
-                                        className="glass-input py-1.5 text-sm flex-1"
-                                    />
-                                    <button
-                                        onClick={handleEdit}
-                                        disabled={!editName.trim()}
-                                        className="p-1.5 rounded-lg bg-primary-800/80 dark:bg-primary-500/70 text-white disabled:opacity-40 cursor-pointer"
-                                    >
-                                        <Check size={14} />
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            triggerHaptic("light");
-                                            setEditingId(null);
-                                        }}
-                                        className="p-1.5 rounded-lg text-(--text-tertiary) active:bg-white/10 cursor-pointer"
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div
-                                    key={notebook.id}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 transition-all duration-200 ${notebook.id === activeNotebookId
-                                        ? "bg-primary-500/12 text-primary-700 dark:text-primary-300"
-                                        : "text-(--text-primary)"
+                                        key={notebook.id}
+                                        className={`w-full flex items-center gap-3 px-4 py-3 select-none touch-none transition-all duration-200 ${
+                                            isDraggingThis
+                                                ? "bg-primary-500/12 text-primary-700 dark:text-primary-300"
+                                                : "text-(--text-primary)"
                                         }`}
-                                >
-                                    <button
-                                        onClick={() => {
-                                            triggerHaptic("selection");
-                                            onSelect?.(notebook.id);
-                                            setOpen(false);
+                                        style={{
+                                            transform: isDraggingThis ? `translateY(${offsetY}px)` : "none",
+                                            zIndex: isDraggingThis ? 50 : 1,
+                                            position: "relative",
+                                            boxShadow: isDraggingThis ? "0 8px 24px rgba(0,0,0,0.12)" : "none",
+                                            transition: isDraggingThis ? "none" : "transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)",
                                         }}
-                                        className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
                                     >
-                                        <BookOpen size={16} className="shrink-0 text-(--text-tertiary)" />
-                                        <span className="text-sm font-medium truncate flex-1">
+                                        <div
+                                            onMouseDown={(e) => handleDragStart(e, index, notebook.id)}
+                                            onTouchStart={(e) => handleDragStart(e, index, notebook.id)}
+                                            className="p-1 text-(--text-tertiary) cursor-grab active:cursor-grabbing shrink-0"
+                                        >
+                                            <GripVertical size={16} />
+                                        </div>
+                                        <span className={`text-sm truncate flex-1 ${
+                                            isDraggingThis
+                                                ? "font-semibold text-primary-700 dark:text-primary-300"
+                                                : "font-medium text-(--text-primary)"
+                                        }`}>
                                             {notebook.name}
                                         </span>
-                                        {isItemPending?.(notebook.id) && (
-                                            <CloudOff size={13} className="text-warning-500 shrink-0" />
-                                        )}
-                                        {notebook.id === activeNotebookId && (
-                                            <Check size={15} className="text-primary-500 shrink-0" />
-                                        )}
-                                    </button>
-                                    <div className="flex items-center gap-0.5 shrink-0">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                triggerHaptic("light");
-                                                startEdit(notebook);
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            displayNotebooks.map((notebook) =>
+                                editingId === notebook.id ? (
+                                    <div key={notebook.id} className="px-3 py-2 flex items-center gap-2">
+                                        <input
+                                            ref={editInputRef}
+                                            type="text"
+                                            value={editName}
+                                            onChange={(e) => setEditName(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") handleEdit();
+                                                if (e.key === "Escape") setEditingId(null);
                                             }}
-                                            className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
+                                            className="glass-input py-1.5 text-sm flex-1"
+                                        />
+                                        <button
+                                            onClick={handleEdit}
+                                            disabled={!editName.trim()}
+                                            className="p-1.5 rounded-lg bg-primary-800/80 dark:bg-primary-500/70 text-white disabled:opacity-40 cursor-pointer"
                                         >
-                                            <Pencil size={12} />
+                                            <Check size={14} />
                                         </button>
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                triggerHaptic("warning");
-                                                setDeleteTargetId(notebook.id);
+                                            onClick={() => {
+                                                triggerHaptic("light");
+                                                setEditingId(null);
                                             }}
-                                            className="p-1 rounded-md text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
+                                            className="p-1.5 rounded-lg text-(--text-tertiary) active:bg-white/10 cursor-pointer"
                                         >
-                                            <Trash2 size={12} />
+                                            <X size={14} />
                                         </button>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div
+                                        key={notebook.id}
+                                        className={`w-full flex items-center gap-3 px-4 py-3 transition-all duration-200 ${notebook.id === activeNotebookId
+                                            ? "bg-primary-500/12 text-primary-700 dark:text-primary-300"
+                                            : "text-(--text-primary)"
+                                            }`}
+                                    >
+                                        <button
+                                            onClick={() => {
+                                                triggerHaptic("selection");
+                                                onSelect?.(notebook.id);
+                                                setOpen(false);
+                                            }}
+                                            className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
+                                        >
+                                            <BookOpen size={16} className="shrink-0 text-(--text-tertiary)" />
+                                            <span className="text-sm font-medium truncate flex-1">
+                                                {notebook.name}
+                                            </span>
+                                            {isItemPending?.(notebook.id) && (
+                                                <CloudOff size={13} className="text-warning-500 shrink-0" />
+                                            )}
+                                            {notebook.id === activeNotebookId && (
+                                                <Check size={15} className="text-primary-500 shrink-0" />
+                                            )}
+                                        </button>
+                                        <div className="flex items-center gap-0.5 shrink-0">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    triggerHaptic("light");
+                                                    startEdit(notebook);
+                                                }}
+                                                className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
+                                            >
+                                                <Pencil size={12} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    triggerHaptic("warning");
+                                                    setDeleteTargetId(notebook.id);
+                                                }}
+                                                className="p-1 rounded-md text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
+                                                >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )
                             )
-                        )
-                    )}
+                        )}
+                    </div>
                 </div>
 
                 {/* Divider + Add section */}
