@@ -290,8 +290,8 @@ export default function NotebookSwitcher({
                 }}
             >
                 {/* Notebook list */}
-                <div className="max-h-60 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
-                    <div className="pt-2 after:content-[''] after:block after:h-2">
+                <div className="max-h-64 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]">
+                    <div className="pt-2 pb-1 after:content-[''] after:block after:h-2">
                         {displayNotebooks.length === 0 ? (
                             <p className="text-xs text-(--text-tertiary) text-center py-6 px-4">
                                 {t("dashboard.empty.title")}
@@ -302,9 +302,9 @@ export default function NotebookSwitcher({
                                 return (
                                     <div
                                         key={notebook.id}
-                                        className={`w-full flex items-center gap-3 px-4 py-3 select-none touch-none transition-all duration-200 ${
+                                        className={`w-full flex items-center gap-3 px-4 py-3 select-none transition-all duration-200 ${
                                             isDraggingThis
-                                                ? "bg-primary-500/12 text-primary-700 dark:text-primary-300"
+                                                ? "bg-primary-500/12 text-primary-700 dark:text-primary-300 z-50 shadow-xl"
                                                 : "text-(--text-primary)"
                                         }`}
                                         style={{
@@ -318,7 +318,7 @@ export default function NotebookSwitcher({
                                         <div
                                             onMouseDown={(e) => handleDragStart(e, index, notebook.id)}
                                             onTouchStart={(e) => handleDragStart(e, index, notebook.id)}
-                                            className="p-1 text-(--text-tertiary) cursor-grab active:cursor-grabbing shrink-0"
+                                            className="p-1 text-(--text-tertiary) cursor-grab active:cursor-grabbing shrink-0 touch-none"
                                         >
                                             <GripVertical size={16} />
                                         </div>
