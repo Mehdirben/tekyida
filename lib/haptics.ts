@@ -9,43 +9,6 @@ const getHapticsInstance = (): WebHaptics | null => {
 
     if (!hapticsInstance) {
         hapticsInstance = new WebHaptics();
-
-        // iOS WebKit display: none / off-screen optimizations workaround
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const hapticObj = hapticsInstance as any;
-            if (typeof hapticObj.ensureDOM === "function") {
-                hapticObj.ensureDOM();
-                const label = hapticObj.hapticLabel as HTMLLabelElement | null;
-                if (label) {
-                    label.style.display = "block";
-                    label.style.position = "fixed";
-                    label.style.left = "0px";
-                    label.style.top = "0px";
-                    label.style.width = "1px";
-                    label.style.height = "1px";
-                    label.style.overflow = "hidden";
-                    label.style.opacity = "0.0001";
-                    label.style.pointerEvents = "none";
-                    label.style.zIndex = "-99999";
-
-                    const input = label.querySelector("input");
-                    if (input) {
-                        input.style.display = "block";
-                        input.style.position = "absolute";
-                        input.style.left = "0px";
-                        input.style.top = "0px";
-                        input.style.width = "1px";
-                        input.style.height = "1px";
-                        input.style.opacity = "0.0001";
-                        input.style.pointerEvents = "none";
-                        input.style.zIndex = "-99999";
-                    }
-                }
-            }
-        } catch (error) {
-            console.warn("[web-haptics] Failed to apply WebKit DOM override:", error);
-        }
     }
 
     return hapticsInstance;
@@ -85,13 +48,16 @@ export const initGlobalHaptics = (): (() => void) => {
         return () => {};
     }
 
+    const SELECTOR = "button, a, [role='button'], [data-haptic]";
+
     const setupHapticElements = (el: HTMLElement) => {
-        // Skip if disabled or already containing haptic elements
+        // Skip if disabled
         if (el.hasAttribute("disabled") || (el as any).disabled) {
             return;
         }
 
-        const hasHapticInput = el.querySelector("input[id^='global-haptic-']");
+        // Check if already has haptic elements as direct children (prevents nested querySelector bugs)
+        const hasHapticInput = Array.from(el.children).some(child => child.id && child.id.startsWith("global-haptic-"));
         if (hasHapticInput) {
             return;
         }
@@ -110,14 +76,8 @@ export const initGlobalHaptics = (): (() => void) => {
         // Create the transparent label overlay
         const label = document.createElement("label");
         label.htmlFor = id;
-        label.style.position = "absolute";
-        label.style.top = "0px";
-        label.style.left = "0px";
-        label.style.right = "0px";
-        label.style.bottom = "0px";
-        label.style.opacity = "0.0001";
-        label.style.zIndex = "99999";
-        label.style.cursor = "pointer";
+        // Removed z-10 to prevent blocking explicitly layered nested interactive elements
+        label.className = "absolute inset-0 cursor-pointer opacity-0";
         label.style.setProperty("-webkit-tap-highlight-color", "transparent");
 
         // Ensure container is relative/absolute/fixed so absolute overlay fits it
@@ -132,17 +92,30 @@ export const initGlobalHaptics = (): (() => void) => {
     };
 
     // Scan existing elements
-    document.querySelectorAll("button, a, [role='button'], [data-haptic]").forEach((el) => {
+    document.querySelectorAll(SELECTOR).forEach((el) => {
         setupHapticElements(el as HTMLElement);
     });
 
     // Observe future elements and subtree changes
     const observer = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
-            // If the mutated element's children changed, verify if it is interactive
             const targetEl = mutation.target as HTMLElement;
+
+            // Handle attribute changes (e.g., button becoming enabled/disabled)
+            if (mutation.type === "attributes" && mutation.attributeName === "disabled") {
+                if (targetEl.matches && targetEl.matches(SELECTOR)) {
+                    if (targetEl.hasAttribute("disabled") || (targetEl as any).disabled) {
+                        // Elements are disabled, clicks naturally won't trigger haptics.
+                    } else {
+                        setupHapticElements(targetEl);
+                    }
+                }
+                continue;
+            }
+
+            // If the mutated element's children changed, verify if it is interactive
             if (targetEl && targetEl.closest) {
-                const interactiveParent = targetEl.closest("button, a, [role='button'], [data-haptic]") as HTMLElement | null;
+                const interactiveParent = targetEl.closest(SELECTOR) as HTMLElement | null;
                 if (interactiveParent) {
                     setupHapticElements(interactiveParent);
                 }
@@ -152,10 +125,10 @@ export const initGlobalHaptics = (): (() => void) => {
             if (mutation.type === "childList") {
                 mutation.addedNodes.forEach((node) => {
                     if (node instanceof HTMLElement) {
-                        if (node.matches("button, a, [role='button'], [data-haptic]")) {
+                        if (node.matches(SELECTOR)) {
                             setupHapticElements(node);
                         }
-                        node.querySelectorAll("button, a, [role='button'], [data-haptic]").forEach((child) => {
+                        node.querySelectorAll(SELECTOR).forEach((child) => {
                             setupHapticElements(child as HTMLElement);
                         });
                     }
@@ -164,7 +137,12 @@ export const initGlobalHaptics = (): (() => void) => {
         }
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["disabled"]
+    });
 
     return () => {
         observer.disconnect();
