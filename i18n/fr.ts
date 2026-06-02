@@ -223,6 +223,8 @@ const fr: Record<TranslationKey, string> = {
     "sync.pending": "{count} en attente",
     "sync.syncing": "Synchronisation…",
     "sync.synced": "Synchronisé",
+    "notebook.reorder": "Réorganiser",
+    "notebook.reorderDone": "Terminé",
 };
 
 export default fr;

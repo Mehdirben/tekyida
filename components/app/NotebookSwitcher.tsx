@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Plus, BookOpen, Check, Pencil, Trash2, X, CloudOff } from "lucide-react";
+import { ChevronDown, Plus, BookOpen, Check, Pencil, Trash2, X, CloudOff, GripVertical } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { triggerHaptic } from "@/lib/haptics";
@@ -19,6 +19,7 @@ interface NotebookSwitcherProps {
     onAdd?: (name: string) => void;
     onEdit?: (id: string, name: string) => void;
     onDelete?: (id: string) => void;
+    onReorder?: (ids: string[]) => void;
     isItemPending?: (id: string) => boolean;
 }
 
@@ -29,6 +30,7 @@ export default function NotebookSwitcher({
     onAdd,
     onEdit,
     onDelete,
+    onReorder,
     isItemPending,
 }: NotebookSwitcherProps) {
     const { t } = useTranslation();
@@ -42,23 +44,119 @@ export default function NotebookSwitcher({
     const inputRef = useRef<HTMLInputElement>(null);
     const editInputRef = useRef<HTMLInputElement>(null);
 
+    const [isReordering, setIsReordering] = useState(false);
+    const [draggedId, setDraggedId] = useState<string | null>(null);
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [localNotebooks, setLocalNotebooks] = useState<Notebook[]>([]);
+    const [offsetY, setOffsetY] = useState(0);
+    const dragStartYRef = useRef(0);
+    const dragCurrentIndexRef = useRef<number | null>(null);
+
+    const handleDragStart = (
+        e: React.MouseEvent | React.TouchEvent,
+        index: number,
+        id: string
+    ) => {
+        triggerHaptic("light");
+        setDraggedId(id);
+        setDraggedIndex(index);
+        dragCurrentIndexRef.current = index;
+        setOffsetY(0);
+
+        const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+        dragStartYRef.current = clientY;
+    };
+
+    useEffect(() => {
+        if (draggedId !== null && draggedIndex !== null) {
+            const handleDragMove = (e: MouseEvent | TouchEvent) => {
+                const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+                const deltaY = clientY - dragStartYRef.current;
+                setOffsetY(deltaY);
+
+                const itemHeight = 48; // Estimated height of a row
+                const newIndex = Math.max(
+                    0,
+                    Math.min(
+                        localNotebooks.length - 1,
+                        Math.round(draggedIndex + deltaY / itemHeight)
+                    )
+                );
+
+                if (newIndex !== dragCurrentIndexRef.current) {
+                    triggerHaptic("light");
+                    const updated = [...localNotebooks];
+                    const [movedItem] = updated.splice(draggedIndex, 1);
+                    updated.splice(newIndex, 0, movedItem);
+                    
+                    const indexDiff = newIndex - draggedIndex;
+                    dragStartYRef.current += indexDiff * itemHeight;
+
+                    setLocalNotebooks(updated);
+                    setDraggedIndex(newIndex);
+                    dragCurrentIndexRef.current = newIndex;
+                    setOffsetY(clientY - dragStartYRef.current);
+                }
+            };
+
+            const handleDragEnd = () => {
+                triggerHaptic("success");
+                setDraggedId(null);
+                setDraggedIndex(null);
+                dragCurrentIndexRef.current = null;
+                setOffsetY(0);
+                
+                const ids = localNotebooks.map((n) => n.id);
+                onReorder?.(ids);
+            };
+
+            const onMove = (e: MouseEvent | TouchEvent) => {
+                if (e.cancelable) e.preventDefault();
+                handleDragMove(e);
+            };
+            const onEnd = () => {
+                handleDragEnd();
+            };
+
+            window.addEventListener("mousemove", onMove, { passive: false });
+            window.addEventListener("mouseup", onEnd);
+            window.addEventListener("touchmove", onMove, { passive: false });
+            window.addEventListener("touchend", onEnd);
+
+            return () => {
+                window.removeEventListener("mousemove", onMove);
+                window.removeEventListener("mouseup", onEnd);
+                window.removeEventListener("touchmove", onMove);
+                window.removeEventListener("touchend", onEnd);
+            };
+        }
+    }, [draggedId, draggedIndex, localNotebooks, onReorder]);
+
     const activeNotebook = notebooks.find((n) => n.id === activeNotebookId);
     const displayName = activeNotebook?.name || t("notebook.select");
     const deleteTarget = notebooks.find((n) => n.id === deleteTargetId);
+    const displayNotebooks = isReordering ? localNotebooks : notebooks;
 
     useBodyScrollLock(Boolean(deleteTarget));
 
     // Close dropdown on outside click, page scroll, or escape key
     useEffect(() => {
+        let active = true;
+        let scrollListenerAdded = false;
+
         function handleClick(e: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
                 setOpen(false);
                 setAdding(false);
                 setNewName("");
                 setEditingId(null);
+                setIsReordering(false);
             }
         }
-        function handleScroll() {
+        function handleScroll(e: Event) {
+            if (dropdownRef.current && e.target instanceof Node && dropdownRef.current.contains(e.target)) {
+                return;
+            }
             if (dropdownRef.current?.contains(document.activeElement)) {
                 return;
             }
@@ -66,6 +164,7 @@ export default function NotebookSwitcher({
             setAdding(false);
             setNewName("");
             setEditingId(null);
+            setIsReordering(false);
         }
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === "Escape") {
@@ -73,16 +172,29 @@ export default function NotebookSwitcher({
                 setAdding(false);
                 setNewName("");
                 setEditingId(null);
+                setIsReordering(false);
             }
         }
         if (open) {
             document.addEventListener("mousedown", handleClick);
             document.addEventListener("keydown", handleKeyDown);
-            window.addEventListener("scroll", handleScroll, { capture: true, passive: true });
+            
+            // Add scroll listener with a small delay to avoid capturing the initial render/focus scroll
+            const timer = setTimeout(() => {
+                if (active) {
+                    window.addEventListener("scroll", handleScroll, { capture: true, passive: true });
+                    scrollListenerAdded = true;
+                }
+            }, 150);
+
             return () => {
+                active = false;
+                clearTimeout(timer);
                 document.removeEventListener("mousedown", handleClick);
                 document.removeEventListener("keydown", handleKeyDown);
-                window.removeEventListener("scroll", handleScroll, { capture: true });
+                if (scrollListenerAdded) {
+                    window.removeEventListener("scroll", handleScroll, { capture: true });
+                }
             };
         }
     }, [open]);
@@ -135,11 +247,10 @@ export default function NotebookSwitcher({
                 onClick={() => {
                     triggerHaptic("selection");
                     setOpen(!open);
-                    if (open) {
-                        setAdding(false);
-                        setNewName("");
-                        setEditingId(null);
-                    }
+                    setAdding(false);
+                    setNewName("");
+                    setEditingId(null);
+                    setIsReordering(false);
                 }}
                 className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl cursor-pointer transition-all duration-300 active:scale-[0.97]"
                 style={{
@@ -180,12 +291,48 @@ export default function NotebookSwitcher({
             >
                 {/* Notebook list */}
                 <div className="max-h-60 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] py-2">
-                    {notebooks.length === 0 ? (
+                    {displayNotebooks.length === 0 ? (
                         <p className="text-xs text-(--text-tertiary) text-center py-6 px-4">
                             {t("dashboard.empty.title")}
                         </p>
+                    ) : isReordering ? (
+                        displayNotebooks.map((notebook, index) => {
+                            const isDraggingThis = draggedId === notebook.id;
+                            return (
+                                <div
+                                    key={notebook.id}
+                                    className={`w-full flex items-center gap-3 px-4 py-3 select-none touch-none transition-all duration-200 ${
+                                        isDraggingThis
+                                            ? "bg-primary-500/12 text-primary-700 dark:text-primary-300"
+                                            : "text-(--text-primary)"
+                                    }`}
+                                    style={{
+                                        transform: isDraggingThis ? `translateY(${offsetY}px)` : "none",
+                                        zIndex: isDraggingThis ? 50 : 1,
+                                        position: "relative",
+                                        boxShadow: isDraggingThis ? "0 8px 24px rgba(0,0,0,0.12)" : "none",
+                                        transition: isDraggingThis ? "none" : "transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)",
+                                    }}
+                                >
+                                    <div
+                                        onMouseDown={(e) => handleDragStart(e, index, notebook.id)}
+                                        onTouchStart={(e) => handleDragStart(e, index, notebook.id)}
+                                        className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-grab active:cursor-grabbing shrink-0"
+                                    >
+                                        <GripVertical size={16} />
+                                    </div>
+                                    <span className={`text-sm truncate flex-1 ${
+                                        isDraggingThis
+                                            ? "font-semibold text-primary-700 dark:text-primary-300"
+                                            : "font-medium text-(--text-primary)"
+                                    }`}>
+                                        {notebook.name}
+                                    </span>
+                                </div>
+                            );
+                        })
                     ) : (
-                        notebooks.map((notebook) =>
+                        displayNotebooks.map((notebook) =>
                             editingId === notebook.id ? (
                                 <div key={notebook.id} className="px-3 py-2 flex items-center gap-2">
                                     <input
@@ -273,7 +420,20 @@ export default function NotebookSwitcher({
 
                 {/* Divider + Add section */}
                 <div className="border-t border-(--border)">
-                    {adding ? (
+                    {isReordering ? (
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                triggerHaptic("selection");
+                                setIsReordering(false);
+                            }}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3.5 text-center text-primary-600 dark:text-primary-400 hover:bg-primary-500/5 transition-all duration-200 cursor-pointer font-semibold text-sm"
+                        >
+                            <Check size={16} />
+                            <span>{t("notebook.reorderDone")}</span>
+                        </button>
+                    ) : adding ? (
                         <div className="p-3 flex items-center gap-2">
                             <input
                                 ref={inputRef}
@@ -299,18 +459,42 @@ export default function NotebookSwitcher({
                             </button>
                         </div>
                     ) : (
-                        <button
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                triggerHaptic("selection");
-                                setAdding(true);
-                            }}
-                            className="w-full flex items-center gap-3 px-4 py-3.5 text-left text-primary-600 dark:text-primary-400 transition-all duration-200 cursor-pointer"
-                        >
-                            <Plus size={17} strokeWidth={2.5} />
-                            <span className="text-sm font-semibold">{t("notebook.add")}</span>
-                        </button>
+                        <div className="flex divide-x divide-(--border)">
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    triggerHaptic("selection");
+                                    setAdding(true);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 text-primary-600 dark:text-primary-400 transition-all duration-200 cursor-pointer"
+                            >
+                                <Plus size={17} strokeWidth={2.5} />
+                                <span className="text-sm font-semibold">{t("notebook.add")}</span>
+                            </button>
+                            {notebooks.length > 1 && onReorder && (
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        triggerHaptic("selection");
+                                        
+                                        // Lock the current active notebook in hooks state before reordering
+                                        // so that shifting the first notebook doesn't change the displayed selection
+                                        if (!activeNotebookId && notebooks.length > 0) {
+                                            onSelect?.(notebooks[0].id);
+                                        }
+                                        
+                                        setLocalNotebooks(notebooks);
+                                        setIsReordering(true);
+                                    }}
+                                    className="px-4 flex items-center justify-center text-(--text-secondary) active:text-primary-500 transition-all duration-200 cursor-pointer"
+                                    title={t("notebook.reorder")}
+                                >
+                                    <GripVertical size={17} />
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>

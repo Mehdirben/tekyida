@@ -16,6 +16,7 @@ export function useActiveNotebook() {
     const createNotebook = useMutation(api.notebooks.create);
     const updateNotebook = useMutation(api.notebooks.update);
     const deleteNotebook = useMutation(api.notebooks.remove);
+    const reorderNotebooks = useMutation(api.notebooks.reorder);
     const { offlineMutation, isItemPending } = useSync();
 
     const [activeNotebookId, setActiveNotebookIdRaw] = useState<Id<"notebooks"> | undefined>(() => {
@@ -32,6 +33,7 @@ export function useActiveNotebook() {
             localStorage.removeItem("tekyida-active-notebook");
         }
     }, []);
+
 
     // Auto-select first notebook when loaded
     const resolvedActiveId =
@@ -67,6 +69,14 @@ export function useActiveNotebook() {
         }
     };
 
+    const handleReorderNotebooks = async (ids: string[]) => {
+        await offlineMutation(
+            "notebooks:reorder",
+            reorderNotebooks,
+            { ids: ids as Id<"notebooks">[] }
+        );
+    };
+
     const safeNotebooks = notebooks ?? [];
     const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
 
@@ -78,6 +88,7 @@ export function useActiveNotebook() {
         handleCreateNotebook,
         handleEditNotebook,
         handleDeleteNotebook,
+        handleReorderNotebooks,
         isItemPending,
         isOffline,
     };

@@ -35,6 +35,7 @@ export default function ExperiencesPage() {
         handleCreateNotebook,
         handleEditNotebook,
         handleDeleteNotebook,
+        handleReorderNotebooks,
         isItemPending,
         isOffline,
     } = useActiveNotebook();
@@ -131,6 +132,7 @@ export default function ExperiencesPage() {
                         onAdd={handleCreateNotebook}
                         onEdit={handleEditNotebook}
                         onDelete={handleDeleteNotebook}
+                        onReorder={handleReorderNotebooks}
                         isItemPending={isItemPending}
                     />
                 </div>

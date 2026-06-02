@@ -9,6 +9,7 @@ const schema = defineSchema({
         userId: v.id("users"),
         name: v.string(),
         createdAt: v.number(),
+        order: v.optional(v.number()),
     }).index("by_user", ["userId"]),
 
     contacts: defineTable({

@@ -221,6 +221,8 @@ const en = {
     "sync.pending": "{count} pending",
     "sync.syncing": "Syncing…",
     "sync.synced": "Synced",
+    "notebook.reorder": "Reorder",
+    "notebook.reorderDone": "Done",
 } as const;
 
 export type TranslationKey = keyof typeof en;

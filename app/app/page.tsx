@@ -23,6 +23,7 @@ export default function DashboardPage() {
         handleCreateNotebook,
         handleEditNotebook,
         handleDeleteNotebook,
+        handleReorderNotebooks,
         isItemPending,
         isOffline,
     } = useActiveNotebook();
@@ -74,6 +75,7 @@ export default function DashboardPage() {
                         onAdd={handleCreateNotebook}
                         onEdit={handleEditNotebook}
                         onDelete={handleDeleteNotebook}
+                        onReorder={handleReorderNotebooks}
                         isItemPending={isItemPending}
                     />
                 </div>

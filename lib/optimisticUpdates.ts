@@ -33,6 +33,8 @@ export async function applyOptimisticUpdate(
                 return void (await notebookUpdate(args));
             case "notebooks:remove":
                 return void (await notebookRemove(args));
+            case "notebooks:reorder":
+                return void (await notebookReorder(args));
             case "contacts:create":
                 return await contactCreate(args);
             case "contacts:update":
@@ -106,6 +108,31 @@ async function notebookRemove(args: Record<string, unknown>): Promise<void> {
     const list = await readList(key);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await queryCache.set(key, list.filter((n: any) => n._id !== args.id));
+}
+
+async function notebookReorder(args: Record<string, unknown>): Promise<void> {
+    const key = queryCache.cacheKey("notebooks.list", {});
+    const list = await readList(key);
+    const ids = args.ids as string[];
+    
+    // Sort local cache list elements to match the order of IDs in the array
+    const sorted = [...list].sort((a, b) => {
+        const indexA = ids.indexOf(a._id);
+        const indexB = ids.indexOf(b._id);
+        const valA = indexA !== -1 ? indexA : Number.MAX_SAFE_INTEGER;
+        const valB = indexB !== -1 ? indexB : Number.MAX_SAFE_INTEGER;
+        return valA - valB;
+    });
+
+    // Patch local order property
+    for (let i = 0; i < sorted.length; i++) {
+        const idx = ids.indexOf(sorted[i]._id);
+        if (idx !== -1) {
+            sorted[i] = { ...sorted[i], order: idx };
+        }
+    }
+
+    await queryCache.set(key, sorted);
 }
 
 // ─── Contacts ───────────────────────────────────────────────

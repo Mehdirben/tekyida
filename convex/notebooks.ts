@@ -14,9 +14,19 @@ export const list = query({
             .order("desc")
             .collect();
 
+        // Sort notebooks by order (ascending), fallback to createdAt (descending)
+        const sortedNotebooks = [...notebooks].sort((a, b) => {
+            const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER;
+            const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER;
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+            return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+
         // Compute contact count and balance for each notebook
         const result = await Promise.all(
-            notebooks.map(async (notebook) => {
+            sortedNotebooks.map(async (notebook) => {
                 const contacts = await ctx.db
                     .query("contacts")
                     .withIndex("by_notebook", (q) => q.eq("notebookId", notebook._id))
@@ -119,5 +129,25 @@ export const update = mutation({
         }
 
         await ctx.db.patch(args.id, { name });
+    },
+});
+
+export const reorder = mutation({
+    args: {
+        ids: v.array(v.id("notebooks")),
+    },
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error("Not authenticated");
+
+        // Verify all notebooks belong to the user and patch their order
+        for (let i = 0; i < args.ids.length; i++) {
+            const id = args.ids[i];
+            const notebook = await ctx.db.get(id);
+            if (!notebook || notebook.userId !== userId) {
+                throw new Error(`Notebook not found or access denied: ${id}`);
+            }
+            await ctx.db.patch(id, { order: i });
+        }
     },
 });
