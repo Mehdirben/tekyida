@@ -50,15 +50,26 @@ export const initGlobalHaptics = (): (() => void) => {
 
     const SELECTOR = "button, a, [role='button'], [data-haptic]";
 
-    const setupHapticElements = (el: HTMLElement) => {
-        // Skip if disabled
-        if (el.hasAttribute("disabled") || (el as any).disabled) {
-            return;
-        }
+    const syncDisabledState = (el: HTMLElement) => {
+        const hapticInput = Array.from(el.children).find(
+            (child) => child.id && child.id.startsWith("global-haptic-")
+        ) as HTMLInputElement | undefined;
+        if (!hapticInput) return;
 
+        const label = el.querySelector(`label[for="${hapticInput.id}"]`) as HTMLLabelElement | null;
+        const isDisabled = el.hasAttribute("disabled") || ("disabled" in el && (el as HTMLButtonElement).disabled);
+
+        hapticInput.disabled = isDisabled;
+        if (label) {
+            label.style.pointerEvents = isDisabled ? "none" : "auto";
+        }
+    };
+
+    const setupHapticElements = (el: HTMLElement) => {
         // Check if already has haptic elements as direct children (prevents nested querySelector bugs)
         const hasHapticInput = Array.from(el.children).some(child => child.id && child.id.startsWith("global-haptic-"));
         if (hasHapticInput) {
+            syncDisabledState(el);
             return;
         }
 
@@ -109,6 +120,9 @@ export const initGlobalHaptics = (): (() => void) => {
         // Append to interactive element
         el.appendChild(input);
         el.appendChild(label);
+
+        // Sync the disabled state initially
+        syncDisabledState(el);
     };
 
     // Scan existing elements
@@ -121,14 +135,23 @@ export const initGlobalHaptics = (): (() => void) => {
         for (const mutation of mutations) {
             const targetEl = mutation.target as HTMLElement;
 
+            // Skip mutations triggered by our own haptic overlay elements
+            if (targetEl.id && targetEl.id.startsWith("global-haptic-")) {
+                continue;
+            }
+            if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+                const isOurOwnNode = Array.from(mutation.addedNodes).some(
+                    (node) => node instanceof HTMLElement && node.id && node.id.startsWith("global-haptic-")
+                );
+                if (isOurOwnNode) {
+                    continue;
+                }
+            }
+
             // Handle attribute changes (e.g., button becoming enabled/disabled)
             if (mutation.type === "attributes" && mutation.attributeName === "disabled") {
                 if (targetEl.matches && targetEl.matches(SELECTOR)) {
-                    if (targetEl.hasAttribute("disabled") || (targetEl as any).disabled) {
-                        // Elements are disabled, clicks naturally won't trigger haptics.
-                    } else {
-                        setupHapticElements(targetEl);
-                    }
+                    syncDisabledState(targetEl);
                 }
                 continue;
             }

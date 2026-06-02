@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useQuery } from "convex/react";
 import * as queryCache from "@/lib/queryCache";
 
@@ -33,20 +33,31 @@ export function useCachedQuery<T>(
     const [cachedData, setCachedData] = useState<T | undefined>(() => 
         (isHydrated && key) ? queryCache.getInMemory<T>(key) : undefined
     );
-    const [isOnline, setIsOnline] = useState(() =>
-        typeof navigator !== "undefined" ? navigator.onLine : true
-    );
-    const cacheKeyRef = useRef<string | null>(key);
-    const initialLoadDone = useRef(false);
+    const [isOnline, setIsOnline] = useState(true);
+    const [prevKey, setPrevKey] = useState<string | null>(key);
 
-    // Track online/offline status
+    // Reset/synchronize cache state during render when the key changes.
+    // This avoids rendering stale data or needing react-hooks/set-state-in-effect disables.
+    if (key !== prevKey) {
+        setPrevKey(key);
+        const syncData = key ? queryCache.getInMemory<T>(key) : undefined;
+        setCachedData(syncData);
+    }
+
+    // Track online/offline status and sync initial state on mount to avoid hydration mismatch
     useEffect(() => {
+        // Run asynchronously to prevent cascading renders during mount phase
+        const timer = setTimeout(() => {
+            setIsOnline(navigator.onLine);
+        }, 0);
+
         const handleOnline = () => setIsOnline(true);
         const handleOffline = () => setIsOnline(false);
 
         window.addEventListener("online", handleOnline);
         window.addEventListener("offline", handleOffline);
         return () => {
+            clearTimeout(timer);
             window.removeEventListener("online", handleOnline);
             window.removeEventListener("offline", handleOffline);
         };
@@ -62,30 +73,13 @@ export function useCachedQuery<T>(
         });
     }, [key]);
 
-    // Load cached data on mount / when key changes
+    // Load cached data from IndexedDB if in-memory cache did not resolve
     useEffect(() => {
         isHydrated = true; // Safe to use synchronous cache for future components
-        
-        if (!key) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setCachedData(undefined);
-            cacheKeyRef.current = null;
-            initialLoadDone.current = false;
-            return;
-        }
-        
-        // Key changed — clear stale data immediately only if switching between different keys
-        if (cacheKeyRef.current && cacheKeyRef.current !== key) {
-            setCachedData(undefined);
-        }
-        cacheKeyRef.current = key;
-        initialLoadDone.current = false;
-        
-        // Try to load from synchronous memory cache first
+        if (!key) return;
+
         const syncData = queryCache.getInMemory<T>(key);
-        if (syncData !== undefined) {
-            setCachedData(syncData);
-        } else {
+        if (syncData === undefined) {
             readCache();
         }
     }, [key, readCache]);
@@ -104,8 +98,6 @@ export function useCachedQuery<T>(
     // When live data arrives while online, update the cache
     useEffect(() => {
         if (liveData !== undefined && key && isOnline) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setCachedData(liveData as T);
             queryCache.set(key, liveData);
         }
     }, [liveData, key, isOnline]);

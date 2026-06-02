@@ -51,6 +51,9 @@ export function cacheKey(functionPath: string, args: Record<string, unknown>): s
 
 // ─── In-memory Cache ────────────────────────────────────────
 const memoryCache = new Map<string, unknown>();
+const mutatedKeys = new Set<string>();
+let preloadAborted = false;
+let isPreloading = true;
 
 let preloadPromise: Promise<void> | null = null;
 
@@ -71,7 +74,10 @@ export function preloadCache(): Promise<void> {
                 request.onsuccess = (event) => {
                     const cursor = (event.target as IDBRequest<IDBCursorWithValue | null>).result;
                     if (cursor) {
-                        memoryCache.set(cursor.key as string, cursor.value);
+                        const key = cursor.key as string;
+                        if (!preloadAborted && !mutatedKeys.has(key)) {
+                            memoryCache.set(key, cursor.value);
+                        }
                         cursor.continue();
                     } else {
                         resolve();
@@ -81,6 +87,9 @@ export function preloadCache(): Promise<void> {
             });
         } catch {
             // Silently fail
+        } finally {
+            isPreloading = false;
+            mutatedKeys.clear();
         }
     })();
 
@@ -99,6 +108,9 @@ export function getInMemory<T>(key: string): T | undefined {
 /** Store a query result */
 export async function set(key: string, data: unknown): Promise<void> {
     memoryCache.set(key, data);
+    if (isPreloading) {
+        mutatedKeys.add(key);
+    }
     try {
         const db = await openDB();
         await new Promise<void>((resolve, reject) => {
@@ -140,6 +152,9 @@ export async function get<T>(key: string): Promise<T | undefined> {
 /** Remove a specific cache entry */
 export async function remove(key: string): Promise<void> {
     memoryCache.delete(key);
+    if (isPreloading) {
+        mutatedKeys.add(key);
+    }
     try {
         const db = await openDB();
         return new Promise((resolve, reject) => {
@@ -156,6 +171,9 @@ export async function remove(key: string): Promise<void> {
 /** Clear entire query cache */
 export async function clear(): Promise<void> {
     memoryCache.clear();
+    if (isPreloading) {
+        preloadAborted = true;
+    }
     try {
         const db = await openDB();
         return new Promise((resolve, reject) => {
