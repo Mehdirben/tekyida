@@ -59,6 +59,9 @@ export default function NotebookSwitcher({
             }
         }
         function handleScroll() {
+            if (dropdownRef.current?.contains(document.activeElement)) {
+                return;
+            }
             setOpen(false);
             setAdding(false);
             setNewName("");
