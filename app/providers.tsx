@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { SyncProvider } from "@/contexts/SyncContext";
+import { initGlobalHaptics } from "@/lib/haptics";
 
 export function Providers({ children }: { children: React.ReactNode }) {
     useEffect(() => {
@@ -49,6 +50,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 return () => window.removeEventListener("load", registerSW);
             }
         }
+    }, []);
+
+    useEffect(() => {
+        const cleanup = initGlobalHaptics();
+        return () => cleanup();
     }, []);
 
     return (
