@@ -520,12 +520,12 @@ export default function SettingsPage() {
                             <button
                                 type="button"
                                 onClick={handleLockToggleClick}
-                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none cursor-pointer ${
+                                className={`relative inline-flex h-6 w-11 shrink-0 items-center cursor-pointer rounded-full p-[3px] transition-colors duration-200 ease-in-out focus:outline-none ${
                                     isLockEnabled ? "bg-primary-500" : "bg-(--text-tertiary)/25"
                                 }`}
                             >
                                 <span
-                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                    className={`pointer-events-none inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
                                         isLockEnabled ? "translate-x-5" : "translate-x-0"
                                     }`}
                                 />

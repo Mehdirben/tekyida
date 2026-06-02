@@ -12,7 +12,7 @@ export default function LanguageToggle() {
     ];
 
     return (
-        <div className="flex items-center liquid-glass rounded-full p-0.5">
+        <div className="flex items-center liquid-glass rounded-full p-1 shrink-0">
             {options.map(({ value, label, flag }) => (
                 <button
                     key={value}
