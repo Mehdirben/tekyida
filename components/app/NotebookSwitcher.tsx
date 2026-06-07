@@ -345,21 +345,26 @@ export default function NotebookSwitcher({
                             displayNotebooks.map((notebook) =>
                                 editingId === notebook.id ? (
                                     <div key={notebook.id} className="px-3 py-2 flex items-center gap-2">
-                                        <input
-                                            ref={editInputRef}
-                                            type="text"
-                                            value={editName}
-                                            onChange={(e) => setEditName(e.target.value)}
-                                            maxLength={20}
-                                            onKeyDown={(e) => {
-                                                if (e.key === "Enter") handleEdit();
-                                                if (e.key === "Escape") {
-                                                    e.stopPropagation();
-                                                    setEditingId(null);
-                                                }
-                                            }}
-                                            className="glass-input py-1.5 text-sm flex-1"
-                                        />
+                                        <div className="relative flex-1">
+                                            <input
+                                                ref={editInputRef}
+                                                type="text"
+                                                value={editName}
+                                                onChange={(e) => setEditName(e.target.value)}
+                                                maxLength={20}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter") handleEdit();
+                                                    if (e.key === "Escape") {
+                                                        e.stopPropagation();
+                                                        setEditingId(null);
+                                                    }
+                                                }}
+                                                className="glass-input py-1.5 pl-3 pr-11 text-sm w-full"
+                                            />
+                                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-(--text-tertiary) pointer-events-none select-none">
+                                                {editName.length}/20
+                                            </span>
+                                        </div>
                                         <button
                                             onClick={handleEdit}
                                             disabled={!editName.trim()}
@@ -399,9 +404,6 @@ export default function NotebookSwitcher({
                                             </span>
                                             {isItemPending?.(notebook.id) && (
                                                 <CloudOff size={13} className="text-warning-500 shrink-0" />
-                                            )}
-                                            {notebook.id === activeNotebookId && (
-                                                <Check size={15} className="text-primary-500 shrink-0" />
                                             )}
                                         </button>
                                         <div className="flex items-center gap-0.5 shrink-0">
@@ -450,23 +452,28 @@ export default function NotebookSwitcher({
                         </button>
                     ) : adding ? (
                         <div className="p-3 flex items-center gap-2">
-                            <input
-                                ref={inputRef}
-                                type="text"
-                                value={newName}
-                                onChange={(e) => setNewName(e.target.value)}
-                                maxLength={20}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleAdd();
-                                    if (e.key === "Escape") {
-                                        e.stopPropagation();
-                                        setAdding(false);
-                                        setNewName("");
-                                    }
-                                }}
-                                placeholder={t("notebook.namePlaceholder")}
-                                className="glass-input py-2 text-sm flex-1"
-                            />
+                            <div className="relative flex-1">
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    value={newName}
+                                    onChange={(e) => setNewName(e.target.value)}
+                                    maxLength={20}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") handleAdd();
+                                        if (e.key === "Escape") {
+                                            e.stopPropagation();
+                                            setAdding(false);
+                                            setNewName("");
+                                        }
+                                    }}
+                                    placeholder={t("notebook.namePlaceholder")}
+                                    className="glass-input py-2 pl-3.5 pr-11 text-sm w-full"
+                                />
+                                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-(--text-tertiary) pointer-events-none select-none">
+                                    {newName.length}/20
+                                </span>
+                            </div>
                             <button
                                 onClick={handleAdd}
                                 disabled={!newName.trim()}
