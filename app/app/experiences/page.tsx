@@ -151,7 +151,12 @@ export default function ExperiencesPage() {
                             experiences={experiences}
                             notebookId={resolvedActiveId}
                             contacts={safeContacts.map((c) => ({ _id: c._id, name: c.name }))}
-                            notebooks={safeNotebooks.map((n) => ({ _id: n._id, name: n.name }))}
+                            notebooks={safeNotebooks.map((n) => ({
+                                _id: n._id,
+                                name: n.name,
+                                order: n.order,
+                                createdAt: n.createdAt,
+                            }))}
                             onSelectExperience={(exp) => setSelectedExperience(exp)}
                             onTransferComplete={(targetId) => setActiveNotebookId(targetId)}
                         />

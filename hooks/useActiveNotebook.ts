@@ -12,7 +12,7 @@ import { useSync } from "@/contexts/SyncContext";
  * Used by both the Dashboard and Experiences pages.
  */
 export function useActiveNotebook() {
-    const notebooks = useCachedQuery<{ _id: Id<"notebooks">; name: string; contactCount: number; balance: number }[]>("notebooks.list", api.notebooks.list, {});
+    const notebooks = useCachedQuery<{ _id: Id<"notebooks">; name: string; contactCount: number; balance: number; order?: number; createdAt?: number }[]>("notebooks.list", api.notebooks.list, {});
     const createNotebook = useMutation(api.notebooks.create);
     const updateNotebook = useMutation(api.notebooks.update);
     const deleteNotebook = useMutation(api.notebooks.remove);

@@ -48,6 +48,8 @@ interface Contact {
 interface Notebook {
     _id: Id<"notebooks">;
     name: string;
+    order?: number;
+    createdAt?: number;
 }
 
 interface ExperienceListProps {
@@ -242,7 +244,16 @@ export default function ExperienceList({
     };
 
     const transferNotebookOptions = useMemo(() => {
-        return notebooks
+        const sorted = [...notebooks].sort((a, b) => {
+            const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER;
+            const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER;
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+            return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+
+        return sorted
             .filter((n) => n._id !== notebookId)
             .map((n) => ({ value: n._id, label: n.name }));
     }, [notebooks, notebookId]);
