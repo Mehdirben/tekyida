@@ -533,7 +533,7 @@ export default function NotebookSwitcher({
                             <p className="text-sm text-(--text-secondary)">
                                 {t("notebook.deleteConfirm")}
                             </p>
-                            <p className="text-sm font-semibold mt-2">{deleteTarget.name}</p>
+                            <p className="text-sm font-semibold mt-2 break-words whitespace-normal">{deleteTarget.name}</p>
                         </div>
                         <div className="flex border-t border-(--border)">
                             <button
