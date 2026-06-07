@@ -82,9 +82,9 @@ export default function Select({
                 ref={triggerRef}
                 onClick={handleToggle}
                 type="button"
-                className={`glass-input relative w-full flex items-center justify-between text-left cursor-pointer transition-all duration-200 active:scale-[0.99] py-2.5 text-sm ${className}`}
+                className={`glass-input relative w-full flex items-center justify-between text-left cursor-pointer transition-all duration-200 active:scale-[0.99] py-2.5 text-sm min-w-0 ${className}`}
             >
-                <span className={selectedOption ? "text-(--text-primary)" : "text-(--text-tertiary)"}>
+                <span className={`truncate flex-1 min-w-0 text-left pr-2 ${selectedOption ? "text-(--text-primary)" : "text-(--text-tertiary)"}`}>
                     {selectedOption ? selectedOption.label : placeholder}
                 </span>
                 <ChevronDown
