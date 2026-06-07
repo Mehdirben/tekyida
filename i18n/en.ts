@@ -201,6 +201,9 @@ const en = {
     "settings.amountsOnLoad": "Amounts on Load",
     "settings.alwaysHidden": "Hidden",
     "settings.rememberLast": "Remember",
+    "settings.transferOnMove": "After Transfer",
+    "settings.transferStay": "Stay",
+    "settings.transferRedirect": "Go to Notebook",
     "settings.signOut": "Sign Out",
     "settings.signOutConfirm": "Are you sure you want to sign out?",
 

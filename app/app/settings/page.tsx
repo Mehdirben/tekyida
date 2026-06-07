@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import LanguageToggle from "@/components/ui/LanguageToggle";
 import AmountsLoadBehaviorToggle from "@/components/ui/AmountsLoadBehaviorToggle";
+import TransferRedirectToggle from "@/components/ui/TransferRedirectToggle";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useSync } from "@/contexts/SyncContext";
@@ -585,6 +586,17 @@ export default function SettingsPage() {
                     <div className="flex items-center justify-center sm:justify-between gap-4">
                         <span className="hidden sm:block text-sm font-medium min-w-0 flex-1">{t("settings.amountsOnLoad")}</span>
                         <AmountsLoadBehaviorToggle />
+                    </div>
+                </section>
+
+                {/* Transfer Redirect Section */}
+                <section className="liquid-glass-card p-6 animate-slide-up delay-400">
+                    <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
+                        {t("settings.transferOnMove")}
+                    </h2>
+                    <div className="flex items-center justify-center sm:justify-between gap-4">
+                        <span className="hidden sm:block text-sm font-medium min-w-0 flex-1">{t("settings.transferOnMove")}</span>
+                        <TransferRedirectToggle />
                     </div>
                 </section>
 

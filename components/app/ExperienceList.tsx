@@ -56,6 +56,7 @@ interface ExperienceListProps {
     contacts: Contact[];
     notebooks: Notebook[];
     onSelectExperience: (experience: ExperienceSummary) => void;
+    onTransferComplete?: (targetNotebookId: Id<"notebooks">) => void;
 }
 
 export default function ExperienceList({
@@ -64,6 +65,7 @@ export default function ExperienceList({
     contacts,
     notebooks,
     onSelectExperience,
+    onTransferComplete,
 }: ExperienceListProps) {
     const { t } = useTranslation();
     const { mask } = useAmountsVisibility();
@@ -248,16 +250,25 @@ export default function ExperienceList({
     const handleTransfer = async () => {
         if (!transferTarget || !transferNotebookId) return;
         triggerHaptic("success");
+        const targetId = transferNotebookId as Id<"notebooks">;
         await offlineMutation(
             "experiences:transfer",
             transferExperience,
             {
                 id: transferTarget._id,
-                targetNotebookId: transferNotebookId as Id<"notebooks">,
+                targetNotebookId: targetId,
             },
             { notebookId }
         );
         handleCloseTransfer();
+
+        // Check if user wants to redirect to the target notebook
+        const redirectPref = typeof window !== "undefined"
+            ? localStorage.getItem("tekyida-transfer-redirect")
+            : null;
+        if (redirectPref === "redirect" && onTransferComplete) {
+            onTransferComplete(targetId);
+        }
     };
 
     const formatBalance = (amount: number) => {
