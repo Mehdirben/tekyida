@@ -142,6 +142,10 @@ const en = {
     "experience.transactions": "transactions",
     "experience.closedNotice": "This experience is closed. Reopen it to make changes.",
     "experience.totalBalance": "Open Experiences Balance",
+    "experience.transfer": "Transfer to Notebook",
+    "experience.transferTitle": "Transfer Experience",
+    "experience.transferConfirm": "Move this experience and all its transactions to the selected notebook? Contact link will be removed.",
+    "experience.selectNotebook": "Select a notebook",
 
     // Transaction
     "transaction.add": "Add Transaction",
@@ -161,6 +165,7 @@ const en = {
     "common.delete": "Delete",
     "common.save": "Save",
     "common.close": "Close",
+    "common.transfer": "Transfer",
 
     // Settings
     "settings.title": "Settings",

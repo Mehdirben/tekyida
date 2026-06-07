@@ -13,6 +13,7 @@ import {
     ChevronRight,
     CloudOff,
     User,
+    ArrowRightLeft,
 } from "lucide-react";
 import Select from "@/components/ui/Select";
 import { useTranslation } from "@/i18n/LanguageContext";
@@ -44,10 +45,16 @@ interface Contact {
     name: string;
 }
 
+interface Notebook {
+    _id: Id<"notebooks">;
+    name: string;
+}
+
 interface ExperienceListProps {
     experiences: ExperienceSummary[];
     notebookId: Id<"notebooks">;
     contacts: Contact[];
+    notebooks: Notebook[];
     onSelectExperience: (experience: ExperienceSummary) => void;
 }
 
@@ -55,6 +62,7 @@ export default function ExperienceList({
     experiences,
     notebookId,
     contacts,
+    notebooks,
     onSelectExperience,
 }: ExperienceListProps) {
     const { t } = useTranslation();
@@ -91,6 +99,9 @@ export default function ExperienceList({
     const [editName, setEditName] = useState("");
     const [editContactId, setEditContactId] = useState<string>("");
     const [isEditClosing, setIsEditClosing] = useState(false);
+    const [transferTarget, setTransferTarget] = useState<ExperienceSummary | null>(null);
+    const [transferNotebookId, setTransferNotebookId] = useState<string>("");
+    const [isTransferClosing, setIsTransferClosing] = useState(false);
 
     const handleCloseEdit = useCallback(() => {
         triggerHaptic("light");
@@ -98,6 +109,16 @@ export default function ExperienceList({
         setTimeout(() => {
             setEditTarget(null);
             setIsEditClosing(false);
+        }, 250);
+    }, []);
+
+    const handleCloseTransfer = useCallback(() => {
+        triggerHaptic("light");
+        setIsTransferClosing(true);
+        setTimeout(() => {
+            setTransferTarget(null);
+            setTransferNotebookId("");
+            setIsTransferClosing(false);
         }, 250);
     }, []);
 
@@ -109,16 +130,19 @@ export default function ExperienceList({
     const updateExperience = useMutation(api.experiences.update);
     const closeExperience = useMutation(api.experiences.close);
     const reopenExperience = useMutation(api.experiences.reopen);
+    const transferExperience = useMutation(api.experiences.transfer);
     const { offlineMutation, isItemPending } = useSync();
 
-    useBodyScrollLock(Boolean(deleteTarget || editTarget));
+    useBodyScrollLock(Boolean(deleteTarget || editTarget || transferTarget));
     const keyboardInset = useKeyboardInset();
     const keyboardOffsetStyle = keyboardInset > 0 ? { paddingBottom: `${keyboardInset + 12}px` } : undefined;
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
-                if (deleteTarget) {
+                if (transferTarget) {
+                    handleCloseTransfer();
+                } else if (deleteTarget) {
                     triggerHaptic("light");
                     setDeleteTarget(null);
                 } else if (editTarget) {
@@ -133,7 +157,7 @@ export default function ExperienceList({
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [deleteTarget, editTarget, adding, handleCloseEdit]);
+    }, [deleteTarget, editTarget, transferTarget, adding, handleCloseEdit, handleCloseTransfer]);
 
     useEffect(() => {
         if (adding && nameRef.current) nameRef.current.focus();
@@ -213,6 +237,27 @@ export default function ExperienceList({
                 { notebookId }
             );
         }
+    };
+
+    const transferNotebookOptions = useMemo(() => {
+        return notebooks
+            .filter((n) => n._id !== notebookId)
+            .map((n) => ({ value: n._id, label: n.name }));
+    }, [notebooks, notebookId]);
+
+    const handleTransfer = async () => {
+        if (!transferTarget || !transferNotebookId) return;
+        triggerHaptic("success");
+        await offlineMutation(
+            "experiences:transfer",
+            transferExperience,
+            {
+                id: transferTarget._id,
+                targetNotebookId: transferNotebookId as Id<"notebooks">,
+            },
+            { notebookId }
+        );
+        handleCloseTransfer();
     };
 
     const formatBalance = (amount: number) => {
@@ -335,6 +380,17 @@ export default function ExperienceList({
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
+                                    triggerHaptic("selection");
+                                    setTransferTarget(exp);
+                                }}
+                                className="p-1.5 rounded-lg text-(--text-tertiary) hover:bg-white/10 active:bg-white/10 transition-all cursor-pointer"
+                                title={t("experience.transfer")}
+                            >
+                                <ArrowRightLeft size={13} />
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
                                     triggerHaptic("warning");
                                     setDeleteTarget(exp);
                                 }}
@@ -453,6 +509,61 @@ export default function ExperienceList({
                                 className="flex-1 py-3.5 text-sm font-semibold text-primary-500 border-l border-(--border) transition-all active:bg-primary-500/10 disabled:opacity-40 cursor-pointer"
                             >
                                 {t("common.save")}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Transfer Experience Popup */}
+            {transferTarget && createPortal(
+                <div className="fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
+                    <div
+                        className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${isTransferClosing ? "animate-fade-out" : "animate-fade-in"}`}
+                        onClick={handleCloseTransfer}
+                    />
+                    <div className={`relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl ${isTransferClosing ? "animate-scale-out" : "animate-scale-in"}`}>
+                        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
+                            <h3 className="text-base font-bold">{t("experience.transferTitle")}</h3>
+                            <button
+                                onClick={handleCloseTransfer}
+                                className="p-1.5 rounded-lg active:bg-white/10 transition-all cursor-pointer"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-3">
+                            <p className="text-sm font-semibold">{transferTarget.name}</p>
+                            <p className="text-xs text-(--text-secondary)">
+                                {t("experience.transferConfirm")}
+                            </p>
+                            {transferNotebookOptions.length > 0 ? (
+                                <Select
+                                    options={transferNotebookOptions}
+                                    value={transferNotebookId}
+                                    onChange={setTransferNotebookId}
+                                    placeholder={t("experience.selectNotebook")}
+                                />
+                            ) : (
+                                <p className="text-xs text-(--text-tertiary) italic text-center py-2">
+                                    {t("notebook.add")}
+                                </p>
+                            )}
+                        </div>
+                        <div className="flex border-t border-(--border) rounded-b-2xl overflow-hidden">
+                            <button
+                                onClick={handleCloseTransfer}
+                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
+                            >
+                                {t("common.cancel")}
+                            </button>
+                            <button
+                                onClick={handleTransfer}
+                                disabled={!transferNotebookId}
+                                className="flex-1 py-3.5 text-sm font-semibold text-primary-500 border-l border-(--border) transition-all active:bg-primary-500/10 disabled:opacity-40 cursor-pointer"
+                            >
+                                {t("common.transfer")}
                             </button>
                         </div>
                     </div>

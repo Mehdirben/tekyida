@@ -144,6 +144,10 @@ const fr: Record<TranslationKey, string> = {
     "experience.transactions": "transactions",
     "experience.closedNotice": "Cette expérience est clôturée. Rouvrez-la pour faire des modifications.",
     "experience.totalBalance": "Solde Expériences Ouvertes",
+    "experience.transfer": "Transférer vers un Carnet",
+    "experience.transferTitle": "Transférer l'Expérience",
+    "experience.transferConfirm": "Déplacer cette expérience et toutes ses transactions vers le carnet sélectionné ? Le lien avec le contact sera supprimé.",
+    "experience.selectNotebook": "Choisir un carnet",
 
     // Transaction
     "transaction.add": "Ajouter une Transaction",
@@ -163,6 +167,7 @@ const fr: Record<TranslationKey, string> = {
     "common.delete": "Supprimer",
     "common.save": "Enregistrer",
     "common.close": "Fermer",
+    "common.transfer": "Transférer",
 
     // Settings
     "settings.title": "Paramètres",

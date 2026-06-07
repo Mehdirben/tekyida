@@ -168,3 +168,46 @@ export const reopen = mutation({
         await ctx.db.patch(args.id, { closed: false });
     },
 });
+
+export const transfer = mutation({
+    args: {
+        id: v.id("experiences"),
+        targetNotebookId: v.id("notebooks"),
+    },
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error("Not authenticated");
+
+        const experience = await ctx.db.get(args.id);
+        if (!experience || experience.userId !== userId) {
+            throw new Error("Experience not found");
+        }
+
+        if (experience.notebookId === args.targetNotebookId) {
+            throw new Error("Already in this notebook");
+        }
+
+        const targetNotebook = await ctx.db.get(args.targetNotebookId);
+        if (!targetNotebook || targetNotebook.userId !== userId) {
+            throw new Error("Target notebook not found");
+        }
+
+        // Move experience — clear contactId (contacts are notebook-scoped)
+        await ctx.db.patch(args.id, {
+            notebookId: args.targetNotebookId,
+            contactId: undefined,
+        });
+
+        // Move all linked transactions
+        const transactions = await ctx.db
+            .query("transactions")
+            .withIndex("by_experience", (q) => q.eq("experienceId", args.id))
+            .collect();
+        for (const t of transactions) {
+            await ctx.db.patch(t._id, {
+                notebookId: args.targetNotebookId,
+                contactId: undefined,
+            });
+        }
+    },
+});

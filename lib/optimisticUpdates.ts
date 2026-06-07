@@ -57,6 +57,8 @@ export async function applyOptimisticUpdate(
                 return void (await experienceSetClosed(args, context, true));
             case "experiences:reopen":
                 return void (await experienceSetClosed(args, context, false));
+            case "experiences:transfer":
+                return void (await experienceTransfer(args, context));
             default:
                 return undefined;
         }
@@ -555,5 +557,60 @@ async function updateExperienceSummary(
         }
         experiences[expIdx] = updatedExp;
         await queryCache.set(expKey, experiences);
+    }
+}
+
+async function experienceTransfer(
+    args: Record<string, unknown>,
+    ctx?: OptimisticContext
+): Promise<void> {
+    const sourceNotebookId = ctx?.notebookId;
+    const targetNotebookId = args.targetNotebookId as string;
+    const experienceId = args.id as string;
+    if (!sourceNotebookId || !targetNotebookId) return;
+
+    // Remove from source notebook's experience list
+    const sourceKey = queryCache.cacheKey("experiences.list", { notebookId: sourceNotebookId });
+    const sourceList = await readList(sourceKey);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const exp = sourceList.find((e: any) => e._id === experienceId);
+    if (!exp) return;
+
+    const expBalance = exp.balance ?? 0;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await queryCache.set(sourceKey, sourceList.filter((e: any) => e._id !== experienceId));
+
+    // Add to target notebook's experience list (clear contactId)
+    const targetKey = queryCache.cacheKey("experiences.list", { notebookId: targetNotebookId });
+    const targetList = await readList(targetKey);
+    targetList.unshift({
+        ...exp,
+        notebookId: targetNotebookId,
+        contactId: undefined,
+    });
+    await queryCache.set(targetKey, targetList);
+
+    // Update notebook balances
+    const nbKey = queryCache.cacheKey("notebooks.list", {});
+    const notebooks = await readList(nbKey);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const srcIdx = notebooks.findIndex((n: any) => n._id === sourceNotebookId);
+    if (srcIdx !== -1) {
+        notebooks[srcIdx] = {
+            ...notebooks[srcIdx],
+            balance: (notebooks[srcIdx].balance ?? 0) - expBalance,
+        };
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tgtIdx = notebooks.findIndex((n: any) => n._id === targetNotebookId);
+    if (tgtIdx !== -1) {
+        notebooks[tgtIdx] = {
+            ...notebooks[tgtIdx],
+            balance: (notebooks[tgtIdx].balance ?? 0) + expBalance,
+        };
+    }
+    if (srcIdx !== -1 || tgtIdx !== -1) {
+        await queryCache.set(nbKey, notebooks);
     }
 }
