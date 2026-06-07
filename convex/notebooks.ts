@@ -58,7 +58,7 @@ export const create = mutation({
         if (!userId) throw new Error("Not authenticated");
 
         const name = args.name.trim();
-        if (!name || name.length > 200) throw new Error("Invalid notebook name");
+        if (!name || name.length > 20) throw new Error("Invalid notebook name");
 
         return await ctx.db.insert("notebooks", {
             userId,
@@ -121,7 +121,7 @@ export const update = mutation({
         if (!userId) throw new Error("Not authenticated");
 
         const name = args.name.trim();
-        if (!name || name.length > 200) throw new Error("Invalid notebook name");
+        if (!name || name.length > 20) throw new Error("Invalid notebook name");
 
         const notebook = await ctx.db.get(args.id);
         if (!notebook || notebook.userId !== userId) {

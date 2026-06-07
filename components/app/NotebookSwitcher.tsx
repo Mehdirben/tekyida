@@ -350,6 +350,7 @@ export default function NotebookSwitcher({
                                             type="text"
                                             value={editName}
                                             onChange={(e) => setEditName(e.target.value)}
+                                            maxLength={20}
                                             onKeyDown={(e) => {
                                                 if (e.key === "Enter") handleEdit();
                                                 if (e.key === "Escape") {
@@ -454,6 +455,7 @@ export default function NotebookSwitcher({
                                 type="text"
                                 value={newName}
                                 onChange={(e) => setNewName(e.target.value)}
+                                maxLength={20}
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") handleAdd();
                                     if (e.key === "Escape") {

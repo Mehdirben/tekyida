@@ -45,7 +45,7 @@ export function useActiveNotebook() {
         const id = await offlineMutation(
             "notebooks:create",
             createNotebook,
-            { name }
+            { name: name.trim().slice(0, 20) }
         );
         if (id) setActiveNotebookId(id as Id<"notebooks">);
     };
@@ -54,7 +54,7 @@ export function useActiveNotebook() {
         await offlineMutation(
             "notebooks:update",
             updateNotebook,
-            { id: id as Id<"notebooks">, name }
+            { id: id as Id<"notebooks">, name: name.trim().slice(0, 20) }
         );
     };
 
