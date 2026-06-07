@@ -232,6 +232,11 @@ export default function ExperienceDetail({
                                 {localMask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
                                 {localHidden ? <EyeOff size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" /> : <Eye size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" />}
                             </button>
+                            <span className="text-[11px] text-(--text-tertiary) flex items-center gap-1">
+                                <span>·</span>
+                                <span>{transactions.length} {t("experience.transactions")}</span>
+                                <span>·</span>
+                            </span>
                             <button
                                 onClick={() => {
                                     triggerHaptic(closed ? "selection" : "warning");
