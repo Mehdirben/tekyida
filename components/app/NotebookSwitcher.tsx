@@ -561,9 +561,19 @@ export default function NotebookSwitcher({
                             <button
                                 onClick={handleAdd}
                                 disabled={!newName.trim()}
-                                className="p-2 rounded-xl bg-primary-800/80 dark:bg-primary-500/70 text-white transition-all duration-200 disabled:opacity-40 cursor-pointer"
+                                className="p-2 rounded-xl bg-primary-800/80 dark:bg-primary-500/70 text-white transition-all duration-200 disabled:opacity-40 cursor-pointer shrink-0"
                             >
                                 <Plus size={16} />
+                            </button>
+                            <button
+                                onClick={() => {
+                                    triggerHaptic("light");
+                                    setAdding(false);
+                                    setNewName("");
+                                }}
+                                className="p-2 rounded-xl text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer shrink-0"
+                            >
+                                <X size={16} />
                             </button>
                         </div>
                     ) : (
