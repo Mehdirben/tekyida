@@ -120,6 +120,9 @@ const fr: Record<TranslationKey, string> = {
     "notebook.unarchive": "Restaurer le Carnet",
     "notebook.archivedSection": "Carnets Archivés",
     "notebook.noArchived": "Aucun carnet archivé",
+    "notebook.archivedStatus": "archivé",
+    "notebook.showArchived": "Afficher les carnets archivés",
+    "notebook.hideArchived": "Masquer les carnets archivés",
 
     // Contact
     "contact.add": "Ajouter un Contact",

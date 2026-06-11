@@ -118,6 +118,9 @@ const en = {
     "notebook.unarchive": "Restore Notebook",
     "notebook.archivedSection": "Archived Notebooks",
     "notebook.noArchived": "No archived notebooks",
+    "notebook.archivedStatus": "archived",
+    "notebook.showArchived": "Show archived notebooks",
+    "notebook.hideArchived": "Hide archived notebooks",
 
     // Contact
     "contact.add": "Add Contact",

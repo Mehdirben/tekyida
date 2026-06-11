@@ -15,6 +15,12 @@ interface SelectProps {
     onChange: (value: string) => void;
     placeholder?: string;
     className?: string;
+    footerButton?: {
+        icon: React.ReactNode;
+        label: string;
+        onClick: () => void;
+        active?: boolean;
+    };
 }
 
 export default function Select({
@@ -23,6 +29,7 @@ export default function Select({
     onChange,
     placeholder,
     className = "",
+    footerButton,
 }: SelectProps) {
     const [open, setOpen] = useState(false);
     const [openUpward, setOpenUpward] = useState(false);
@@ -137,6 +144,27 @@ export default function Select({
                         </button>
                     ))}
                 </div>
+                {footerButton && (
+                    <div className="border-t border-(--border)">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                triggerHaptic("selection");
+                                footerButton.onClick();
+                            }}
+                            className={`w-full flex items-center justify-center gap-2 px-4 py-3 text-center transition-all duration-200 cursor-pointer font-semibold text-sm ${
+                                footerButton.active
+                                    ? "text-warning-500 bg-warning-500/8 dark:bg-warning-500/12 hover:bg-warning-500/12 dark:hover:bg-warning-500/20"
+                                    : "text-primary-600 dark:text-primary-400 hover:bg-black/5 dark:hover:bg-white/5"
+                            }`}
+                        >
+                            {footerButton.icon}
+                            <span>{footerButton.label}</span>
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

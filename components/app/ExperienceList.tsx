@@ -14,6 +14,8 @@ import {
     CloudOff,
     User,
     ArrowRightLeft,
+    Archive,
+    ArchiveRestore,
 } from "lucide-react";
 import Select from "@/components/ui/Select";
 import { useTranslation } from "@/i18n/LanguageContext";
@@ -50,6 +52,7 @@ interface Notebook {
     name: string;
     order?: number;
     createdAt?: number;
+    archived?: boolean;
 }
 
 interface ExperienceListProps {
@@ -106,6 +109,7 @@ export default function ExperienceList({
     const [transferTarget, setTransferTarget] = useState<ExperienceSummary | null>(null);
     const [transferNotebookId, setTransferNotebookId] = useState<string>("");
     const [isTransferClosing, setIsTransferClosing] = useState(false);
+    const [showArchivedInTransfer, setShowArchivedInTransfer] = useState(false);
 
     const handleCloseEdit = useCallback(() => {
         triggerHaptic("light");
@@ -122,6 +126,7 @@ export default function ExperienceList({
         setTimeout(() => {
             setTransferTarget(null);
             setTransferNotebookId("");
+            setShowArchivedInTransfer(false);
             setIsTransferClosing(false);
         }, 250);
     }, []);
@@ -254,9 +259,12 @@ export default function ExperienceList({
         });
 
         return sorted
-            .filter((n) => n._id !== notebookId)
-            .map((n) => ({ value: n._id, label: n.name }));
-    }, [notebooks, notebookId]);
+            .filter((n) => n._id !== notebookId && (showArchivedInTransfer || !n.archived))
+            .map((n) => ({
+                value: n._id,
+                label: n.archived ? `${n.name} (${t("notebook.archivedStatus")})` : n.name
+            }));
+    }, [notebooks, notebookId, showArchivedInTransfer, t]);
 
     const handleTransfer = async () => {
         if (!transferTarget || !transferNotebookId) return;
@@ -566,6 +574,14 @@ export default function ExperienceList({
                                     value={transferNotebookId}
                                     onChange={setTransferNotebookId}
                                     placeholder={t("experience.selectNotebook")}
+                                    footerButton={
+                                        notebooks.some((n) => n.archived && n._id !== notebookId) ? {
+                                            icon: showArchivedInTransfer ? <ArchiveRestore size={15} /> : <Archive size={15} />,
+                                            label: showArchivedInTransfer ? t("notebook.hideArchived") : t("notebook.showArchived"),
+                                            onClick: () => setShowArchivedInTransfer(!showArchivedInTransfer),
+                                            active: showArchivedInTransfer
+                                        } : undefined
+                                    }
                                 />
                             ) : (
                                 <p className="text-xs text-(--text-tertiary) italic text-center py-2">
