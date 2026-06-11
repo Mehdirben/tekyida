@@ -736,8 +736,8 @@ export default function NotebookSwitcher({
                     />
                     <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
                         <div className="p-5 text-center">
-                            <div className="inline-flex p-3 rounded-full bg-primary-500/10 mb-3">
-                                <ArchiveRestore size={22} className="text-primary-500" />
+                            <div className="inline-flex p-3 rounded-full bg-warning-500/10 mb-3">
+                                <ArchiveRestore size={22} className="text-warning-500" />
                             </div>
                             <h3 className="text-base font-bold mb-1">{t("notebook.unarchive")}</h3>
                             <p className="text-sm text-(--text-secondary)">
@@ -764,7 +764,7 @@ export default function NotebookSwitcher({
                                         setOpen(false);
                                     }
                                 }}
-                                className="flex-1 py-3.5 text-sm font-semibold text-primary-500 border-l border-(--border) transition-all active:bg-primary-500/10 cursor-pointer"
+                                className="flex-1 py-3.5 text-sm font-semibold text-warning-500 border-l border-(--border) transition-all active:bg-warning-500/10 cursor-pointer"
                             >
                                 {t("common.restore")}
                             </button>
