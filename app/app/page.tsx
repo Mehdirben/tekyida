@@ -51,7 +51,7 @@ export default function DashboardPage() {
     const netBalance = moneyOwed - moneyGiven;
 
     // Wait for data before rendering — prevents flash from 0 to loaded values
-    const dataReady = !!notebooks && (safeNotebooks.length === 0 || contacts !== undefined);
+    const dataReady = !!notebooks && (!resolvedActiveId || contacts !== undefined);
 
     if (!dataReady && !isOffline) return null;
 
@@ -83,7 +83,7 @@ export default function DashboardPage() {
                     />
                 </div>
 
-                {safeNotebooks.length === 0 ? (
+                {!resolvedActiveId ? (
                     /* Empty State */
                     <div className="animate-slide-up delay-100">
                         <EmptyState

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -28,19 +28,29 @@ export function useActiveNotebook() {
 
     const setActiveNotebookId = useCallback((id: Id<"notebooks"> | undefined) => {
         setActiveNotebookIdRaw(id);
-        if (id) {
-            localStorage.setItem("tekyida-active-notebook", id);
-        } else {
-            localStorage.removeItem("tekyida-active-notebook");
-        }
     }, []);
 
-
-    // Auto-select first active notebook when loaded
+    // Auto-select first active notebook when loaded.
+    // Allows archived notebooks if they were explicitly selected during the session.
     const resolvedActiveId =
-        activeNotebookId && notebooks?.some((n) => n._id === activeNotebookId && !n.archived)
+        activeNotebookId && notebooks?.some((n) => n._id === activeNotebookId)
             ? activeNotebookId
             : notebooks?.find((n) => !n.archived)?._id;
+
+    // Sync active notebook to localStorage ONLY if it is not archived
+    useEffect(() => {
+        if (!notebooks) return;
+
+        if (!resolvedActiveId) {
+            localStorage.removeItem("tekyida-active-notebook");
+            return;
+        }
+
+        const notebook = notebooks.find((n) => n._id === resolvedActiveId);
+        if (notebook && !notebook.archived) {
+            localStorage.setItem("tekyida-active-notebook", resolvedActiveId);
+        }
+    }, [resolvedActiveId, notebooks]);
 
     const handleCreateNotebook = async (name: string) => {
         const id = await offlineMutation(

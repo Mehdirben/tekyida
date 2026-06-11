@@ -109,7 +109,7 @@ export default function ExperiencesPage() {
         }
     };
 
-    const dataReady = !!notebooks && (safeNotebooks.length === 0 || experiences !== undefined);
+    const dataReady = !!notebooks && (!resolvedActiveId || experiences !== undefined);
 
     if (!dataReady && !isOffline) return null;
 

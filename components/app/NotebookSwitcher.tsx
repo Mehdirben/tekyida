@@ -292,7 +292,11 @@ export default function NotebookSwitcher({
                     boxShadow: "0 4px 24px var(--glass-shadow), 0 1px 2px var(--glass-shadow), inset 0 1px 0 var(--glass-highlight)",
                 }}
             >
-                <BookOpen size={18} className="text-primary-500" />
+                {activeNotebook?.archived ? (
+                    <Archive size={18} className="text-warning-500" />
+                ) : (
+                    <BookOpen size={18} className="text-primary-500" />
+                )}
                 <span className="font-semibold text-sm truncate max-w-[200px]">
                     {displayName}
                 </span>
@@ -478,17 +482,27 @@ export default function NotebookSwitcher({
                             {archivedNotebooks.map((notebook) => (
                                 <div
                                     key={notebook.id}
-                                    className="w-full flex items-center justify-between px-4 py-2.5 text-(--text-secondary) transition-all duration-200"
+                                    className={`w-full flex items-center justify-between px-4 py-2.5 transition-all duration-200 ${notebook.id === activeNotebookId
+                                        ? "bg-primary-500/12 text-primary-700 dark:text-primary-300"
+                                        : "text-(--text-secondary)"
+                                        }`}
                                 >
-                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    <button
+                                        onClick={() => {
+                                            triggerHaptic("selection");
+                                            onSelect?.(notebook.id);
+                                            setOpen(false);
+                                        }}
+                                        className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
+                                    >
                                         <Archive size={14} className="shrink-0 text-(--text-tertiary)" />
-                                        <span className="text-sm font-medium truncate flex-1 select-none">
+                                        <span className="text-sm font-medium truncate flex-1">
                                             {notebook.name}
                                         </span>
                                         {isItemPending?.(notebook.id) && (
                                             <CloudOff size={11} className="text-warning-500 shrink-0" />
                                         )}
-                                    </div>
+                                    </button>
                                     <div className="flex items-center gap-1 shrink-0 ml-2">
                                         {onArchive && (
                                             <button
