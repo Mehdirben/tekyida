@@ -37,6 +37,7 @@ export default function Select({
     const [openUpward, setOpenUpward] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
+    const archivedSectionRef = useRef<HTMLDivElement>(null);
 
     const { t } = useTranslation();
     const selectedOption = options.find((opt) => opt.value === value);
@@ -160,7 +161,10 @@ export default function Select({
                     ))}
 
                     {archivedOptions.length > 0 && (
-                        <div className="border-t border-(--border)/30 mt-2 pt-1 bg-black/5 dark:bg-white/2 divide-y divide-(--border)/30">
+                        <div
+                            ref={archivedSectionRef}
+                            className="border-t border-(--border)/30 mt-2 pt-1 bg-black/5 dark:bg-white/2 divide-y divide-(--border)/30"
+                        >
                             <div className="px-4 pt-1.5 pb-2.5 text-[10px] font-bold uppercase tracking-wider text-(--text-tertiary) select-none">
                                 {t("notebook.archivedSection")} ({archivedOptions.length})
                             </div>
@@ -202,6 +206,12 @@ export default function Select({
                                 e.stopPropagation();
                                 triggerHaptic("selection");
                                 footerButton.onClick();
+                                
+                                if (!footerButton.active) {
+                                    setTimeout(() => {
+                                        archivedSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                                    }, 100);
+                                }
                             }}
                             className={`w-full flex items-center justify-center gap-2 px-4 py-3 text-center transition-all duration-200 cursor-pointer font-semibold text-sm ${
                                 footerButton.active

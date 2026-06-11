@@ -579,7 +579,17 @@ export default function ExperienceList({
                                         notebooks.some((n) => n.archived && n._id !== notebookId) ? {
                                             icon: showArchivedInTransfer ? <ArchiveRestore size={15} /> : <Archive size={15} />,
                                             label: showArchivedInTransfer ? t("notebook.hideArchived") : t("notebook.showArchived"),
-                                            onClick: () => setShowArchivedInTransfer(!showArchivedInTransfer),
+                                            onClick: () => {
+                                                const nextShow = !showArchivedInTransfer;
+                                                setShowArchivedInTransfer(nextShow);
+                                                
+                                                if (!nextShow && transferNotebookId) {
+                                                    const selectedNotebook = notebooks.find((n) => n._id === transferNotebookId);
+                                                    if (selectedNotebook?.archived) {
+                                                        setTransferNotebookId("");
+                                                    }
+                                                }
+                                            },
                                             active: showArchivedInTransfer
                                         } : undefined
                                     }

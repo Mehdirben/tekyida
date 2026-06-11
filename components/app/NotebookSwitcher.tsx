@@ -49,6 +49,7 @@ export default function NotebookSwitcher({
     const dropdownRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const editInputRef = useRef<HTMLInputElement>(null);
+    const archivedSectionRef = useRef<HTMLDivElement>(null);
 
     const [isReordering, setIsReordering] = useState(false);
     const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -219,6 +220,16 @@ export default function NotebookSwitcher({
     useEffect(() => {
         if (editingId && editInputRef.current) editInputRef.current.focus();
     }, [editingId]);
+
+    // Scroll to archived section when expanded
+    useEffect(() => {
+        if (showArchived) {
+            const timer = setTimeout(() => {
+                archivedSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [showArchived]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -475,7 +486,10 @@ export default function NotebookSwitcher({
 
                     {/* Collapsible Archived Section inside scroll container */}
                     {showArchived && archivedNotebooks.length > 0 && (
-                        <div className="border-t border-(--border)/30 mt-2 pt-1 bg-black/5 dark:bg-white/2 divide-y divide-(--border)/30">
+                        <div
+                            ref={archivedSectionRef}
+                            className="border-t border-(--border)/30 mt-2 pt-1 bg-black/5 dark:bg-white/2 divide-y divide-(--border)/30"
+                        >
                             <div className="px-4 pt-1.5 pb-2.5 text-[10px] font-bold uppercase tracking-wider text-(--text-tertiary) select-none">
                                 {t("notebook.archivedSection")} ({archivedNotebooks.length})
                             </div>
