@@ -154,7 +154,7 @@ export default function NotebookSwitcher({
         let active = true;
         let scrollListenerAdded = false;
 
-        function handleClick(e: MouseEvent) {
+        function handleClick(e: MouseEvent | TouchEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
                 setOpen(false);
                 setAdding(false);
@@ -187,6 +187,7 @@ export default function NotebookSwitcher({
         }
         if (open) {
             document.addEventListener("mousedown", handleClick);
+            document.addEventListener("touchstart", handleClick, { passive: true });
             document.addEventListener("keydown", handleKeyDown);
 
             // Add scroll listener with a small delay to avoid capturing the initial render/focus scroll
@@ -201,6 +202,7 @@ export default function NotebookSwitcher({
                 active = false;
                 clearTimeout(timer);
                 document.removeEventListener("mousedown", handleClick);
+                document.removeEventListener("touchstart", handleClick);
                 document.removeEventListener("keydown", handleKeyDown);
                 if (scrollListenerAdded) {
                     window.removeEventListener("scroll", handleScroll, { capture: true });

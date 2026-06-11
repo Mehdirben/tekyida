@@ -46,7 +46,7 @@ export default function Select({
 
     // Close on click outside and escape key
     useEffect(() => {
-        function handleClick(e: MouseEvent) {
+        function handleClick(e: MouseEvent | TouchEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
                 setOpen(false);
             }
@@ -58,9 +58,11 @@ export default function Select({
         }
         if (open) {
             document.addEventListener("mousedown", handleClick);
+            document.addEventListener("touchstart", handleClick, { passive: true });
             document.addEventListener("keydown", handleKeyDown);
             return () => {
                 document.removeEventListener("mousedown", handleClick);
+                document.removeEventListener("touchstart", handleClick);
                 document.removeEventListener("keydown", handleKeyDown);
             };
         }
