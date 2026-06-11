@@ -113,6 +113,11 @@ const en = {
     "notebook.namePlaceholder": "Notebook name…",
     "notebook.edit": "Edit Notebook",
     "notebook.editName": "Notebook name",
+    "notebook.archive": "Archive Notebook",
+    "notebook.archiveConfirm": "Archive this notebook? It will be hidden from the active list but can be restored later.",
+    "notebook.unarchive": "Restore Notebook",
+    "notebook.archivedSection": "Archived Notebooks",
+    "notebook.noArchived": "No archived notebooks",
 
     // Contact
     "contact.add": "Add Contact",

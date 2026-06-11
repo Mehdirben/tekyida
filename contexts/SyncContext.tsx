@@ -43,6 +43,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     // Get all mutation functions
     const notebooksCreate = useMutation(api.notebooks.create);
     const notebooksUpdate = useMutation(api.notebooks.update);
+    const notebooksArchive = useMutation(api.notebooks.archive);
     const notebooksRemove = useMutation(api.notebooks.remove);
     const contactsCreate = useMutation(api.contacts.create);
     const contactsUpdate = useMutation(api.contacts.update);
@@ -61,6 +62,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         switch (path) {
             case "notebooks:create": return notebooksCreate;
             case "notebooks:update": return notebooksUpdate;
+            case "notebooks:archive": return notebooksArchive;
             case "notebooks:remove": return notebooksRemove;
             case "contacts:create": return contactsCreate;
             case "contacts:update": return contactsUpdate;
@@ -76,7 +78,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
             default: return null;
         }
     }, [
-        notebooksCreate, notebooksUpdate, notebooksRemove,
+        notebooksCreate, notebooksUpdate, notebooksArchive, notebooksRemove,
         contactsCreate, contactsUpdate, contactsRemove,
         transactionsCreate, transactionsUpdate, transactionsRemove,
         experiencesCreate, experiencesUpdate, experiencesRemove,

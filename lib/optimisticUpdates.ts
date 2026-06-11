@@ -31,6 +31,8 @@ export async function applyOptimisticUpdate(
                 return await notebookCreate(args);
             case "notebooks:update":
                 return void (await notebookUpdate(args));
+            case "notebooks:archive":
+                return void (await notebookArchive(args));
             case "notebooks:remove":
                 return void (await notebookRemove(args));
             case "notebooks:reorder":
@@ -104,6 +106,18 @@ async function notebookUpdate(args: Record<string, unknown>): Promise<void> {
         await queryCache.set(key, list);
     }
 }
+
+async function notebookArchive(args: Record<string, unknown>): Promise<void> {
+    const key = queryCache.cacheKey("notebooks.list", {});
+    const list = await readList(key);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const idx = list.findIndex((n: any) => n._id === args.id);
+    if (idx !== -1) {
+        list[idx] = { ...list[idx], archived: args.archived };
+        await queryCache.set(key, list);
+    }
+}
+
 
 async function notebookRemove(args: Record<string, unknown>): Promise<void> {
     const key = queryCache.cacheKey("notebooks.list", {});

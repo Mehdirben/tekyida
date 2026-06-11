@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Plus, BookOpen, Check, Pencil, Trash2, X, CloudOff, GripVertical } from "lucide-react";
+import { ChevronDown, Plus, BookOpen, Check, Pencil, Trash2, X, CloudOff, GripVertical, Archive, ArchiveRestore } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { triggerHaptic } from "@/lib/haptics";
@@ -10,6 +10,7 @@ import { triggerHaptic } from "@/lib/haptics";
 interface Notebook {
     id: string;
     name: string;
+    archived?: boolean;
 }
 
 interface NotebookSwitcherProps {
@@ -19,6 +20,7 @@ interface NotebookSwitcherProps {
     onAdd?: (name: string) => void;
     onEdit?: (id: string, name: string) => void;
     onDelete?: (id: string) => void;
+    onArchive?: (id: string, archived: boolean) => void;
     onReorder?: (ids: string[]) => void;
     isItemPending?: (id: string) => boolean;
 }
@@ -30,6 +32,7 @@ export default function NotebookSwitcher({
     onAdd,
     onEdit,
     onDelete,
+    onArchive,
     onReorder,
     isItemPending,
 }: NotebookSwitcherProps) {
@@ -40,6 +43,8 @@ export default function NotebookSwitcher({
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState("");
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+    const [archiveTargetId, setArchiveTargetId] = useState<string | null>(null);
+    const [showArchived, setShowArchived] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const editInputRef = useRef<HTMLInputElement>(null);
@@ -132,12 +137,15 @@ export default function NotebookSwitcher({
         }
     }, [draggedId, draggedIndex, localNotebooks, onReorder]);
 
+    const activeNotebooks = notebooks.filter((n) => !n.archived);
+    const archivedNotebooks = notebooks.filter((n) => n.archived);
     const activeNotebook = notebooks.find((n) => n.id === activeNotebookId);
     const displayName = activeNotebook?.name || t("notebook.select");
     const deleteTarget = notebooks.find((n) => n.id === deleteTargetId);
-    const displayNotebooks = isReordering ? localNotebooks : notebooks;
+    const archiveTarget = notebooks.find((n) => n.id === archiveTargetId);
+    const displayNotebooks = isReordering ? localNotebooks : activeNotebooks;
 
-    useBodyScrollLock(Boolean(deleteTarget));
+    useBodyScrollLock(Boolean(deleteTarget) || Boolean(archiveTarget));
 
     // Close dropdown on outside click, page scroll, or escape key
     useEffect(() => {
@@ -210,14 +218,19 @@ export default function NotebookSwitcher({
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape" && deleteTargetId) {
-                triggerHaptic("light");
-                setDeleteTargetId(null);
+            if (e.key === "Escape") {
+                if (deleteTargetId) {
+                    triggerHaptic("light");
+                    setDeleteTargetId(null);
+                } else if (archiveTargetId) {
+                    triggerHaptic("light");
+                    setArchiveTargetId(null);
+                }
             }
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [deleteTargetId]);
+    }, [deleteTargetId, archiveTargetId]);
 
     const handleAdd = () => {
         const trimmed = newName.trim();
@@ -414,9 +427,23 @@ export default function NotebookSwitcher({
                                                     startEdit(notebook);
                                                 }}
                                                 className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
+                                                title={t("notebook.edit")}
                                             >
                                                 <Pencil size={12} />
                                             </button>
+                                            {onArchive && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        triggerHaptic("warning");
+                                                        setArchiveTargetId(notebook.id);
+                                                    }}
+                                                    className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
+                                                    title={t("notebook.archive")}
+                                                >
+                                                    <Archive size={12} />
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -424,6 +451,7 @@ export default function NotebookSwitcher({
                                                     setDeleteTargetId(notebook.id);
                                                 }}
                                                 className="p-1 rounded-md text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
+                                                title={t("notebook.delete")}
                                             >
                                                 <Trash2 size={12} />
                                             </button>
@@ -433,6 +461,57 @@ export default function NotebookSwitcher({
                             )
                         )}
                     </div>
+
+                    {/* Collapsible Archived Section inside scroll container */}
+                    {showArchived && archivedNotebooks.length > 0 && (
+                        <div className="border-t border-(--border)/30 mt-2 pt-2 bg-black/5 dark:bg-white/2 divide-y divide-(--border)/30">
+                            <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-(--text-tertiary) select-none">
+                                {t("notebook.archivedSection")} ({archivedNotebooks.length})
+                            </div>
+                            {archivedNotebooks.map((notebook) => (
+                                <div
+                                    key={notebook.id}
+                                    className="w-full flex items-center justify-between px-4 py-2.5 text-(--text-secondary) transition-all duration-200"
+                                >
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <Archive size={14} className="shrink-0 text-(--text-tertiary)" />
+                                        <span className="text-sm font-medium truncate flex-1 select-none">
+                                            {notebook.name}
+                                        </span>
+                                        {isItemPending?.(notebook.id) && (
+                                            <CloudOff size={11} className="text-warning-500 shrink-0" />
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                                        {onArchive && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    triggerHaptic("success");
+                                                    onArchive(notebook.id, false);
+                                                }}
+                                                className="p-1 rounded-md text-primary-600 hover:bg-primary-500/10 transition-all cursor-pointer"
+                                                title={t("notebook.unarchive")}
+                                            >
+                                                <ArchiveRestore size={13} />
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                triggerHaptic("warning");
+                                                setDeleteTargetId(notebook.id);
+                                            }}
+                                            className="p-1 rounded-md text-danger-500/60 hover:bg-danger-500/10 transition-all cursor-pointer"
+                                            title={t("notebook.delete")}
+                                        >
+                                            <Trash2 size={13} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Divider + Add section */}
@@ -484,6 +563,28 @@ export default function NotebookSwitcher({
                         </div>
                     ) : (
                         <div className="flex divide-x divide-(--border)">
+                            {archivedNotebooks.length > 0 && (
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        triggerHaptic("selection");
+                                        setShowArchived(!showArchived);
+                                    }}
+                                    className={`px-4.5 flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                                        showArchived
+                                            ? "text-warning-500 bg-warning-500/12 dark:bg-warning-500/20"
+                                            : "text-(--text-secondary) hover:text-warning-500 active:bg-white/5"
+                                    }`}
+                                    title={t("notebook.archivedSection")}
+                                >
+                                    {showArchived ? (
+                                        <ArchiveRestore size={17} className="stroke-[2.25]" />
+                                    ) : (
+                                        <Archive size={17} />
+                                    )}
+                                </button>
+                            )}
                             <button
                                 onClick={(e) => {
                                     e.preventDefault();
@@ -496,7 +597,7 @@ export default function NotebookSwitcher({
                                 <Plus size={17} strokeWidth={2.5} />
                                 <span className="text-sm font-semibold">{t("notebook.add")}</span>
                             </button>
-                            {notebooks.length > 1 && onReorder && (
+                            {activeNotebooks.length > 1 && onReorder && (
                                 <button
                                     onClick={(e) => {
                                         e.preventDefault();
@@ -505,11 +606,11 @@ export default function NotebookSwitcher({
 
                                         // Lock the current active notebook in hooks state before reordering
                                         // so that shifting the first notebook doesn't change the displayed selection
-                                        if (!activeNotebookId && notebooks.length > 0) {
-                                            onSelect?.(notebooks[0].id);
+                                        if (!activeNotebookId && activeNotebooks.length > 0) {
+                                            onSelect?.(activeNotebooks[0].id);
                                         }
 
-                                        setLocalNotebooks(notebooks);
+                                        setLocalNotebooks(activeNotebooks);
                                         setIsReordering(true);
                                     }}
                                     className="px-4 flex items-center justify-center text-(--text-secondary) active:text-primary-500 transition-all duration-200 cursor-pointer"
@@ -561,6 +662,56 @@ export default function NotebookSwitcher({
                                 className="flex-1 py-3.5 text-sm font-semibold text-danger-500 border-l border-(--border) transition-all active:bg-danger-500/10 cursor-pointer"
                             >
                                 {t("common.delete")}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Archive Notebook Confirmation */}
+            {archiveTarget && createPortal(
+                <div className="fixed inset-0 z-[200] flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+                        onClick={() => {
+                            triggerHaptic("light");
+                            setArchiveTargetId(null);
+                        }}
+                    />
+                    <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
+                        <div className="p-5 text-center">
+                            <div className="inline-flex p-3 rounded-full bg-warning-500/10 mb-3">
+                                <Archive size={22} className="text-warning-500" />
+                            </div>
+                            <h3 className="text-base font-bold mb-1">{t("notebook.archive")}</h3>
+                            <p className="text-sm text-(--text-secondary)">
+                                {t("notebook.archiveConfirm")}
+                            </p>
+                            <p className="text-sm font-semibold mt-2 break-words whitespace-normal">{archiveTarget.name}</p>
+                        </div>
+                        <div className="flex border-t border-(--border)">
+                            <button
+                                onClick={() => {
+                                    triggerHaptic("light");
+                                    setArchiveTargetId(null);
+                                }}
+                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
+                            >
+                                {t("common.cancel")}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (archiveTargetId) {
+                                        triggerHaptic("success");
+                                        onArchive?.(archiveTargetId, true);
+                                        setArchiveTargetId(null);
+                                        setOpen(false);
+                                    }
+                                }}
+                                className="flex-1 py-3.5 text-sm font-semibold text-warning-500 border-l border-(--border) transition-all active:bg-warning-500/10 cursor-pointer"
+                            >
+                                {t("common.confirm")}
                             </button>
                         </div>
                     </div>

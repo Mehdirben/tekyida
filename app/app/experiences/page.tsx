@@ -35,6 +35,7 @@ export default function ExperiencesPage() {
         handleCreateNotebook,
         handleEditNotebook,
         handleDeleteNotebook,
+        handleArchiveNotebook,
         handleReorderNotebooks,
         isItemPending,
         isOffline,
@@ -123,15 +124,17 @@ export default function ExperiencesPage() {
                         <SyncIndicator />
                     </div>
                     <NotebookSwitcher
-                        notebooks={safeNotebooks.map((n) => ({
+                        notebooks={notebooks ? notebooks.map((n) => ({
                             id: n._id,
                             name: n.name,
-                        }))}
+                            archived: n.archived,
+                        })) : []}
                         activeNotebookId={resolvedActiveId}
                         onSelect={(id) => setActiveNotebookId(id as Id<"notebooks">)}
                         onAdd={handleCreateNotebook}
                         onEdit={handleEditNotebook}
                         onDelete={handleDeleteNotebook}
+                        onArchive={handleArchiveNotebook}
                         onReorder={handleReorderNotebooks}
                         isItemPending={isItemPending}
                     />

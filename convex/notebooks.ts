@@ -151,3 +151,22 @@ export const reorder = mutation({
         }
     },
 });
+
+export const archive = mutation({
+    args: {
+        id: v.id("notebooks"),
+        archived: v.boolean(),
+    },
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error("Not authenticated");
+
+        const notebook = await ctx.db.get(args.id);
+        if (!notebook || notebook.userId !== userId) {
+            throw new Error("Notebook not found");
+        }
+
+        await ctx.db.patch(args.id, { archived: args.archived });
+    },
+});
+

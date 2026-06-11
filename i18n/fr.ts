@@ -115,6 +115,11 @@ const fr: Record<TranslationKey, string> = {
     "notebook.namePlaceholder": "Nom du carnet…",
     "notebook.edit": "Modifier le Carnet",
     "notebook.editName": "Nom du carnet",
+    "notebook.archive": "Archiver le Carnet",
+    "notebook.archiveConfirm": "Archiver ce carnet ? Il sera masqué de la liste active mais pourra être restauré plus tard.",
+    "notebook.unarchive": "Restaurer le Carnet",
+    "notebook.archivedSection": "Carnets Archivés",
+    "notebook.noArchived": "Aucun carnet archivé",
 
     // Contact
     "contact.add": "Ajouter un Contact",

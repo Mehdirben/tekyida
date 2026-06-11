@@ -12,10 +12,11 @@ import { useSync } from "@/contexts/SyncContext";
  * Used by both the Dashboard and Experiences pages.
  */
 export function useActiveNotebook() {
-    const notebooks = useCachedQuery<{ _id: Id<"notebooks">; name: string; contactCount: number; balance: number; order?: number; createdAt?: number }[]>("notebooks.list", api.notebooks.list, {});
+    const notebooks = useCachedQuery<{ _id: Id<"notebooks">; name: string; contactCount: number; balance: number; order?: number; createdAt?: number; archived?: boolean }[]>("notebooks.list", api.notebooks.list, {});
     const createNotebook = useMutation(api.notebooks.create);
     const updateNotebook = useMutation(api.notebooks.update);
     const deleteNotebook = useMutation(api.notebooks.remove);
+    const archiveNotebook = useMutation(api.notebooks.archive);
     const reorderNotebooks = useMutation(api.notebooks.reorder);
     const { offlineMutation, isItemPending } = useSync();
 
@@ -35,11 +36,11 @@ export function useActiveNotebook() {
     }, []);
 
 
-    // Auto-select first notebook when loaded
+    // Auto-select first active notebook when loaded
     const resolvedActiveId =
-        activeNotebookId && notebooks?.some((n) => n._id === activeNotebookId)
+        activeNotebookId && notebooks?.some((n) => n._id === activeNotebookId && !n.archived)
             ? activeNotebookId
-            : notebooks?.[0]?._id;
+            : notebooks?.find((n) => !n.archived)?._id;
 
     const handleCreateNotebook = async (name: string) => {
         const id = await offlineMutation(
@@ -69,6 +70,18 @@ export function useActiveNotebook() {
         }
     };
 
+    const handleArchiveNotebook = async (id: string, archived: boolean) => {
+        await offlineMutation(
+            "notebooks:archive",
+            archiveNotebook,
+            { id: id as Id<"notebooks">, archived }
+        );
+        if (archived && resolvedActiveId === id) {
+            const nextActive = notebooks?.find((n) => n._id !== id && !n.archived);
+            setActiveNotebookId(nextActive?._id);
+        }
+    };
+
     const handleReorderNotebooks = async (ids: string[]) => {
         await offlineMutation(
             "notebooks:reorder",
@@ -77,7 +90,7 @@ export function useActiveNotebook() {
         );
     };
 
-    const safeNotebooks = notebooks ?? [];
+    const safeNotebooks = notebooks?.filter((n) => !n.archived) ?? [];
     const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
 
     return {
@@ -88,6 +101,7 @@ export function useActiveNotebook() {
         handleCreateNotebook,
         handleEditNotebook,
         handleDeleteNotebook,
+        handleArchiveNotebook,
         handleReorderNotebooks,
         isItemPending,
         isOffline,

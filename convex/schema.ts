@@ -10,6 +10,7 @@ const schema = defineSchema({
         name: v.string(),
         createdAt: v.number(),
         order: v.optional(v.number()),
+        archived: v.optional(v.boolean()),
     }).index("by_user", ["userId"]),
 
     contacts: defineTable({
