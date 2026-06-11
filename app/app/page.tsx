@@ -73,7 +73,7 @@ export default function DashboardPage() {
                             archived: n.archived,
                         })) : []}
                         activeNotebookId={resolvedActiveId}
-                        onSelect={(id) => setActiveNotebookId(id as Id<"notebooks">)}
+                        onSelect={(id) => setActiveNotebookId(id ? id as Id<"notebooks"> : undefined)}
                         onAdd={handleCreateNotebook}
                         onEdit={handleEditNotebook}
                         onDelete={handleDeleteNotebook}

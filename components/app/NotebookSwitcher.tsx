@@ -16,7 +16,7 @@ interface Notebook {
 interface NotebookSwitcherProps {
     notebooks: Notebook[];
     activeNotebookId?: string;
-    onSelect?: (id: string) => void;
+    onSelect?: (id: string | undefined) => void;
     onAdd?: (name: string) => void;
     onEdit?: (id: string, name: string) => void;
     onDelete?: (id: string) => void;
@@ -561,7 +561,12 @@ export default function NotebookSwitcher({
                                             e.preventDefault();
                                             e.stopPropagation();
                                             triggerHaptic("selection");
-                                            setShowArchived(!showArchived);
+                                            const nextShow = !showArchived;
+                                            setShowArchived(nextShow);
+                                            if (!nextShow && activeNotebook?.archived) {
+                                                const saved = localStorage.getItem("tekyida-active-notebook");
+                                                onSelect?.(saved || undefined);
+                                            }
                                         }}
                                         className={`px-4.5 flex items-center justify-center transition-all duration-200 cursor-pointer ${
                                             showArchived
