@@ -158,8 +158,8 @@ export default function Select({
                     ))}
 
                     {archivedOptions.length > 0 && (
-                        <div className="border-t border-(--border)/30 mt-2 pt-2 bg-black/5 dark:bg-white/2 divide-y divide-(--border)/30">
-                            <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-(--text-tertiary) select-none">
+                        <div className="border-t border-(--border)/30 mt-2 pt-1 bg-black/5 dark:bg-white/2 divide-y divide-(--border)/30">
+                            <div className="px-4 pt-1.5 pb-2.5 text-[10px] font-bold uppercase tracking-wider text-(--text-tertiary) select-none">
                                 {t("notebook.archivedSection")} ({archivedOptions.length})
                             </div>
                             {archivedOptions.map((option) => (
