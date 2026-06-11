@@ -262,9 +262,10 @@ export default function ExperienceList({
             .filter((n) => n._id !== notebookId && (showArchivedInTransfer || !n.archived))
             .map((n) => ({
                 value: n._id,
-                label: n.archived ? `${n.name} (${t("notebook.archivedStatus")})` : n.name
+                label: n.name,
+                archived: n.archived
             }));
-    }, [notebooks, notebookId, showArchivedInTransfer, t]);
+    }, [notebooks, notebookId, showArchivedInTransfer]);
 
     const handleTransfer = async () => {
         if (!transferTarget || !transferNotebookId) return;

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, Archive } from "lucide-react";
 import { triggerHaptic } from "@/lib/haptics";
+import { useTranslation } from "@/i18n/LanguageContext";
 
 export interface SelectOption {
     value: string;
     label: string;
+    archived?: boolean;
 }
 
 interface SelectProps {
@@ -36,7 +38,11 @@ export default function Select({
     const dropdownRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
 
+    const { t } = useTranslation();
     const selectedOption = options.find((opt) => opt.value === value);
+
+    const activeOptions = options.filter((opt) => !opt.archived);
+    const archivedOptions = options.filter((opt) => opt.archived);
 
     // Close on click outside and escape key
     useEffect(() => {
@@ -91,8 +97,15 @@ export default function Select({
                 type="button"
                 className={`glass-input relative w-full flex items-center justify-between text-left cursor-pointer transition-all duration-200 active:scale-[0.99] py-2.5 text-sm min-w-0 ${className}`}
             >
-                <span className={`truncate flex-1 min-w-0 text-left pr-2 ${selectedOption ? "text-(--text-primary)" : "text-(--text-tertiary)"}`}>
-                    {selectedOption ? selectedOption.label : placeholder}
+                <span className={`truncate flex-1 min-w-0 text-left pr-2 flex items-center gap-1.5 ${selectedOption ? "text-(--text-primary)" : "text-(--text-tertiary)"}`}>
+                    {selectedOption?.archived && <Archive size={14} className="text-warning-500 shrink-0" />}
+                    <span className="truncate">
+                        {selectedOption
+                            ? selectedOption.archived
+                                ? `${selectedOption.label} (${t("notebook.archivedStatus")})`
+                                : selectedOption.label
+                            : placeholder}
+                    </span>
                 </span>
                 <ChevronDown
                     size={16}
@@ -120,7 +133,7 @@ export default function Select({
                 }}
             >
                 <div className="max-h-60 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] py-1.5">
-                    {options.map((option) => (
+                    {activeOptions.map((option) => (
                         <button
                             key={option.value}
                             type="button"
@@ -143,6 +156,40 @@ export default function Select({
                             )}
                         </button>
                     ))}
+
+                    {archivedOptions.length > 0 && (
+                        <div className="border-t border-(--border)/30 mt-2 pt-2 bg-black/5 dark:bg-white/2 divide-y divide-(--border)/30">
+                            <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-(--text-tertiary) select-none">
+                                {t("notebook.archivedSection")} ({archivedOptions.length})
+                            </div>
+                            {archivedOptions.map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        triggerHaptic("selection");
+                                        onChange(option.value);
+                                        setOpen(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium transition-all duration-150 cursor-pointer ${
+                                        option.value === value
+                                            ? "bg-primary-500/12 text-primary-700 dark:text-primary-300 font-semibold"
+                                            : "text-(--text-secondary) hover:bg-white/5 active:bg-white/10"
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                                        <Archive size={14} className="shrink-0 text-(--text-tertiary)" />
+                                        <span className="truncate text-left">{option.label}</span>
+                                    </div>
+                                    {option.value === value && (
+                                        <Check size={14} className="text-primary-500 shrink-0" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
                 {footerButton && (
                     <div className="border-t border-(--border)">
