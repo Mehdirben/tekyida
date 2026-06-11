@@ -176,6 +176,7 @@ const fr: Record<TranslationKey, string> = {
     "common.save": "Enregistrer",
     "common.close": "Fermer",
     "common.transfer": "Transférer",
+    "common.archive": "Archiver",
 
     // Settings
     "settings.title": "Paramètres",

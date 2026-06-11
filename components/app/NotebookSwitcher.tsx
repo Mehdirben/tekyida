@@ -711,7 +711,7 @@ export default function NotebookSwitcher({
                                 }}
                                 className="flex-1 py-3.5 text-sm font-semibold text-warning-500 border-l border-(--border) transition-all active:bg-warning-500/10 cursor-pointer"
                             >
-                                {t("common.confirm")}
+                                {t("common.archive")}
                             </button>
                         </div>
                     </div>

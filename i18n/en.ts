@@ -174,6 +174,7 @@ const en = {
     "common.save": "Save",
     "common.close": "Close",
     "common.transfer": "Transfer",
+    "common.archive": "Archive",
 
     // Settings
     "settings.title": "Settings",
