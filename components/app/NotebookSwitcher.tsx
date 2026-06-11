@@ -520,7 +520,7 @@ export default function NotebookSwitcher({
                 </div>
 
                 {/* Divider + Add section */}
-                <div className="border-t border-(--border)">
+                <div className="border-t border-(--border) relative overflow-hidden transition-all duration-300 ease-out" style={{ height: isReordering ? "48px" : (adding ? "62px" : "48px") }}>
                     {isReordering ? (
                         <button
                             onClick={(e) => {
@@ -530,111 +530,122 @@ export default function NotebookSwitcher({
                                 setIsReordering(false);
                             }}
                             className="w-full flex items-center justify-center gap-2 px-4 py-3.5 text-center text-primary-600 dark:text-primary-400 hover:bg-primary-500/5 transition-all duration-200 cursor-pointer font-semibold text-sm"
+                            tabIndex={0}
                         >
                             <Check size={16} />
                             <span>{t("notebook.reorderDone")}</span>
                         </button>
-                    ) : adding ? (
-                        <div className="p-3 flex items-center gap-2">
-                            <div className="relative flex-1">
-                                <input
-                                    ref={inputRef}
-                                    type="text"
-                                    value={newName}
-                                    onChange={(e) => setNewName(e.target.value)}
-                                    maxLength={20}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") handleAdd();
-                                        if (e.key === "Escape") {
-                                            e.stopPropagation();
-                                            setAdding(false);
-                                            setNewName("");
-                                        }
-                                    }}
-                                    placeholder={t("notebook.namePlaceholder")}
-                                    className="glass-input py-2 pl-3.5 pr-11 text-sm w-full"
-                                />
-                                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-(--text-tertiary) pointer-events-none select-none">
-                                    {newName.length}/20
-                                </span>
-                            </div>
-                            <button
-                                onClick={handleAdd}
-                                disabled={!newName.trim()}
-                                className="p-2 rounded-xl bg-primary-800/80 dark:bg-primary-500/70 text-white transition-all duration-200 disabled:opacity-40 cursor-pointer shrink-0"
-                            >
-                                <Plus size={16} />
-                            </button>
-                            <button
-                                onClick={() => {
-                                    triggerHaptic("light");
-                                    setAdding(false);
-                                    setNewName("");
-                                }}
-                                className="p-2 rounded-xl text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer shrink-0"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
                     ) : (
-                        <div className="flex divide-x divide-(--border)">
-                            {archivedNotebooks.length > 0 && (
+                        <>
+                            {/* normal footer buttons */}
+                            <div className={`absolute inset-0 flex divide-x divide-(--border) transition-all duration-300 ease-out ${adding ? "opacity-0 translate-y-2 pointer-events-none scale-95" : "opacity-100 translate-y-0 scale-100"}`}>
+                                {archivedNotebooks.length > 0 && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            triggerHaptic("selection");
+                                            setShowArchived(!showArchived);
+                                        }}
+                                        className={`px-4.5 flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                                            showArchived
+                                                ? "text-warning-500 bg-warning-500/12 dark:bg-warning-500/20"
+                                                : "text-(--text-secondary) hover:text-warning-500 active:bg-white/5"
+                                        }`}
+                                        title={t("notebook.archivedSection")}
+                                        tabIndex={adding ? -1 : 0}
+                                    >
+                                        {showArchived ? (
+                                            <ArchiveRestore size={17} className="stroke-[2.25]" />
+                                        ) : (
+                                            <Archive size={17} />
+                                        )}
+                                    </button>
+                                )}
                                 <button
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         triggerHaptic("selection");
-                                        setShowArchived(!showArchived);
+                                        setAdding(true);
                                     }}
-                                    className={`px-4.5 flex items-center justify-center transition-all duration-200 cursor-pointer ${
-                                        showArchived
-                                            ? "text-warning-500 bg-warning-500/12 dark:bg-warning-500/20"
-                                            : "text-(--text-secondary) hover:text-warning-500 active:bg-white/5"
-                                    }`}
-                                    title={t("notebook.archivedSection")}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 text-primary-600 dark:text-primary-400 transition-all duration-200 cursor-pointer"
+                                    tabIndex={adding ? -1 : 0}
                                 >
-                                    {showArchived ? (
-                                        <ArchiveRestore size={17} className="stroke-[2.25]" />
-                                    ) : (
-                                        <Archive size={17} />
-                                    )}
+                                    <Plus size={17} strokeWidth={2.5} />
+                                    <span className="text-sm font-semibold">{t("notebook.add")}</span>
                                 </button>
-                            )}
-                            <button
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    triggerHaptic("selection");
-                                    setAdding(true);
-                                }}
-                                className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 text-primary-600 dark:text-primary-400 transition-all duration-200 cursor-pointer"
-                            >
-                                <Plus size={17} strokeWidth={2.5} />
-                                <span className="text-sm font-semibold">{t("notebook.add")}</span>
-                            </button>
-                            {activeNotebooks.length > 1 && onReorder && (
+                                {activeNotebooks.length > 1 && onReorder && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            triggerHaptic("selection");
+
+                                            // Lock the current active notebook in hooks state before reordering
+                                            // so that shifting the first notebook doesn't change the displayed selection
+                                            if (!activeNotebookId && activeNotebooks.length > 0) {
+                                                onSelect?.(activeNotebooks[0].id);
+                                            }
+
+                                            setLocalNotebooks(activeNotebooks);
+                                            setIsReordering(true);
+                                        }}
+                                        className="px-4 flex items-center justify-center text-(--text-secondary) active:text-primary-500 transition-all duration-200 cursor-pointer"
+                                        title={t("notebook.reorder")}
+                                        tabIndex={adding ? -1 : 0}
+                                    >
+                                        <GripVertical size={17} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* add input panel */}
+                            <div className={`absolute inset-0 p-3 flex items-center gap-2 transition-all duration-300 ease-out ${adding ? "opacity-100 translate-y-0 scale-100" : "opacity-0 -translate-y-2 pointer-events-none scale-95"}`}>
+                                <div className="relative flex-1">
+                                    <input
+                                        ref={inputRef}
+                                        type="text"
+                                        value={newName}
+                                        onChange={(e) => setNewName(e.target.value)}
+                                        maxLength={20}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") handleAdd();
+                                            if (e.key === "Escape") {
+                                                e.stopPropagation();
+                                                setAdding(false);
+                                                setNewName("");
+                                            }
+                                        }}
+                                        placeholder={t("notebook.namePlaceholder")}
+                                        className="glass-input py-2 pl-3.5 pr-11 text-sm w-full"
+                                        tabIndex={adding ? 0 : -1}
+                                    />
+                                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-(--text-tertiary) pointer-events-none select-none">
+                                        {newName.length}/20
+                                    </span>
+                                </div>
                                 <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        triggerHaptic("selection");
-
-                                        // Lock the current active notebook in hooks state before reordering
-                                        // so that shifting the first notebook doesn't change the displayed selection
-                                        if (!activeNotebookId && activeNotebooks.length > 0) {
-                                            onSelect?.(activeNotebooks[0].id);
-                                        }
-
-                                        setLocalNotebooks(activeNotebooks);
-                                        setIsReordering(true);
-                                    }}
-                                    className="px-4 flex items-center justify-center text-(--text-secondary) active:text-primary-500 transition-all duration-200 cursor-pointer"
-                                    title={t("notebook.reorder")}
+                                    onClick={handleAdd}
+                                    disabled={!newName.trim()}
+                                    className="p-2 rounded-xl bg-primary-800/80 dark:bg-primary-500/70 text-white transition-all duration-200 disabled:opacity-40 cursor-pointer shrink-0"
+                                    tabIndex={adding ? 0 : -1}
                                 >
-                                    <GripVertical size={17} />
+                                    <Plus size={16} />
                                 </button>
-                            )}
-                        </div>
+                                <button
+                                    onClick={() => {
+                                        triggerHaptic("light");
+                                        setAdding(false);
+                                        setNewName("");
+                                    }}
+                                    className="p-2 rounded-xl text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer shrink-0"
+                                    tabIndex={adding ? 0 : -1}
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
