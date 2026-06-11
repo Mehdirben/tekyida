@@ -116,6 +116,7 @@ const en = {
     "notebook.archive": "Archive Notebook",
     "notebook.archiveConfirm": "Archive this notebook? It will be hidden from the active list but can be restored later.",
     "notebook.unarchive": "Restore Notebook",
+    "notebook.unarchiveConfirm": "Restore this notebook? It will be returned to the active list.",
     "notebook.archivedSection": "Archived Notebooks",
     "notebook.noArchived": "No archived notebooks",
     "notebook.archivedStatus": "archived",
@@ -175,6 +176,7 @@ const en = {
     "common.close": "Close",
     "common.transfer": "Transfer",
     "common.archive": "Archive",
+    "common.restore": "Restore",
 
     // Settings
     "settings.title": "Settings",

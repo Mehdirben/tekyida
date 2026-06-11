@@ -118,6 +118,7 @@ const fr: Record<TranslationKey, string> = {
     "notebook.archive": "Archiver le Carnet",
     "notebook.archiveConfirm": "Archiver ce carnet ? Il sera masqué de la liste active mais pourra être restauré plus tard.",
     "notebook.unarchive": "Restaurer le Carnet",
+    "notebook.unarchiveConfirm": "Restaurer ce carnet ? Il sera replacé dans la liste active.",
     "notebook.archivedSection": "Carnets Archivés",
     "notebook.noArchived": "Aucun carnet archivé",
     "notebook.archivedStatus": "archivé",
@@ -177,6 +178,7 @@ const fr: Record<TranslationKey, string> = {
     "common.close": "Fermer",
     "common.transfer": "Transférer",
     "common.archive": "Archiver",
+    "common.restore": "Restaurer",
 
     // Settings
     "settings.title": "Paramètres",

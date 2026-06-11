@@ -44,6 +44,7 @@ export default function NotebookSwitcher({
     const [editName, setEditName] = useState("");
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
     const [archiveTargetId, setArchiveTargetId] = useState<string | null>(null);
+    const [unarchiveTargetId, setUnarchiveTargetId] = useState<string | null>(null);
     const [showArchived, setShowArchived] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -143,9 +144,10 @@ export default function NotebookSwitcher({
     const displayName = activeNotebook?.name || t("notebook.select");
     const deleteTarget = notebooks.find((n) => n.id === deleteTargetId);
     const archiveTarget = notebooks.find((n) => n.id === archiveTargetId);
+    const unarchiveTarget = notebooks.find((n) => n.id === unarchiveTargetId);
     const displayNotebooks = isReordering ? localNotebooks : activeNotebooks;
 
-    useBodyScrollLock(Boolean(deleteTarget) || Boolean(archiveTarget));
+    useBodyScrollLock(Boolean(deleteTarget) || Boolean(archiveTarget) || Boolean(unarchiveTarget));
 
     // Close dropdown on outside click, page scroll, or escape key
     useEffect(() => {
@@ -225,12 +227,15 @@ export default function NotebookSwitcher({
                 } else if (archiveTargetId) {
                     triggerHaptic("light");
                     setArchiveTargetId(null);
+                } else if (unarchiveTargetId) {
+                    triggerHaptic("light");
+                    setUnarchiveTargetId(null);
                 }
             }
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [deleteTargetId, archiveTargetId]);
+    }, [deleteTargetId, archiveTargetId, unarchiveTargetId]);
 
     const handleAdd = () => {
         const trimmed = newName.trim();
@@ -487,8 +492,8 @@ export default function NotebookSwitcher({
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    triggerHaptic("success");
-                                                    onArchive(notebook.id, false);
+                                                    triggerHaptic("warning");
+                                                    setUnarchiveTargetId(notebook.id);
                                                 }}
                                                 className="p-1 rounded-md text-primary-600 hover:bg-primary-500/10 transition-all cursor-pointer"
                                                 title={t("notebook.unarchive")}
@@ -712,6 +717,56 @@ export default function NotebookSwitcher({
                                 className="flex-1 py-3.5 text-sm font-semibold text-warning-500 border-l border-(--border) transition-all active:bg-warning-500/10 cursor-pointer"
                             >
                                 {t("common.archive")}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Unarchive/Restore Notebook Confirmation */}
+            {unarchiveTarget && createPortal(
+                <div className="fixed inset-0 z-[200] flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+                        onClick={() => {
+                            triggerHaptic("light");
+                            setUnarchiveTargetId(null);
+                        }}
+                    />
+                    <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
+                        <div className="p-5 text-center">
+                            <div className="inline-flex p-3 rounded-full bg-primary-500/10 mb-3">
+                                <ArchiveRestore size={22} className="text-primary-500" />
+                            </div>
+                            <h3 className="text-base font-bold mb-1">{t("notebook.unarchive")}</h3>
+                            <p className="text-sm text-(--text-secondary)">
+                                {t("notebook.unarchiveConfirm")}
+                            </p>
+                            <p className="text-sm font-semibold mt-2 break-words whitespace-normal">{unarchiveTarget.name}</p>
+                        </div>
+                        <div className="flex border-t border-(--border)">
+                            <button
+                                onClick={() => {
+                                    triggerHaptic("light");
+                                    setUnarchiveTargetId(null);
+                                }}
+                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
+                            >
+                                {t("common.cancel")}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (unarchiveTargetId) {
+                                        triggerHaptic("success");
+                                        onArchive?.(unarchiveTargetId, false);
+                                        setUnarchiveTargetId(null);
+                                        setOpen(false);
+                                    }
+                                }}
+                                className="flex-1 py-3.5 text-sm font-semibold text-primary-500 border-l border-(--border) transition-all active:bg-primary-500/10 cursor-pointer"
+                            >
+                                {t("common.restore")}
                             </button>
                         </div>
                     </div>
