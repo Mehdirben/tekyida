@@ -91,13 +91,13 @@ input[type="number"] {
   --mesh-5: #e0d4f7;
 
   /* Glass materials */
-  --glass-bg: rgba(255, 255, 255, 0.45);
-  --glass-bg-heavy: rgba(255, 255, 255, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.65);
-  --glass-border-subtle: rgba(255, 255, 255, 0.35);
+  --glass-bg: rgba(235, 240, 253, 0.78);
+  --glass-bg-heavy: rgba(220, 227, 243, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass-border-subtle: rgba(255, 255, 255, 0.45);
   --glass-shadow: rgba(0, 0, 0, 0.06);
   --glass-highlight: rgba(255, 255, 255, 0.9);
-  --glass-blur: 24px;
+  --glass-blur: 0px;
 
   --border: rgba(0, 0, 0, 0.06);
   --border-hover: rgba(0, 0, 0, 0.1);
@@ -121,13 +121,13 @@ input[type="number"] {
   --mesh-4: #2a2010;
   --mesh-5: #1a1530;
 
-  --glass-bg: rgba(255, 255, 255, 0.06);
-  --glass-bg-heavy: rgba(255, 255, 255, 0.1);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-border-subtle: rgba(255, 255, 255, 0.06);
+  --glass-bg: rgba(150, 171, 217, 0.16);
+  --glass-bg-heavy: rgba(150, 171, 217, 0.24);
+  --glass-border: rgba(150, 171, 217, 0.25);
+  --glass-border-subtle: rgba(150, 171, 217, 0.14);
   --glass-shadow: rgba(0, 0, 0, 0.4);
   --glass-highlight: rgba(255, 255, 255, 0.15);
-  --glass-blur: 24px;
+  --glass-blur: 0px;
 
   --border: rgba(255, 255, 255, 0.06);
   --border-hover: rgba(255, 255, 255, 0.12);
@@ -200,8 +200,6 @@ body {
    ══════════════════════════════════════ */
 @utility liquid-glass {
   background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(24px) saturate(1.8);
-  backdrop-filter: blur(24px) saturate(1.8);
   border: 1px solid var(--glass-border);
   box-shadow:
     0 2px 16px var(--glass-shadow),
@@ -211,8 +209,6 @@ body {
 
 @utility liquid-glass-heavy {
   background: var(--glass-bg-heavy);
-  -webkit-backdrop-filter: blur(32px) saturate(2);
-  backdrop-filter: blur(32px) saturate(2);
   border: 1px solid var(--glass-border);
   box-shadow:
     0 4px 24px var(--glass-shadow),
@@ -223,8 +219,6 @@ body {
 
 @utility liquid-glass-card {
   background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(24px) saturate(1.8);
-  backdrop-filter: blur(24px) saturate(1.8);
   border: 1px solid var(--glass-border);
   border-radius: 1.25rem;
   box-shadow:
@@ -239,8 +233,6 @@ body {
    ══════════════════════════════════════ */
 @utility glass-btn {
   background: var(--glass-bg-heavy);
-  -webkit-backdrop-filter: blur(16px) saturate(1.6);
-  backdrop-filter: blur(16px) saturate(1.6);
   border: 1px solid var(--glass-border);
   box-shadow:
     0 2px 8px var(--glass-shadow),
@@ -268,8 +260,6 @@ body {
   line-height: 1.5;
   color: var(--text-primary);
   background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(24px) saturate(1.8);
-  backdrop-filter: blur(24px) saturate(1.8);
   border: 1px solid var(--glass-border-subtle);
   border-radius: 0.875rem;
   box-shadow: inset 0 1px 0 var(--glass-highlight);
@@ -523,4 +513,16 @@ body {
 
 .animate-shake {
   animation: shake 0.4s ease-in-out;
+}
+
+/* ══════════════════════════════════════
+   Disable Tailwind Backdrop Blur Utilities Globally
+   ══════════════════════════════════════ */
+.backdrop-blur-sm,
+.backdrop-blur-md,
+.backdrop-blur-lg,
+.backdrop-blur-xl,
+.backdrop-blur-\[2px\] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
