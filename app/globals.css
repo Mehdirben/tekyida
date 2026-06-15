@@ -167,7 +167,8 @@ body {
     radial-gradient(ellipse 45% 50% at 60% 70%, var(--mesh-3) 0%, transparent 70%),
     radial-gradient(ellipse 40% 40% at 30% 80%, var(--mesh-4) 0%, transparent 70%),
     radial-gradient(ellipse 50% 45% at 70% 50%, var(--mesh-5) 0%, transparent 70%);
-  animation: mesh-shift 20s ease-in-out infinite alternate;
+  /* Disabled infinite radial gradient shift animation to optimize background repaint costs */
+  /* animation: mesh-shift 20s ease-in-out infinite alternate; */
 }
 
 @keyframes mesh-shift {
