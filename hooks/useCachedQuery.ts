@@ -27,7 +27,10 @@ export function useCachedQuery<T>(
     funcRef: any,
     args: Record<string, unknown> | "skip"
 ): T | undefined {
-    const liveData = useQuery(funcRef, args === "skip" ? "skip" : args);
+    const hasTempId = args !== "skip" && Object.values(args).some(
+        (val) => typeof val === "string" && val.startsWith("temp_")
+    );
+    const liveData = useQuery(funcRef, (args === "skip" || hasTempId) ? "skip" : args);
     const key = args === "skip" ? null : queryCache.cacheKey(name, args);
 
     const [cachedData, setCachedData] = useState<T | undefined>(() => 
