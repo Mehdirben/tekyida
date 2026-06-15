@@ -518,7 +518,6 @@ body {
 /* ══════════════════════════════════════
    Disable Tailwind Backdrop Blur Utilities Globally
    ══════════════════════════════════════ */
-.backdrop-blur-sm,
 .backdrop-blur-md,
 .backdrop-blur-lg,
 .backdrop-blur-xl,

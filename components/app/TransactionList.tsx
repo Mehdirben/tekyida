@@ -209,7 +209,7 @@ export default function TransactionList({
         <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
             {/* Backdrop */}
             <div
-                className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${isClosing ? "animate-fade-out" : "animate-fade-in"}`}
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                 onClick={handleAnimatedClose}
             />
 
@@ -281,7 +281,7 @@ export default function TransactionList({
                 {deleteTargetId && createPortal(
                     <div className="fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                         <div
-                            className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                             onClick={() => {
                                 triggerHaptic("light");
                                 setDeleteTargetId(null);
@@ -323,7 +323,7 @@ export default function TransactionList({
                 {editTarget && createPortal(
                     <div className="fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                         <div
-                            className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${isEditClosing ? "animate-fade-out" : "animate-fade-in"}`}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                             onClick={handleCloseEdit}
                         />
                         <div className={`relative z-10 w-[85%] max-w-xs liquid-glass-heavy rounded-2xl shadow-2xl overflow-hidden ${isEditClosing ? "animate-scale-out" : "animate-scale-in"}`}>

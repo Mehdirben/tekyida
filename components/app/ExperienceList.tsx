@@ -449,7 +449,7 @@ export default function ExperienceList({
             {deleteTarget && createPortal(
                 <div className="fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                     <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={() => {
                             triggerHaptic("light");
                             setDeleteTarget(null);
@@ -492,7 +492,7 @@ export default function ExperienceList({
             {editTarget && createPortal(
                 <div className="fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                     <div
-                        className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${isEditClosing ? "animate-fade-out" : "animate-fade-in"}`}
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={handleCloseEdit}
                     />
                     <div className={`relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl ${isEditClosing ? "animate-scale-out" : "animate-scale-in"}`}>
@@ -551,7 +551,7 @@ export default function ExperienceList({
             {transferTarget && createPortal(
                 <div className="fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                     <div
-                        className={`absolute inset-0 bg-black/40 backdrop-blur-sm ${isTransferClosing ? "animate-fade-out" : "animate-fade-in"}`}
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={handleCloseTransfer}
                     />
                     <div className={`relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl ${isTransferClosing ? "animate-scale-out" : "animate-scale-in"}`}>

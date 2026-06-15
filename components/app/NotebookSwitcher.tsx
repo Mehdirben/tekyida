@@ -685,7 +685,7 @@ export default function NotebookSwitcher({
             {deleteTarget && createPortal(
                 <div className="fixed inset-0 z-[200] flex items-center justify-center">
                     <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={() => {
                             triggerHaptic("light");
                             setDeleteTargetId(null);
@@ -730,7 +730,7 @@ export default function NotebookSwitcher({
             {archiveTarget && createPortal(
                 <div className="fixed inset-0 z-[200] flex items-center justify-center">
                     <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={() => {
                             triggerHaptic("light");
                             setArchiveTargetId(null);
@@ -780,7 +780,7 @@ export default function NotebookSwitcher({
             {unarchiveTarget && createPortal(
                 <div className="fixed inset-0 z-[200] flex items-center justify-center">
                     <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={() => {
                             triggerHaptic("light");
                             setUnarchiveTargetId(null);
