@@ -63,6 +63,14 @@ export default function ExperiencesPage() {
     // Selected experience for detail sheet
     const [selectedExperience, setSelectedExperience] = useState<ExperienceSummary | null>(null);
 
+    const [animateIn, setAnimateIn] = useState(true);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setAnimateIn(false);
+        }, 900);
+        return () => clearTimeout(timer);
+    }, []);
+
     // Auto-open experience detail from ?open=<id> query param (once only)
     const searchParams = useSearchParams();
     const openId = searchParams.get("open");
@@ -118,7 +126,7 @@ export default function ExperiencesPage() {
             <CacheWarmer notebookIds={safeNotebooks.map((n) => n._id)} />
             <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
                 {/* Header */}
-                <div className="mb-6 animate-slide-up flex items-center justify-between relative z-50">
+                <div className={`mb-6 ${animateIn ? "animate-slide-up" : ""} flex items-center justify-between relative z-50`}>
                     <div className="flex items-center gap-2">
                         <Logo size="md" />
                         <SyncIndicator />
@@ -142,14 +150,14 @@ export default function ExperiencesPage() {
 
                 {/* Open Experiences Balance Card */}
                 {resolvedActiveId && experiences !== undefined && experiences.length > 0 && (
-                    <div className="mb-6 animate-slide-up delay-100">
+                    <div className={`mb-6 ${animateIn ? "animate-slide-up delay-100" : ""}`}>
                         <ExperienceBalanceCard balance={openExperiencesBalance} />
                     </div>
                 )}
 
                 {/* Experience List */}
                 {resolvedActiveId && experiences !== undefined && (
-                    <div className="animate-slide-up delay-100">
+                    <div className={animateIn ? "animate-slide-up delay-100" : ""}>
                         <ExperienceList
                             experiences={experiences}
                             notebookId={resolvedActiveId}

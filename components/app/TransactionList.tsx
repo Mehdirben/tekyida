@@ -75,6 +75,7 @@ export default function TransactionList({
 
     const [adding, setAdding] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
+    const [animateIn, setAnimateIn] = useState(true);
     const [amount, setAmount] = useState("");
     const [isPositive, setIsPositive] = useState(true); // true = they owe you
     const [description, setDescription] = useState("");
@@ -86,6 +87,13 @@ export default function TransactionList({
     const [editDescription, setEditDescription] = useState("");
     const [editDate, setEditDate] = useState("");
     const [isEditClosing, setIsEditClosing] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setAnimateIn(false);
+        }, 450);
+        return () => clearTimeout(timer);
+    }, []);
 
     const handleCloseEdit = useCallback(() => {
         triggerHaptic("light");
@@ -214,7 +222,7 @@ export default function TransactionList({
             />
 
             {/* Sheet */}
-            <div className={`relative z-10 w-full sm:max-w-md h-[92dvh] sm:h-[92vh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl ${isClosing ? "animate-sheet-down" : "animate-sheet-up"} overflow-hidden`}>
+            <div className={`relative z-10 w-full sm:max-w-md h-[92dvh] sm:h-[92vh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl ${isClosing ? "animate-sheet-down" : animateIn ? "animate-sheet-up" : ""} overflow-hidden`}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border) gap-2">
                     <div className="flex-1 min-w-0 pr-3">

@@ -28,6 +28,14 @@ export default function SettingsPage() {
     const router = useRouter();
     const { isOnline } = useSync();
 
+    const [animateIn, setAnimateIn] = useState(true);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setAnimateIn(false);
+        }, 900);
+        return () => clearTimeout(timer);
+    }, []);
+
     // Security & App Lock states
     const [isLockEnabled, setIsLockEnabled] = useState(false);
     const [showPinSetup, setShowPinSetup] = useState<"setup" | "confirm" | "verify_disable" | "verify_change" | "change_new" | "change_confirm" | null>(null);
@@ -289,7 +297,7 @@ export default function SettingsPage() {
     return (
         <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
             {/* Title */}
-            <div className="mb-8 animate-slide-up text-center">
+            <div className={`mb-8 ${animateIn ? "animate-slide-up" : ""} text-center`}>
                 <h1 className="text-2xl font-extrabold tracking-tight">
                     <span className="gradient-text">{t("settings.title")}</span>
                 </h1>
@@ -297,7 +305,7 @@ export default function SettingsPage() {
 
             <div className="space-y-6">
                 {/* Email Section */}
-                <section className="liquid-glass-card p-6 animate-slide-up delay-100 relative">
+                <section className={`liquid-glass-card p-6 ${animateIn ? "animate-slide-up delay-100" : ""} relative`}>
                     {!isOnline && (
                         <div className="absolute inset-0 z-10 rounded-2xl bg-(--surface-primary)/70 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
                             <WifiOff size={22} className="text-(--text-tertiary)" />
@@ -375,7 +383,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Password Section */}
-                <section className="liquid-glass-card p-6 animate-slide-up delay-150 relative">
+                <section className={`liquid-glass-card p-6 ${animateIn ? "animate-slide-up delay-150" : ""} relative`}>
                     {!isOnline && (
                         <div className="absolute inset-0 z-10 rounded-2xl bg-(--surface-primary)/70 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
                             <WifiOff size={22} className="text-(--text-tertiary)" />
@@ -497,7 +505,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Security Section (App Lock) */}
-                <section className="liquid-glass-card p-6 animate-slide-up delay-175">
+                <section className={`liquid-glass-card p-6 ${animateIn ? "animate-slide-up delay-175" : ""}`}>
                     <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.security")}
                     </h2>
@@ -557,7 +565,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Appearance Section */}
-                <section className="liquid-glass-card p-6 animate-slide-up delay-200">
+                <section className={`liquid-glass-card p-6 ${animateIn ? "animate-slide-up delay-200" : ""}`}>
                     <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.appearance")}
                     </h2>
@@ -568,7 +576,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Language Section */}
-                <section className="liquid-glass-card p-6 animate-slide-up delay-300">
+                <section className={`liquid-glass-card p-6 ${animateIn ? "animate-slide-up delay-300" : ""}`}>
                     <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.language")}
                     </h2>
@@ -579,7 +587,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Amounts on Load Section */}
-                <section className="liquid-glass-card p-6 animate-slide-up delay-400">
+                <section className={`liquid-glass-card p-6 ${animateIn ? "animate-slide-up delay-400" : ""}`}>
                     <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.amountsOnLoad")}
                     </h2>
@@ -590,7 +598,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Transfer Redirect Section */}
-                <section className="liquid-glass-card p-6 animate-slide-up delay-400">
+                <section className={`liquid-glass-card p-6 ${animateIn ? "animate-slide-up delay-400" : ""}`}>
                     <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.transferOnMove")}
                     </h2>
@@ -601,7 +609,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Install App Section */}
-                <section className="liquid-glass-card p-6 animate-slide-up delay-500">
+                <section className={`liquid-glass-card p-6 ${animateIn ? "animate-slide-up delay-500" : ""}`}>
                     <h2 className="text-center sm:text-left text-sm font-bold uppercase tracking-wider text-(--text-tertiary) mb-5">
                         {t("settings.installApp")}
                     </h2>
@@ -630,7 +638,7 @@ export default function SettingsPage() {
                 </section>
 
                 {/* Sign Out Section */}
-                <section className="liquid-glass-card p-6 animate-slide-up delay-600">
+                <section className={`liquid-glass-card p-6 ${animateIn ? "animate-slide-up delay-600" : ""}`}>
                     <Button
                         variant="danger"
                         size="md"
