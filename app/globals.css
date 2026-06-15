@@ -506,9 +506,21 @@ body {
 
 /* ── Shake Animation (PIN Pad Error) ── */
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-6px); }
-  40%, 80% { transform: translateX(6px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
 }
 
 .animate-shake {
@@ -518,6 +530,7 @@ body {
 /* ══════════════════════════════════════
    Disable Tailwind Backdrop Blur Utilities Globally
    ══════════════════════════════════════ */
+.backdrop-blur-sm,
 .backdrop-blur-md,
 .backdrop-blur-lg,
 .backdrop-blur-xl,
