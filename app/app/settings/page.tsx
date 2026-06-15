@@ -215,7 +215,7 @@ export default function SettingsPage() {
             setPasswordError(t("settings.currentPasswordRequired"));
             return;
         }
-        if (!newPassword || newPassword.length < 6) {
+        if (!newPassword || newPassword.length < 8) {
             setPasswordError(t("settings.passwordTooShort"));
             return;
         }

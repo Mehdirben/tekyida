@@ -74,6 +74,9 @@ const fr: Record<TranslationKey, string> = {
     "login.register": "Créer un compte",
     "login.forgotPassword": "Mot de passe oublié ?",
     "login.error": "Email ou mot de passe invalide.",
+    "login.error.invalidPassword": "Mot de passe incorrect. Veuillez réessayer.",
+    "login.error.userNotFound": "Aucun compte trouvé avec cet e-mail.",
+    "login.error.invalidEmail": "Veuillez entrer une adresse e-mail valide.",
 
     // Register
     "register.title": "Créer un Compte",
@@ -87,7 +90,10 @@ const fr: Record<TranslationKey, string> = {
     "register.login": "Se connecter",
     "register.error": "L'inscription a échoué. Veuillez réessayer.",
     "register.passwordMismatch": "Les mots de passe ne correspondent pas.",
-    "register.passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères.",
+    "register.passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
+    "register.error.userExists": "Un compte avec cet e-mail existe déjà.",
+    "register.error.invalidEmail": "Veuillez entrer une adresse e-mail valide.",
+    "register.error.passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
 
     // App Navigation
     "nav.dashboard": "Tableau de bord",
@@ -201,7 +207,7 @@ const fr: Record<TranslationKey, string> = {
     "settings.savePassword": "Modifier le mot de passe",
     "settings.passwordChanged": "Mot de passe mis à jour avec succès.",
     "settings.passwordMismatch": "Les mots de passe ne correspondent pas.",
-    "settings.passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères.",
+    "settings.passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
     "settings.passwordChangeError": "Échec de la mise à jour du mot de passe. Veuillez réessayer.",
     "settings.offlineUnavailable": "Non disponible hors ligne",
     "settings.appearance": "Apparence",

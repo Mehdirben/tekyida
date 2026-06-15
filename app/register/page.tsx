@@ -46,17 +46,30 @@ export default function RegisterPage() {
             return;
         }
 
-        if (password.length < 6) {
-            setError(t("register.passwordTooShort") || "Password must be at least 6 characters.");
+        if (password.length < 8) {
+            setError(t("register.passwordTooShort") || "Password must be at least 8 characters.");
             return;
         }
 
         setLoading(true);
 
-        signIn("password", { email, password, name, flow: "signUp" }).catch(() => {
-            setError(t("register.error") || "Registration failed. Please try again.");
-            setLoading(false);
-        });
+        signIn("password", { email, password, name, flow: "signUp" })
+            .catch((err) => {
+                console.error("Registration failed:", err);
+                const msg = err instanceof Error ? err.message : String(err);
+                const lowerMsg = msg.toLowerCase();
+                
+                if (lowerMsg.includes("already exists") || lowerMsg.includes("useralreadyexists") || lowerMsg.includes("email already in use")) {
+                    setError(t("register.error.userExists") || "An account with this email already exists.");
+                } else if (lowerMsg.includes("invalid email") || lowerMsg.includes("invalidemail")) {
+                    setError(t("register.error.invalidEmail") || "Please enter a valid email address.");
+                } else if (lowerMsg.includes("password too short") || lowerMsg.includes("passwordtooshort") || lowerMsg.includes("invalid password")) {
+                    setError(t("register.error.passwordTooShort") || "Password must be at least 8 characters.");
+                } else {
+                    setError(t("register.error") || "Registration failed. Please try again.");
+                }
+                setLoading(false);
+            });
     };
 
     return (

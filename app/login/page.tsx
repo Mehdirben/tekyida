@@ -43,8 +43,25 @@ export default function LoginPage() {
             .then(() => {
                 setLoading(false);
             })
-            .catch(() => {
-                setError(t("login.error") || "Invalid email or password.");
+            .catch((err) => {
+                console.error("Login failed:", err);
+                const msg = err instanceof Error ? err.message : String(err);
+                const lowerMsg = msg.toLowerCase();
+                
+                if (
+                    lowerMsg.includes("invalidpassword") ||
+                    lowerMsg.includes("invalid-password") ||
+                    lowerMsg.includes("incorrect password") ||
+                    lowerMsg.includes("invalid password")
+                ) {
+                    setError(t("login.error.invalidPassword") || "Incorrect password. Please try again.");
+                } else if (lowerMsg.includes("no account") || lowerMsg.includes("usernotfound") || lowerMsg.includes("user-not-found")) {
+                    setError(t("login.error.userNotFound") || "No account found with this email.");
+                } else if (lowerMsg.includes("invalid email") || lowerMsg.includes("invalidemail")) {
+                    setError(t("login.error.invalidEmail") || "Please enter a valid email address.");
+                } else {
+                    setError(t("login.error") || "Invalid email or password.");
+                }
                 setLoading(false);
             });
     };

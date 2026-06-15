@@ -72,6 +72,9 @@ const en = {
     "login.register": "Create one",
     "login.forgotPassword": "Forgot password?",
     "login.error": "Invalid email or password.",
+    "login.error.invalidPassword": "Incorrect password. Please try again.",
+    "login.error.userNotFound": "No account found with this email.",
+    "login.error.invalidEmail": "Please enter a valid email address.",
 
     // Register
     "register.title": "Create Account",
@@ -85,7 +88,10 @@ const en = {
     "register.login": "Sign in",
     "register.error": "Registration failed. Please try again.",
     "register.passwordMismatch": "Passwords do not match.",
-    "register.passwordTooShort": "Password must be at least 6 characters.",
+    "register.passwordTooShort": "Password must be at least 8 characters.",
+    "register.error.userExists": "An account with this email already exists.",
+    "register.error.invalidEmail": "Please enter a valid email address.",
+    "register.error.passwordTooShort": "Password must be at least 8 characters.",
 
     // App Navigation
     "nav.dashboard": "Dashboard",
@@ -199,7 +205,7 @@ const en = {
     "settings.savePassword": "Update Password",
     "settings.passwordChanged": "Password updated successfully.",
     "settings.passwordMismatch": "Passwords do not match.",
-    "settings.passwordTooShort": "Password must be at least 6 characters.",
+    "settings.passwordTooShort": "Password must be at least 8 characters.",
     "settings.passwordChangeError": "Failed to update password. Please try again.",
     "settings.offlineUnavailable": "Not available offline",
     "settings.appearance": "Appearance",
