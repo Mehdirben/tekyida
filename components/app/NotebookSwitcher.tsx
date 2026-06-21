@@ -297,6 +297,8 @@ export default function NotebookSwitcher({
                 className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl cursor-pointer transition-all duration-300 active:scale-[0.97]"
                 style={{
                     background: "var(--glass-bg-heavy)",
+                    backdropFilter: "blur(32px) saturate(2)",
+                    WebkitBackdropFilter: "blur(32px) saturate(2)",
                     border: "1px solid var(--glass-border)",
                     boxShadow: "0 4px 24px var(--glass-shadow), 0 1px 2px var(--glass-shadow), inset 0 1px 0 var(--glass-highlight)",
                 }}
@@ -327,6 +329,8 @@ export default function NotebookSwitcher({
                     }`}
                 style={{
                     background: "var(--dropdown-bg, rgba(255, 255, 255, 0.88))",
+                    backdropFilter: "blur(40px) saturate(2)",
+                    WebkitBackdropFilter: "blur(40px) saturate(2)",
                     border: "1px solid var(--glass-border)",
                     boxShadow: "0 12px 48px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08), inset 0 1px 0 var(--glass-highlight)",
                 }}

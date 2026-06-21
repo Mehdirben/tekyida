@@ -104,6 +104,8 @@ export default function AppLock({ children }: { children: React.ReactNode }) {
                 }`}
                 style={{
                     background: "var(--glass-bg)",
+                    backdropFilter: "blur(32px) saturate(2.2)",
+                    WebkitBackdropFilter: "blur(32px) saturate(2.2)",
                 }}
             >
                 {/* Unified Lock Block */}

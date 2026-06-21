@@ -289,7 +289,7 @@ export default function ExperienceDetail({
                         transactions.map((tx) => (
                             <div
                                 key={tx._id}
-                                className="liquid-glass-card p-3.5 flex items-center gap-3"
+                                className="liquid-glass-card-flat p-3.5 flex items-center gap-3"
                             >
                                 <div
                                     className={`p-1.5 rounded-lg ${tx.amount > 0

@@ -22,13 +22,13 @@ const variantHapticPatterns: Record<Variant, "medium" | "light" | "selection" | 
 
 const variantClasses: Record<Variant, string> = {
     primary:
-        "bg-primary-800 dark:bg-primary-500 text-white border border-primary-700/50 dark:border-primary-400/30 hover:bg-primary-700 dark:hover:bg-primary-400 shadow-lg shadow-primary-900/15 dark:shadow-primary-500/15 hover:shadow-xl transition-all duration-200",
+        "bg-primary-800/90 dark:bg-primary-500/80 text-white backdrop-blur-md border border-primary-700/50 dark:border-primary-400/30 hover:bg-primary-700/90 dark:hover:bg-primary-400/80 shadow-lg shadow-primary-900/15 dark:shadow-primary-500/15 hover:shadow-xl transition-all duration-200",
     glass:
         "glass-btn text-(--text-primary) transition-all duration-200",
     ghost:
         "bg-transparent text-(--text-secondary) hover:text-(--text-primary) hover:bg-white/15 dark:hover:bg-white/5 transition-all duration-200",
     danger:
-        "bg-danger-500 text-white border border-danger-500/40 hover:bg-danger-600 transition-all duration-200",
+        "bg-danger-500/85 text-white backdrop-blur-md border border-danger-500/40 hover:bg-danger-500/95 transition-all duration-200",
 };
 
 const sizeClasses: Record<Size, string> = {

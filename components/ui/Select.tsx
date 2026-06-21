@@ -129,6 +129,8 @@ export default function Select({
                 }`}
                 style={{
                     background: "var(--dropdown-bg, rgba(255, 255, 255, 0.88))",
+                    backdropFilter: "blur(40px) saturate(2)",
+                    WebkitBackdropFilter: "blur(40px) saturate(2)",
                     border: "1px solid var(--glass-border)",
                     boxShadow: "0 12px 48px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08), inset 0 1px 0 var(--glass-highlight)",
                 }}

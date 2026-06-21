@@ -38,6 +38,8 @@ export default function BottomNav() {
                     className="inline-flex items-center gap-2 p-1.5 rounded-full"
                     style={{
                         background: "var(--glass-bg-heavy)",
+                        backdropFilter: "blur(48px) saturate(2.4)",
+                        WebkitBackdropFilter: "blur(48px) saturate(2.4)",
                         border: "1px solid var(--glass-border)",
                         boxShadow:
                             "0 8px 40px var(--glass-shadow), 0 2px 6px var(--glass-shadow), inset 0 1px 0 var(--glass-highlight)",
