@@ -301,6 +301,8 @@ export default function NotebookSwitcher({
                     WebkitBackdropFilter: "blur(32px) saturate(2)",
                     border: "1px solid var(--glass-border)",
                     boxShadow: "0 4px 24px var(--glass-shadow), 0 1px 2px var(--glass-shadow), inset 0 1px 0 var(--glass-highlight)",
+                    transform: "translate3d(0, 0, 0)",
+                    backfaceVisibility: "hidden",
                 }}
             >
                 {activeNotebook?.archived ? (
@@ -333,6 +335,8 @@ export default function NotebookSwitcher({
                     WebkitBackdropFilter: "blur(40px) saturate(2)",
                     border: "1px solid var(--glass-border)",
                     boxShadow: "0 12px 48px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08), inset 0 1px 0 var(--glass-highlight)",
+                    transform: "translate3d(0, 0, 0)",
+                    backfaceVisibility: "hidden",
                 }}
             >
                 {/* Notebook list */}

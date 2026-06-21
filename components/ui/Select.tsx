@@ -133,6 +133,8 @@ export default function Select({
                     WebkitBackdropFilter: "blur(40px) saturate(2)",
                     border: "1px solid var(--glass-border)",
                     boxShadow: "0 12px 48px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08), inset 0 1px 0 var(--glass-highlight)",
+                    transform: "translate3d(0, 0, 0)",
+                    backfaceVisibility: "hidden",
                 }}
             >
                 <div className="max-h-60 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] py-1.5">

@@ -43,6 +43,8 @@ export default function BottomNav() {
                         border: "1px solid var(--glass-border)",
                         boxShadow:
                             "0 8px 40px var(--glass-shadow), 0 2px 6px var(--glass-shadow), inset 0 1px 0 var(--glass-highlight)",
+                        transform: "translate3d(0, 0, 0)",
+                        backfaceVisibility: "hidden",
                     }}
                 >
                     {tabs.map((tab) => {
