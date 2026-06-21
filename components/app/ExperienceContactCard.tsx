@@ -50,7 +50,7 @@ export default function ExperienceContactCard({
                     onSelect(experience);
                 }
             }}
-            className="liquid-glass-card p-3 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all border border-primary-500/20"
+            className="liquid-glass-card-flat p-3 flex items-center gap-3 cursor-pointer active:scale-[0.98] transition-all border border-primary-500/20"
         >
             <div className="p-1.5 rounded-lg bg-primary-500/10 shrink-0">
                 <Compass size={14} className="text-primary-500" />
