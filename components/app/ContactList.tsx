@@ -430,7 +430,7 @@ export default function ContactList({
                                 setNewName("");
                                 setNewPhone("");
                             }}
-                            className="flex-1 py-2 rounded-xl text-sm font-medium text-(--text-secondary) liquid-glass hover:bg-white/10 transition-all cursor-pointer"
+                            className="flex-1 py-2 rounded-xl text-sm font-medium text-(--text-secondary) liquid-glass-flat hover:bg-white/10 transition-all cursor-pointer"
                         >
                             {t("common.cancel")}
                         </button>
