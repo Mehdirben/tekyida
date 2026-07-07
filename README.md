@@ -156,6 +156,46 @@ cp .env.example .env.local
 
 ---
 
+## 🐳 Docker Deployment
+
+The Docker image runs only the Next.js frontend. Convex remains a separate Cloud or self-hosted backend.
+
+Create the Compose environment file (it is ignored by Git):
+
+```bash
+cp .env.example .env
+```
+
+Set the public URLs in `.env` to the target Convex deployment, then build and start the app:
+
+```bash
+docker compose up -d --build
+docker compose ps
+```
+
+The frontend is available at [http://localhost:3000](http://localhost:3000). Set `APP_PORT` in `.env` to publish another host port. View logs or stop it with:
+
+```bash
+docker compose logs -f app
+docker compose down
+```
+
+`NEXT_PUBLIC_CONVEX_URL` and `NEXT_PUBLIC_CONVEX_SITE_URL` are build arguments because Next.js embeds public variables in the browser bundle. Rebuild the image whenever either URL changes. Never pass `CONVEX_SELF_HOSTED_ADMIN_KEY`, JWT keys, or other backend secrets into this frontend image.
+
+For Dokploy, deploy this repository with the `Dockerfile`, expose container port `3000`, and configure both `NEXT_PUBLIC_*` variables as build arguments. The platform can terminate HTTPS and route the public domain to the container. The detailed Cloud-to-self-hosted data procedure is in [migration_guide.md](migration_guide.md).
+
+To build without Compose:
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_CONVEX_URL=https://convex-api.yourdomain.com \
+  --build-arg NEXT_PUBLIC_CONVEX_SITE_URL=https://convex-site.yourdomain.com \
+  -t tekyida:latest .
+docker run -d --name tekyida --restart unless-stopped -p 3000:3000 tekyida:latest
+```
+
+---
+
 ## 🏗 Production Deployment
 
 ### 1. Deploy Convex Backend
