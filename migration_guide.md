@@ -654,11 +654,21 @@ Then remove the `convex-data` volume from the Compose definition to prevent it f
 
 ### 15.9 Configure Dokploy database backups
 
-With PostgreSQL running inside the Compose stack, you can use Dokploy's built-in backup feature:
+With PostgreSQL running inside the Compose stack, Dokploy can automatically back up the database on a schedule. In Dokploy, navigate to the `convex-stack` Compose service, go to the **Backups** tab, and click **Create Backup**. Fill in the fields:
 
-1. In Dokploy, navigate to the `convex-stack` service or the PostgreSQL database settings.
-2. Configure backup destination (local, S3, Backblaze, etc.).
-3. Set a backup schedule (e.g. daily).
+| Field | Value |
+|---|---|
+| **Database Type** | `PostgreSQL` |
+| **Destination** | Select your configured backup destination (e.g. S3, IDrive e2, Backblaze, or local) |
+| **Service Name** | `postgres` (select the PostgreSQL service from the Compose stack) |
+| **Database** | `convex_prod` (must match your `POSTGRES_DB` value) |
+| **Schedule** | Select a predefined schedule or enter a custom cron expression (e.g. `0 3 * * *` for daily at 3 AM) |
+| **Prefix Destination** | `/convex-backups` (or any path to organize backups in your destination bucket) |
+| **Keep the latest** | Number of backups to retain (e.g. `7` for one week of daily backups; leave empty to keep all) |
+| **Enabled** | Toggle on |
+| **Database User** | `convex` (must match the `POSTGRES_USER` in the Compose definition) |
+
+Click **Create** to save. Dokploy will run `pg_dump` on the configured schedule and upload the result to the selected destination.
 
 > [!IMPORTANT]
 > Dokploy's database backup covers only the PostgreSQL tables. It does not back up Convex environment variables or file storage saved to a local volume. Continue running periodic `npx convex export --include-file-storage` for complete backups as described in Section 13.
