@@ -433,10 +433,241 @@ Periodically restore a snapshot into a disposable Convex stack. A backup is not 
 - Accounts for the PWA service worker and Tekyida's IndexedDB offline mutation queue.
 - Uses Dokploy for the frontend instead of a second systemd/Caddy deployment.
 
-## 15) Official references
+## 15) Migrate from SQLite to PostgreSQL
+
+After completing the Cloud-to-self-hosted migration, the backend uses SQLite by default. This section upgrades the storage engine to PostgreSQL so that Dokploy's built-in database backup feature can manage automated snapshots.
+
+This is a data migration. Convex does not automatically move data between storage engines. The procedure is: export the current SQLite data, reconfigure the backend to use PostgreSQL, redeploy, then import the snapshot.
+
+### 15.1 Prerequisites
+
+- The self-hosted Convex backend is running and healthy on SQLite.
+- All Tekyida data has been verified after the Cloud-to-self-hosted migration.
+- You have a working `.env.convex-selfhosted` with the admin key.
+- No users are actively writing data during the migration window.
+
+### 15.2 Export the SQLite database
+
+Create a protected backup directory and export everything:
+
+```bash
+mkdir -p "$HOME/backups/sqlite-to-postgres"
+chmod 700 "$HOME/backups/sqlite-to-postgres"
+
+npx convex export \
+  --env-file .env.convex-selfhosted \
+  --include-file-storage \
+  --path "$HOME/backups/sqlite-to-postgres/sqlite-backup.zip"
+
+npx convex env --env-file .env.convex-selfhosted list \
+  > "$HOME/backups/sqlite-to-postgres/sqlite-env.txt"
+
+chmod 600 "$HOME"/backups/sqlite-to-postgres/*
+unzip -t "$HOME/backups/sqlite-to-postgres/sqlite-backup.zip"
+```
+
+Do not proceed until the export is verified.
+
+### 15.3 Update the Compose definition
+
+In Dokploy, open the `convex-stack` Docker Compose service and replace the Compose definition with:
+
+```yaml
+services:
+  backend:
+    image: ghcr.io/get-convex/convex-backend:${CONVEX_REV:-latest}
+    container_name: convex-backend
+    restart: unless-stopped
+    stop_grace_period: 10s
+    stop_signal: SIGINT
+    expose:
+      - "3210"
+      - "3211"
+    volumes:
+      - convex-data:/convex/data
+    environment:
+      CONVEX_CLOUD_ORIGIN: https://${API_HOST}
+      CONVEX_SITE_ORIGIN: https://${SITE_HOST}
+      INSTANCE_NAME: ${INSTANCE_NAME}
+      INSTANCE_SECRET: ${INSTANCE_SECRET}
+      APPLICATION_MAX_CONCURRENT_MUTATIONS: "16"
+      APPLICATION_MAX_CONCURRENT_NODE_ACTIONS: "16"
+      APPLICATION_MAX_CONCURRENT_QUERIES: "16"
+      APPLICATION_MAX_CONCURRENT_V8_ACTIONS: "16"
+      DISABLE_METRICS_ENDPOINT: "true"
+      RUST_LOG: info
+      POSTGRES_URL: postgresql://convex:${POSTGRES_PASSWORD}@postgres:5432
+      DO_NOT_REQUIRE_SSL: "1"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3210/version"]
+      interval: 5s
+      start_period: 10s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.convex-api.rule=Host(`${API_HOST}`)"
+      - "traefik.http.routers.convex-api.entrypoints=web"
+      - "traefik.http.routers.convex-api.service=convex-api"
+      - "traefik.http.services.convex-api.loadbalancer.server.port=3210"
+      - "traefik.http.routers.convex-site.rule=Host(`${SITE_HOST}`)"
+      - "traefik.http.routers.convex-site.entrypoints=web"
+      - "traefik.http.routers.convex-site.service=convex-site"
+      - "traefik.http.services.convex-site.loadbalancer.server.port=3211"
+
+  postgres:
+    image: postgres:17
+    container_name: convex-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: convex
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-convex_prod}
+    volumes:
+      - convex-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U convex -d ${POSTGRES_DB:-convex_prod}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - dokploy-network
+
+  dashboard:
+    image: ghcr.io/get-convex/convex-dashboard:${CONVEX_REV:-latest}
+    container_name: convex-dashboard
+    restart: unless-stopped
+    stop_grace_period: 10s
+    stop_signal: SIGINT
+    expose:
+      - "6791"
+    environment:
+      NEXT_PUBLIC_DEPLOYMENT_URL: https://${API_HOST}
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
+      - "traefik.http.routers.convex-dashboard.rule=Host(`${DASHBOARD_HOST}`)"
+      - "traefik.http.routers.convex-dashboard.entrypoints=web"
+      - "traefik.http.services.convex-dashboard.loadbalancer.server.port=6791"
+
+networks:
+  dokploy-network:
+    external: true
+
+volumes:
+  convex-data:
+  convex-pg-data:
+```
+
+The key changes from the SQLite version:
+
+- A `postgres` service with PostgreSQL 17, a health check, and a persistent volume.
+- `POSTGRES_URL` and `DO_NOT_REQUIRE_SSL` added to the backend environment.
+- The backend `depends_on` now waits for `postgres` to be healthy before starting.
+- A new `convex-pg-data` volume for PostgreSQL data.
+- The old `convex-data` volume is kept so the backend container can still start; it will no longer be the active data store.
+
+### 15.4 Add the Dokploy environment variables
+
+In the Compose service's **Environment** page, add:
+
+```env
+POSTGRES_PASSWORD=PASTE_A_STRONG_PASSWORD
+POSTGRES_DB=convex_prod
+```
+
+Generate a strong password:
+
+```bash
+openssl rand -base64 32
+```
+
+The `POSTGRES_DB` value must match the database name that Convex derives from `INSTANCE_NAME`. With `INSTANCE_NAME=convex-prod`, the database name is `convex_prod` (hyphens replaced by underscores).
+
+> [!CAUTION]
+> Never commit `POSTGRES_PASSWORD` to Git or expose it in public variables.
+
+Save and deploy the Compose service. Wait until all three containers are healthy.
+
+### 15.5 Deploy the schema and functions
+
+The PostgreSQL database starts empty. Push the Convex schema and functions:
+
+```bash
+npx convex deploy --env-file .env.convex-selfhosted
+```
+
+### 15.6 Import the snapshot and restore environment variables
+
+```bash
+npx convex import \
+  --env-file .env.convex-selfhosted \
+  --replace-all \
+  "$HOME/backups/sqlite-to-postgres/sqlite-backup.zip"
+```
+
+Restore the Convex environment variables (JWT keys, SITE_URL, etc.):
+
+```bash
+# Review the saved environment first
+cat "$HOME/backups/sqlite-to-postgres/sqlite-env.txt"
+```
+
+Set each variable individually using `npx convex env --env-file .env.convex-selfhosted set VAR_NAME VALUE`. The exact command depends on the format of the exported file. Verify each variable is set correctly in the self-hosted dashboard.
+
+### 15.7 Verify
+
+| Check | Expected result |
+|---|---|
+| `curl https://convex-api.yourdomain.com/version` | Backend version response |
+| Self-hosted dashboard | Tables and document counts match SQLite backup |
+| Existing password account | Can sign in |
+| User data | Notebooks, contacts, experiences, and transactions match |
+| Realtime | A second client updates without refresh |
+| Create, edit, delete | Mutations succeed against PostgreSQL |
+| Offline queue | A disposable offline mutation syncs after reconnecting |
+
+### 15.8 Clean up the SQLite files
+
+After the PostgreSQL migration is verified and stable, delete the old SQLite database files. In Dokploy, open the Docker terminal for `convex-backend` and run:
+
+```bash
+rm -f /convex/data/*.sqlite3 /convex/data/*.sqlite3-wal /convex/data/*.sqlite3-shm
+```
+
+Then remove the `convex-data` volume from the Compose definition to prevent it from being recreated on future deploys:
+
+1. Remove the `- convex-data:/convex/data` line from the backend service's `volumes:` section.
+2. Remove the `convex-data:` entry from the top-level `volumes:` section.
+3. Save and redeploy.
+
+### 15.9 Configure Dokploy database backups
+
+With PostgreSQL running inside the Compose stack, you can use Dokploy's built-in backup feature:
+
+1. In Dokploy, navigate to the `convex-stack` service or the PostgreSQL database settings.
+2. Configure backup destination (local, S3, Backblaze, etc.).
+3. Set a backup schedule (e.g. daily).
+
+> [!IMPORTANT]
+> Dokploy's database backup covers only the PostgreSQL tables. It does not back up Convex environment variables or file storage saved to a local volume. Continue running periodic `npx convex export --include-file-storage` for complete backups as described in Section 13.
+
+## 16) Official references
 
 - [Convex self-hosting](https://docs.convex.dev/self-hosting)
 - [Convex export CLI](https://docs.convex.dev/cli/reference/export)
 - [Convex import CLI](https://docs.convex.dev/cli/reference/import)
 - [Convex Auth manual setup](https://labs.convex.dev/auth/setup/manual)
 - [Convex backup and restore](https://docs.convex.dev/database/backup-restore)
+- [PostgreSQL and MySQL configuration](https://github.com/get-convex/convex-backend/blob/main/self-hosted/advanced/postgres_or_mysql.md)
