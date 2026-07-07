@@ -18,8 +18,11 @@ ARG NEXT_PUBLIC_CONVEX_URL
 ARG NEXT_PUBLIC_CONVEX_SITE_URL
 ENV NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL
 ENV NEXT_PUBLIC_CONVEX_SITE_URL=$NEXT_PUBLIC_CONVEX_SITE_URL
-RUN test -n "$NEXT_PUBLIC_CONVEX_URL" \
-    && test -n "$NEXT_PUBLIC_CONVEX_SITE_URL" \
+RUN if [ -z "$NEXT_PUBLIC_CONVEX_URL" ] || [ -z "$NEXT_PUBLIC_CONVEX_SITE_URL" ]; then \
+      echo >&2 "ERROR: NEXT_PUBLIC_CONVEX_URL and NEXT_PUBLIC_CONVEX_SITE_URL are required Docker build arguments."; \
+      echo >&2 "In Dokploy: Environment -> Build Time Arguments (setting runtime variables alone is not enough)."; \
+      exit 1; \
+    fi \
     && npm run build
 
 FROM base AS runner

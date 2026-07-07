@@ -182,7 +182,14 @@ docker compose down
 
 `NEXT_PUBLIC_CONVEX_URL` and `NEXT_PUBLIC_CONVEX_SITE_URL` are build arguments because Next.js embeds public variables in the browser bundle. Rebuild the image whenever either URL changes. Never pass `CONVEX_SELF_HOSTED_ADMIN_KEY`, JWT keys, or other backend secrets into this frontend image.
 
-For Dokploy, deploy this repository with the `Dockerfile`, expose container port `3000`, and configure both `NEXT_PUBLIC_*` variables as build arguments. The platform can terminate HTTPS and route the public domain to the container. The detailed Cloud-to-self-hosted data procedure is in [migration_guide.md](migration_guide.md).
+For Dokploy, deploy this repository with the `Dockerfile` and expose container port `3000`. In **Environment → Build Time Arguments**, add:
+
+```env
+NEXT_PUBLIC_CONVEX_URL=https://convex-api.yourdomain.com
+NEXT_PUBLIC_CONVEX_SITE_URL=https://convex-site.yourdomain.com
+```
+
+Also add the same variables to the normal runtime environment for consistency. Dokploy's normal environment and **Build Time Arguments** are separate fields; setting only the normal environment makes the Docker build fail. Save the settings and redeploy. The platform can terminate HTTPS and route the public domain to the container. The detailed Cloud-to-self-hosted data procedure is in [migration_guide.md](migration_guide.md).
 
 To build without Compose:
 
