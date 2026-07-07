@@ -1,129 +1,225 @@
-# Tekyida: Convex Cloud → Self-Hosted Migration Guide
+# Tekyida: Convex Cloud to Self-Hosted Migration
 
-> Migrating from `exciting-mule-748.eu-west-1.convex.cloud` to your local server.
+This guide migrates Tekyida from a Convex Cloud production deployment to an existing self-hosted Convex stack.
 
-## Prerequisites
+It is specific to this repository:
 
-- Your HP laptop (Ryzen 4650U / 16GB RAM / 512GB SSD) running as a server
-- Docker & Docker Compose installed
-- Node.js 18+ installed
-- Your Tekyida project cloned on the server
+- Next.js `16.2.6` requires Node.js `20.9.0` or newer.
+- Tekyida uses `@convex-dev/auth` with the Password provider.
+- `convex/schema.ts` includes `authTables`, so password accounts migrate with the database snapshot.
+- `convex/auth.config.ts` and `convex/http.ts` are already correct for self-hosting.
+- Tekyida has an IndexedDB offline mutation queue, which must be empty before the final cutover.
+
+The self-hosted backend should already be deployed using:
+
+- [Professional server Convex guide](../selfhosted-guides/selfhosted-professional/05-convex-setup-guide.md)
+
+This guide does not deploy a second raw Docker or Caddy stack.
 
 ---
 
-## Phase 1: Export Data from Convex Cloud
+## 1) Migration endpoints
 
-> [!IMPORTANT]
-> Do this from your development machine where the project currently points to Convex Cloud.
+Replace these examples with the real public domains:
 
-### 1.1 Verify current deployment
+| Service | Example |
+|---|---|
+| Convex API | `https://convex-api.yourdomain.com` |
+| Convex HTTP actions/auth | `https://convex-site.yourdomain.com` |
+| Convex dashboard | `https://convex-dashboard.yourdomain.com` |
+| Tekyida frontend | `https://tekyida.yourdomain.com` |
 
-Your `.env.local` currently points to Cloud:
+Do not use LAN IPs or plain HTTP for the production browser application. Cloudflare Tunnel and Traefik provide the public HTTPS routes.
+
+## 2) Important migration behavior
+
+The snapshot contains Tekyida's normal tables and the Convex Auth tables, including users and password credentials. Existing users should be able to sign in with the same email and password after migration.
+
+Existing browser sessions should be considered invalid after cutover because the self-hosted deployment has a different auth issuer and new JWT signing keys. Users will need to sign in again.
+
+Record the verified production source in the Git-ignored `.env.convex-cloud`
+file described below. Do not put its real identifiers or URLs in this guide.
+
+| Setting | Placeholder |
+|---|---|
+| Deployment | `prod:<cloud-production-deployment>` |
+| Cloud URL | `https://<cloud-production-deployment>.<region>.convex.cloud` |
+| HTTP Actions URL | `https://<cloud-production-deployment>.<region>.convex.site` |
+
+Before the final export, confirm the live frontend uses the production Cloud URL recorded in the protected file. Never export a development deployment by mistake.
+
+> [!CAUTION]
+> The export contains personal data and password credential hashes. The Convex environment export and generated JWT private key contain secrets. Store all migration artifacts outside the Git repository with restrictive permissions.
+
+## 3) Prerequisites
+
+- The self-hosted Convex backend, site proxy, and dashboard are healthy.
+- You have its admin key.
+- The self-hosted target is dedicated to Tekyida and can be overwritten.
+- Node.js `20.9.0` or newer is installed on the migration machine.
+- The project dependencies are installed with `npm ci`.
+- You can still access the source Convex Cloud deployment.
+
+Check the local tools:
+
+```bash
+cd /path/to/tekyida
+node --version
+npx convex --version
+```
+
+Check the self-hosted API:
+
+```bash
+curl -fsS https://convex-api.yourdomain.com/version
+```
+
+## 4) Keep cloud and self-hosted configuration separate
+
+Do not copy `.env.local` if it points to the old development deployment. Create `.env.convex-cloud` with the verified production values:
 
 ```env
-CONVEX_DEPLOYMENT=dev:exciting-mule-748
-NEXT_PUBLIC_CONVEX_URL=https://exciting-mule-748.eu-west-1.convex.cloud
+CONVEX_DEPLOYMENT=prod:<cloud-production-deployment>
+NEXT_PUBLIC_CONVEX_URL=https://<cloud-production-deployment>.<region>.convex.cloud
+NEXT_PUBLIC_CONVEX_SITE_URL=https://<cloud-production-deployment>.<region>.convex.site
 ```
 
-### 1.2 Export all data
+Protect it:
 
 ```bash
-cd ~/projects/tekyida
-
-# Export database + file storage to a ZIP
-npx convex export --path ./backup.zip
+cd /path/to/tekyida
+chmod 600 .env.convex-cloud
 ```
 
-This creates `backup.zip` containing:
-- All tables as JSONL files (notebooks, contacts, experiences, transactions, auth tables)
-- All `_id` and `_creationTime` fields preserved
-- File storage contents (if any)
+Use this file as the authoritative record of the Cloud URLs, but do not pass it
+to Cloud CLI commands with `--env-file` while this project is pinned to Convex
+CLI `1.31.7`. In that version, supplying an env file containing
+`CONVEX_DEPLOYMENT` but no `CONVEX_DEPLOY_KEY` prevents the CLI from loading the
+Cloud login token in `~/.convex/config.json` and produces a misleading
+`MissingAccessToken` error. The Cloud commands below set
+`CONVEX_DEPLOYMENT` for one process and specify the deployment name explicitly.
 
-> [!TIP]
-> If you have files in Convex file storage, add `--include-file-storage`:
-> ```bash
-> npx convex export --include-file-storage --path ./backup.zip
-> ```
+Create `.env.convex-selfhosted`:
 
----
+```env
+CONVEX_SELF_HOSTED_URL=https://convex-api.yourdomain.com
+CONVEX_SELF_HOSTED_ADMIN_KEY=<self-hosted-admin-key>
+NEXT_PUBLIC_CONVEX_URL=https://convex-api.yourdomain.com
+NEXT_PUBLIC_CONVEX_SITE_URL=https://convex-site.yourdomain.com
+```
 
-## Phase 2: Set Up Self-Hosted Convex Backend
-
-### 2.1 Create the Convex backend directory on your server
+Then protect it:
 
 ```bash
-mkdir -p ~/docker/convex-backend
-cd ~/docker/convex-backend
+chmod 600 .env.convex-selfhosted
 ```
 
-### 2.2 Download the official Docker Compose file
+The repository already ignores `.env*` except `.env.example`. Confirm before continuing:
 
 ```bash
-curl -O https://raw.githubusercontent.com/get-convex/convex-backend/main/self-hosted/docker/docker-compose.yml
+git status --short
 ```
 
-### 2.3 Create a `.env` file for Docker Compose
+Neither credential file should appear.
+
+## 5) Make a rehearsal Cloud export
+
+Authenticate this machine with the Convex account that has access to the
+production deployment. This only authenticates the CLI; it does not deploy
+functions or start a watcher:
 
 ```bash
-cat > .env << 'EOF'
-# Ports
-PORT=3210
-SITE_PROXY_PORT=3211
-DASHBOARD_PORT=6791
-
-# Set these to your server's LAN IP or domain
-# Replace 192.168.x.x with your actual server IP
-CONVEX_CLOUD_ORIGIN=http://192.168.x.x:3210
-CONVEX_SITE_ORIGIN=http://192.168.x.x:3211
-NEXT_PUBLIC_DEPLOYMENT_URL=http://192.168.x.x:3210
-EOF
+npx convex login --force --device-name migration-workstation
+npx convex login status
 ```
+
+Confirm that the expected Convex team is listed. Do not use `npx convex dev` to
+authenticate during the migration because it can push local functions to the
+selected deployment.
+
+Create a protected backup directory outside the repository:
+
+```bash
+mkdir -p "$HOME/backups/tekyida-migration"
+chmod 700 "$HOME/backups/tekyida-migration"
+```
+
+Load the protected Cloud configuration into the current shell and derive the
+deployment name without printing it:
+
+```bash
+set -a
+. ./.env.convex-cloud
+set +a
+CLOUD_DEPLOYMENT_NAME="${CONVEX_DEPLOYMENT#*:}"
+```
+
+Export the database and file storage explicitly from that deployment:
+
+```bash
+npx convex export \
+  --deployment-name "$CLOUD_DEPLOYMENT_NAME" \
+  --include-file-storage \
+  --path "$HOME/backups/tekyida-migration/cloud-rehearsal.zip"
+```
+
+Back up the Cloud deployment environment variables separately:
+
+```bash
+umask 077
+npx convex env --deployment-name "$CLOUD_DEPLOYMENT_NAME" list \
+  > "$HOME/backups/tekyida-migration/cloud-environment.txt"
+test -s "$HOME/backups/tekyida-migration/cloud-environment.txt"
+chmod 600 "$HOME"/backups/tekyida-migration/cloud-*
+```
+
+The values loaded from `.env.convex-cloud` exist only in the current shell and
+do not modify `.env.local` or either dedicated environment file. The validation
+block below unsets them when it finishes. Continue using
+`--env-file .env.convex-selfhosted` for self-hosted commands; that file contains
+the self-hosted admin key and does not rely on the Cloud login token.
+
+Validate that the ZIP can be read:
+
+```bash
+unzip -t "$HOME/backups/tekyida-migration/cloud-rehearsal.zip"
+unzip -l "$HOME/backups/tekyida-migration/cloud-rehearsal.zip"
+unset CLOUD_DEPLOYMENT_NAME CONVEX_DEPLOYMENT
+unset NEXT_PUBLIC_CONVEX_URL NEXT_PUBLIC_CONVEX_SITE_URL
+```
+
+The archive should include Tekyida tables such as `notebooks`, `contacts`, `experiences`, and `transactions`, plus Convex Auth tables such as `users` and `authAccounts`. If file storage is in use, it also contains `_storage` entries.
+
+## 6) Deploy Tekyida's Convex code to self-hosted
+
+Use the installed project version first. Do not upgrade Convex or `@convex-dev/auth` during the migration; dependency upgrades and data migration should be separate changes.
+
+Run a deployment preview:
+
+```bash
+npx convex deploy \
+  --env-file .env.convex-selfhosted \
+  --dry-run
+```
+
+Deploy the schema and functions:
+
+```bash
+npx convex deploy --env-file .env.convex-selfhosted
+```
+
+This deploys the current schema, notebooks, contacts, experiences, transactions, user functions, and Convex Auth HTTP routes to the selected self-hosted backend.
 
 > [!WARNING]
-> Replace `192.168.x.x` with your server's actual LAN IP address.
-> Find it with: `ip addr show | grep "inet " | grep -v 127.0.0.1`
+> Do not use `npx convex dev` with the self-hosted production credentials. It watches local files and continuously changes the selected backend.
 
-### 2.4 Start the backend
+## 7) Configure Convex Auth on self-hosted
 
-```bash
-docker compose up -d
-```
+Tekyida's source files already contain the required Convex Auth code. The self-hosted deployment still needs `JWT_PRIVATE_KEY` and `JWKS`. `SITE_URL` is optional for a password-only provider, but set it to the production frontend URL for a complete configuration.
 
-Verify it's running:
+Create `generateKeys.mjs` temporarily in the project root:
 
-```bash
-# Check health
-curl http://localhost:3210/version
-
-# Check logs
-docker compose logs -f backend
-```
-
-### 2.5 Generate an admin key
-
-```bash
-docker compose exec backend ./generate_admin_key.sh
-```
-
-**Save this key securely** — you'll need it for the CLI and dashboard.
-
-### 2.6 Access the dashboard
-
-Open `http://192.168.x.x:6791` in your browser and enter the admin key.
-
----
-
-## Phase 3: Configure Convex Auth for Self-Hosted
-
-> [!IMPORTANT]
-> Since Tekyida uses `@convex-dev/auth` with Password provider, you need to manually set up JWT keys on the self-hosted instance. The CLI wizard doesn't support self-hosted yet.
-
-### 3.1 Generate JWT keys
-
-Create a temporary script:
-
-```bash
-cat > /tmp/generateKeys.mjs << 'SCRIPT'
+```js
 import { exportJWK, exportPKCS8, generateKeyPair } from "jose";
 
 const keys = await generateKeyPair("RS256", { extractable: true });
@@ -132,209 +228,215 @@ const publicKey = await exportJWK(keys.publicKey);
 const jwks = JSON.stringify({ keys: [{ use: "sig", ...publicKey }] });
 
 process.stdout.write(
-  `JWT_PRIVATE_KEY="${privateKey.trimEnd().replace(/\n/g, " ")}"`,
+  `JWT_PRIVATE_KEY="${privateKey.trimEnd().replace(/\n/g, " ")}"\n`,
 );
-process.stdout.write("\n");
-process.stdout.write(`JWKS=${jwks}`);
-process.stdout.write("\n");
-SCRIPT
-
-node /tmp/generateKeys.mjs
+process.stdout.write(`JWKS='${jwks}'\n`);
 ```
 
-This outputs two environment variables: `JWT_PRIVATE_KEY` and `JWKS`.
-
-### 3.2 Set environment variables on self-hosted
+Generate a protected environment file:
 
 ```bash
-cd ~/projects/tekyida
-
-# Set the JWT keys (paste the values from the previous step)
-npx convex env set JWT_PRIVATE_KEY '<paste the full JWT_PRIVATE_KEY value>'
-npx convex env set JWKS '<paste the full JWKS value>'
-
-# Set the site URL (your frontend URL)
-npx convex env set SITE_URL http://192.168.x.x:3000
+node generateKeys.mjs > .env.auth-selfhosted
+chmod 600 .env.auth-selfhosted
 ```
 
-> [!NOTE]
-> Since you're only using the Password provider (no OAuth), the `SITE_URL` is less critical
-> but should still be set to your frontend's address.
+Load the values into the current shell and send them over the self-hosted admin connection without putting the private key in shell history:
 
----
+```bash
+set -a
+. ./.env.auth-selfhosted
+set +a
 
-## Phase 4: Import Data & Deploy Functions
+printf '%s' "$JWT_PRIVATE_KEY" | \
+  npx convex env --env-file .env.convex-selfhosted set JWT_PRIVATE_KEY
 
-### 4.1 Update `.env.local` to point to self-hosted
+printf '%s' "$JWKS" | \
+  npx convex env --env-file .env.convex-selfhosted set JWKS
 
-In your Tekyida project, update `.env.local`:
+npx convex env --env-file .env.convex-selfhosted \
+  set SITE_URL https://tekyida.yourdomain.com
+
+unset JWT_PRIVATE_KEY JWKS
+rm generateKeys.mjs
+```
+
+Store `.env.auth-selfhosted` in an encrypted secret backup or delete it after the deployment is verified. Never commit it.
+
+Do not manually set `CONVEX_SITE_URL`. The self-hosted backend supplies it from the stack's `CONVEX_SITE_ORIGIN`, which must be `https://convex-site.yourdomain.com`.
+
+## 8) Rehearse the import
+
+Import the rehearsal snapshot into the self-hosted target:
+
+```bash
+npx convex import \
+  --env-file .env.convex-selfhosted \
+  --replace-all \
+  "$HOME/backups/tekyida-migration/cloud-rehearsal.zip"
+```
+
+`--replace-all` is intentional only because this target is the dedicated Tekyida deployment and the migration must reproduce the Cloud snapshot exactly. It deletes target documents not present in the snapshot.
+
+Verify in the self-hosted dashboard:
+
+- Application and auth tables exist.
+- Approximate document counts match Cloud.
+- Functions are deployed.
+- A known existing email/password can sign in through a test frontend pointed at self-hosted.
+- That user sees the expected notebooks, contacts, experiences, and transactions.
+
+Do not switch production traffic yet. The Cloud source may have changed since the rehearsal export.
+
+## 9) Prepare the Tekyida frontend
+
+The browser bundle needs only the public URLs, never the self-hosted admin key.
+
+In the Dokploy frontend application's environment, set:
 
 ```env
-# Self-hosted Convex backend
-CONVEX_SELF_HOSTED_URL=http://192.168.x.x:3210
-CONVEX_SELF_HOSTED_ADMIN_KEY=<your-generated-admin-key>
-
-NEXT_PUBLIC_CONVEX_URL=http://192.168.x.x:3210
-NEXT_PUBLIC_CONVEX_SITE_URL=http://192.168.x.x:3211
+NEXT_PUBLIC_CONVEX_URL=https://convex-api.yourdomain.com
+NEXT_PUBLIC_CONVEX_SITE_URL=https://convex-site.yourdomain.com
 ```
 
-Remove or comment out the old Cloud variables:
+Remove `CONVEX_DEPLOYMENT` from the production frontend service unless that service also runs Convex CLI commands. Never expose `CONVEX_SELF_HOSTED_ADMIN_KEY` as a public or browser variable.
 
-```env
-# CONVEX_DEPLOYMENT=dev:exciting-mule-748
-# NEXT_PUBLIC_CONVEX_URL=https://exciting-mule-748.eu-west-1.convex.cloud
-# NEXT_PUBLIC_CONVEX_SITE_URL=https://exciting-mule-748.eu-west-1.convex.site
-```
+Next.js embeds `NEXT_PUBLIC_*` values at build time, so changing them requires a fresh frontend build and deployment. Do not merely restart an old image.
 
-### 4.2 Update Convex CLI to latest
+The current application code does not require changes:
+
+- `components/ConvexClientProvider.tsx` reads `NEXT_PUBLIC_CONVEX_URL`.
+- `convex/auth.config.ts` correctly uses the backend-provided `CONVEX_SITE_URL`.
+- `convex/http.ts` registers the Convex Auth routes.
+- `convex/schema.ts` includes all `authTables`.
+
+Keep using the explicit `.env.convex-selfhosted` file for production maintenance commands. Do not make the production admin credentials the default day-to-day `.env.local`; use a separate local or remote development deployment for `npx convex dev`.
+
+## 10) Final cutover
+
+Choose a short maintenance window.
+
+### 10.1 Drain Tekyida's offline queue
+
+Before the final export, every active device must be online and Tekyida's sync indicator must show no pending mutations.
+
+This is critical for this project. The IndexedDB mutation queue automatically replays against whichever backend the newly loaded frontend uses. If it replays while the user is signed out after migration, the current queue implementation can treat the auth failure as permanent and discard the queued mutation.
+
+Do not clear browser storage or uninstall the PWA until the pending count is zero.
+
+### 10.2 Stop writes to Cloud
+
+Put the frontend into maintenance mode or otherwise stop user writes. Installed PWAs and already-open tabs may remain active, so notify users to close the application after it reports fully synced.
+
+### 10.3 Take the final snapshot
+
+Remove an older file with the same name if necessary, or choose a new timestamped filename. Then run:
 
 ```bash
-npm install convex@latest
+set -a
+. ./.env.convex-cloud
+set +a
+CLOUD_DEPLOYMENT_NAME="${CONVEX_DEPLOYMENT#*:}"
+
+npx convex export \
+  --deployment-name "$CLOUD_DEPLOYMENT_NAME" \
+  --include-file-storage \
+  --path "$HOME/backups/tekyida-migration/cloud-final.zip"
+
+unzip -t "$HOME/backups/tekyida-migration/cloud-final.zip"
+unset CLOUD_DEPLOYMENT_NAME CONVEX_DEPLOYMENT
+unset NEXT_PUBLIC_CONVEX_URL NEXT_PUBLIC_CONVEX_SITE_URL
 ```
 
-### 4.3 Deploy functions to self-hosted
+Do not allow new Cloud writes after this export completes.
+
+### 10.4 Replace the rehearsal data
 
 ```bash
-npx convex dev
+npx convex import \
+  --env-file .env.convex-selfhosted \
+  --replace-all \
+  "$HOME/backups/tekyida-migration/cloud-final.zip"
 ```
 
-This pushes your schema and all functions (notebooks, contacts, experiences, transactions, auth) to the self-hosted backend.
+### 10.5 Deploy the frontend
 
-### 4.4 Import the data
+Build and deploy the Tekyida frontend through Dokploy with the self-hosted public URL variables from Section 9.
+
+After deployment:
+
+1. Open Tekyida in a fresh private browser window.
+2. Sign in with an existing Cloud account's email and password.
+3. Verify its data.
+4. Create, edit, and delete a test record.
+5. Verify realtime updates in a second browser.
+6. Test offline queueing with a disposable record.
+7. Confirm the self-hosted dashboard receives the writes.
+
+Users should close and reopen installed PWAs after the cutover. They must sign in again. If a device keeps an old frontend bundle, reload it while online; clear site data only after confirming its offline queue was already empty.
+
+## 11) Verification checklist
+
+| Check | Expected result |
+|---|---|
+| `curl https://convex-api.yourdomain.com/version` | Backend version response |
+| Self-hosted dashboard | Tables and functions visible |
+| Existing password account | Can sign in again |
+| User data | Notebooks, contacts, experiences, and transactions match |
+| Authorization | One user cannot access another user's records |
+| Realtime | A second client updates without refresh |
+| HTTP/auth site | `https://convex-site.yourdomain.com/.well-known/openid-configuration` responds |
+| Offline queue | A disposable offline mutation syncs after reconnecting |
+| Frontend build | Browser connects only to the new Convex domains |
+
+Use the browser network inspector to confirm there are no requests to either
+old Convex Cloud URL recorded in `.env.convex-cloud`.
+
+## 12) Rollback
+
+Keep the Cloud deployment and final snapshot intact until the self-hosted system has been stable and backed up.
+
+Before accepting writes on self-hosted, rollback is simple: restore the Cloud `NEXT_PUBLIC_CONVEX_URL` and `NEXT_PUBLIC_CONVEX_SITE_URL` in Dokploy and rebuild the frontend.
+
+After accepting writes on self-hosted, do not point users back to the stale Cloud snapshot without reconciling new data. Export self-hosted first and plan a reverse migration or maintenance window.
+
+## 13) Backups after migration
+
+The Docker volume is persistence, not a backup. From a protected machine that has `.env.convex-selfhosted`:
 
 ```bash
-npx convex import ./backup.zip
+npx convex export \
+  --env-file .env.convex-selfhosted \
+  --include-file-storage \
+  --path "$HOME/backups/tekyida-snapshot.zip"
+
+npx convex env --env-file .env.convex-selfhosted list \
+  > "$HOME/backups/tekyida-environment.txt"
 ```
 
-This restores all your data with preserved IDs and relationships.
+Encrypt and copy both files off the server. The environment export contains the Convex Auth signing key and other application secrets. Use unique snapshot filenames in automation because Convex export refuses to overwrite an existing path.
 
-> [!TIP]
-> If you need to re-import (e.g., after a test), use `--replace`:
-> ```bash
-> npx convex import ./backup.zip --replace
-> ```
+Periodically restore a snapshot into a disposable Convex stack. A backup is not proven until a restore succeeds.
 
----
+## 14) Corrections from the previous guide
 
-## Phase 5: Deploy the Next.js Frontend
+- Uses the existing Dokploy/Cloudflare Convex deployment instead of installing another backend.
+- Requires Node.js `20.9+`, matching this project's Next.js version.
+- Always includes file storage when claiming a complete snapshot.
+- Pins Cloud commands to the deployment loaded from the protected Cloud
+  environment file without triggering the Convex CLI `1.31.7` `--env-file`
+  authentication bug, while self-hosted commands keep using their admin-key
+  environment file.
+- Uses `npx convex deploy`, not a production `npx convex dev` watcher.
+- Uses the valid snapshot replacement flag `--replace-all`.
+- Preserves password accounts by importing the Convex Auth tables.
+- Generates new JWT keys without placing the private key in shell history.
+- Accounts for the PWA service worker and Tekyida's IndexedDB offline mutation queue.
+- Uses Dokploy for the frontend instead of a second systemd/Caddy deployment.
 
-### 5.1 Build the frontend
+## 15) Official references
 
-```bash
-cd ~/projects/tekyida
-npm run build
-```
-
-### 5.2 Run in production
-
-```bash
-npm run start
-```
-
-By default Next.js starts on port 3000.
-
-### 5.3 (Optional) Run as a systemd service
-
-```bash
-sudo cat > /etc/systemd/system/tekyida.service << 'EOF'
-[Unit]
-Description=Tekyida Next.js App
-After=network.target docker.service
-
-[Service]
-Type=simple
-User=mehdi
-WorkingDirectory=/home/mehdi/projects/tekyida
-ExecStart=/usr/bin/npm run start
-Restart=on-failure
-RestartSec=5
-Environment=NODE_ENV=production
-Environment=PORT=3000
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo systemctl daemon-reload
-sudo systemctl enable tekyida
-sudo systemctl start tekyida
-```
-
----
-
-## Phase 6: (Optional) Reverse Proxy with Caddy
-
-If you want to access the app via a clean URL (e.g., `tekyida.local`), set up Caddy:
-
-```
-tekyida.local {
-    reverse_proxy localhost:3000
-}
-
-convex.local {
-    reverse_proxy localhost:3210
-}
-
-convex-site.local {
-    reverse_proxy localhost:3211
-}
-
-convex-dashboard.local {
-    reverse_proxy localhost:6791
-}
-```
-
-> [!WARNING]
-> If using a reverse proxy, update the `CONVEX_CLOUD_ORIGIN`, `CONVEX_SITE_ORIGIN`,
-> and `NEXT_PUBLIC_CONVEX_URL` variables to match the proxy URLs.
-
----
-
-## Phase 7: Verification Checklist
-
-| Step | Check | Command / Action |
-|---|---|---|
-| Backend running | `curl http://localhost:3210/version` returns a version | ✅ |
-| Dashboard accessible | Open `http://192.168.x.x:6791` | ✅ |
-| Functions deployed | Dashboard shows your tables and functions | ✅ |
-| Data imported | Dashboard shows your notebooks, contacts, etc. | ✅ |
-| Auth works | Can log in with existing password credentials | ✅ |
-| Frontend loads | Open `http://192.168.x.x:3000` | ✅ |
-| Realtime works | Create a notebook — appears instantly without refresh | ✅ |
-| Offline works | Toggle airplane mode → create item → go online → syncs | ✅ |
-
----
-
-## Important Notes
-
-> [!CAUTION]
-> **Auth sessions will be invalidated.** Users will need to log in again after migration since the
-> JWT keys are different. This is expected — the old Cloud-issued tokens won't work with new keys.
-
-> [!IMPORTANT]
-> **Backups are your responsibility now.** Set up a cron job to regularly export data:
-> ```bash
-> # Add to crontab: daily backup at 3 AM
-> 0 3 * * * cd /home/mehdi/projects/tekyida && npx convex export --path /home/mehdi/backups/tekyida-$(date +\%Y\%m\%d).zip
-> ```
-
-> [!NOTE]
-> **Updates:** To update the self-hosted backend:
-> ```bash
-> cd ~/docker/convex-backend
-> docker compose pull
-> docker compose up -d
-> ```
-
----
-
-## Resource Usage Summary
-
-| Service | RAM | CPU | Disk |
-|---|---|---|---|
-| Convex Backend | ~1-2 GB | Minimal at idle | SQLite volume |
-| Convex Dashboard | ~200 MB | Minimal | — |
-| Next.js (Tekyida) | ~200 MB | Minimal | — |
-| **Total** | **~1.5-2.5 GB** | **< 5% idle** | **< 1 GB** |
-
-Out of your 16 GB / 12 threads → plenty of room for Immich, Kopia, and everything else.
+- [Convex self-hosting](https://docs.convex.dev/self-hosting)
+- [Convex export CLI](https://docs.convex.dev/cli/reference/export)
+- [Convex import CLI](https://docs.convex.dev/cli/reference/import)
+- [Convex Auth manual setup](https://labs.convex.dev/auth/setup/manual)
+- [Convex backup and restore](https://docs.convex.dev/database/backup-restore)
