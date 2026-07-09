@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Mail, Lock, Eye, EyeOff, User, Loader2 } from "lucide-react";
+import { ArrowRight, Mail, Lock, Eye, EyeOff, User, Loader2, ShieldCheck } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Logo from "@/components/ui/Logo";
 import { useTranslation } from "@/i18n/LanguageContext";
@@ -24,7 +24,10 @@ export default function RegisterPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [code, setCode] = useState("");
+    const [mode, setMode] = useState<"form" | "verify">("form");
     const [error, setError] = useState("");
+    const [notice, setNotice] = useState("");
     const [loading, setLoading] = useState(false);
 
     // Redirect if already authenticated
@@ -40,6 +43,7 @@ export default function RegisterPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+        setNotice("");
 
         if (password !== confirmPassword) {
             setError(t("register.passwordMismatch") || "Passwords do not match.");
@@ -53,23 +57,65 @@ export default function RegisterPage() {
 
         setLoading(true);
 
-        signIn("password", { email, password, name, flow: "signUp" })
-            .catch((err) => {
-                console.error("Registration failed:", err);
-                const msg = err instanceof Error ? err.message : String(err);
-                const lowerMsg = msg.toLowerCase();
-                
-                if (lowerMsg.includes("already exists") || lowerMsg.includes("useralreadyexists") || lowerMsg.includes("email already in use")) {
-                    setError(t("register.error.userExists") || "An account with this email already exists.");
-                } else if (lowerMsg.includes("invalid email") || lowerMsg.includes("invalidemail")) {
-                    setError(t("register.error.invalidEmail") || "Please enter a valid email address.");
-                } else if (lowerMsg.includes("password too short") || lowerMsg.includes("passwordtooshort") || lowerMsg.includes("invalid password")) {
-                    setError(t("register.error.passwordTooShort") || "Password must be at least 8 characters.");
-                } else {
-                    setError(t("register.error") || "Registration failed. Please try again.");
-                }
-                setLoading(false);
+        try {
+            const result = await signIn("password", { email, password, name, flow: "signUp" });
+            if (!result.signingIn) {
+                setMode("verify");
+                setNotice(t("auth.verificationSent"));
+            }
+        } catch (err) {
+            console.error("Registration failed:", err);
+            const msg = err instanceof Error ? err.message : String(err);
+            const lowerMsg = msg.toLowerCase();
+
+            if (lowerMsg.includes("already exists") || lowerMsg.includes("useralreadyexists") || lowerMsg.includes("email already in use")) {
+                setError(t("register.error.userExists") || "An account with this email already exists.");
+            } else if (lowerMsg.includes("invalid email") || lowerMsg.includes("invalidemail")) {
+                setError(t("register.error.invalidEmail") || "Please enter a valid email address.");
+            } else if (lowerMsg.includes("password too short") || lowerMsg.includes("passwordtooshort") || lowerMsg.includes("invalid password")) {
+                setError(t("register.error.passwordTooShort") || "Password must be at least 8 characters.");
+            } else {
+                setError(t("register.error") || "Registration failed. Please try again.");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerify = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        setNotice("");
+        setLoading(true);
+
+        try {
+            await signIn("password", {
+                email,
+                code: code.trim(),
+                flow: "email-verification",
             });
+        } catch (err) {
+            console.error("Email verification failed:", err);
+            setError(t("auth.invalidCode"));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResendCode = async () => {
+        setError("");
+        setNotice("");
+        setLoading(true);
+
+        try {
+            await signIn("password", { email, flow: "email-verification" });
+            setNotice(t("auth.verificationSent"));
+        } catch (err) {
+            console.error("Verification resend failed:", err);
+            setError(t("auth.resendError"));
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -189,7 +235,52 @@ export default function RegisterPage() {
                                 </div>
                             )}
 
-                            {/* Form */}
+                            {/* Success / notice message */}
+                            {notice && (
+                                <div className="mb-4 p-3 rounded-xl bg-accent-500/10 border border-accent-500/20 text-accent-600 dark:text-accent-400 text-sm text-center">
+                                    {notice}
+                                </div>
+                            )}
+
+                            {mode === "verify" ? (
+                                <form onSubmit={handleVerify} className="space-y-4">
+                                    <div className="flex justify-center mb-2">
+                                        <div className="w-12 h-12 rounded-full bg-primary-500/15 flex items-center justify-center text-primary-500">
+                                            <ShieldCheck size={22} />
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-(--text-secondary) text-center">
+                                        {t("auth.enterCode")} <span className="font-semibold text-(--text-primary)">{email}</span>
+                                    </p>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-(--text-secondary) mb-1.5 ml-1">
+                                            {t("auth.code")}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            autoComplete="one-time-code"
+                                            className="glass-input text-center text-xl font-bold tracking-[0.35em]"
+                                            placeholder="000000"
+                                            value={code}
+                                            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                            required
+                                            disabled={loading}
+                                        />
+                                    </div>
+                                    <Button size="lg" className="w-full" disabled={loading || code.length !== 6}>
+                                        {loading ? <Loader2 size={16} className="animate-spin" /> : t("auth.verifyEmail")}
+                                    </Button>
+                                    <button
+                                        type="button"
+                                        onClick={handleResendCode}
+                                        disabled={loading}
+                                        className="w-full text-sm text-primary-500 hover:text-primary-400 font-semibold transition-colors disabled:opacity-50"
+                                    >
+                                        {t("auth.resendCode")}
+                                    </button>
+                                </form>
+                            ) : (
                             <form
                                 onSubmit={handleSubmit}
                                 className="space-y-4"
@@ -316,6 +407,7 @@ export default function RegisterPage() {
                                     </Button>
                                 </div>
                             </form>
+                            )}
 
                             {/* Login link */}
                             <p className="text-center text-sm text-(--text-secondary) mt-6">

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowRight, Mail, Lock, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Logo from "@/components/ui/Logo";
 import { useTranslation } from "@/i18n/LanguageContext";
@@ -21,8 +21,19 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [code, setCode] = useState("");
+    const [mode, setMode] = useState<"signIn" | "verify" | "forgot" | "resetSent">("signIn");
     const [error, setError] = useState("");
+    const [notice, setNotice] = useState("");
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("reset") === "success") {
+            setNotice(t("auth.resetSuccess"));
+            window.history.replaceState({}, "", "/login");
+        }
+    }, [t]);
 
     // Redirect if already authenticated
     useEffect(() => {
@@ -37,34 +48,94 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+        setNotice("");
         setLoading(true);
 
-        signIn("password", { email, password, flow: "signIn" })
-            .then(() => {
-                setLoading(false);
-            })
-            .catch((err) => {
-                console.error("Login failed:", err);
-                const msg = err instanceof Error ? err.message : String(err);
-                const lowerMsg = msg.toLowerCase();
-                
-                if (
-                    lowerMsg.includes("invalidpassword") ||
-                    lowerMsg.includes("invalid-password") ||
-                    lowerMsg.includes("incorrect password") ||
-                    lowerMsg.includes("invalid password")
-                ) {
-                    setError(t("login.error.invalidPassword") || "Incorrect password. Please try again.");
-                } else if (lowerMsg.includes("no account") || lowerMsg.includes("usernotfound") || lowerMsg.includes("user-not-found")) {
-                    setError(t("login.error.userNotFound") || "No account found with this email.");
-                } else if (lowerMsg.includes("invalid email") || lowerMsg.includes("invalidemail")) {
-                    setError(t("login.error.invalidEmail") || "Please enter a valid email address.");
-                } else {
-                    setError(t("login.error") || "Invalid email or password.");
-                }
-                setLoading(false);
-            });
+        try {
+            const result = await signIn("password", { email, password, flow: "signIn" });
+            if (!result.signingIn) {
+                setMode("verify");
+                setNotice(t("auth.verificationSent"));
+            }
+        } catch (err) {
+            console.error("Login failed:", err);
+            const msg = err instanceof Error ? err.message : String(err);
+            const lowerMsg = msg.toLowerCase();
+
+            if (
+                lowerMsg.includes("invalidpassword") ||
+                lowerMsg.includes("invalid-password") ||
+                lowerMsg.includes("incorrect password") ||
+                lowerMsg.includes("invalid password")
+            ) {
+                setError(t("login.error.invalidPassword") || "Incorrect password. Please try again.");
+            } else if (lowerMsg.includes("no account") || lowerMsg.includes("usernotfound") || lowerMsg.includes("user-not-found")) {
+                setError(t("login.error.userNotFound") || "No account found with this email.");
+            } else if (lowerMsg.includes("invalid email") || lowerMsg.includes("invalidemail")) {
+                setError(t("login.error.invalidEmail") || "Please enter a valid email address.");
+            } else {
+                setError(t("login.error") || "Invalid email or password.");
+            }
+        } finally {
+            setLoading(false);
+        }
     };
+
+    const handleVerify = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        setNotice("");
+        setLoading(true);
+
+        try {
+            await signIn("password", {
+                email,
+                code: code.trim(),
+                flow: "email-verification",
+            });
+        } catch (err) {
+            console.error("Email verification failed:", err);
+            setError(t("auth.invalidCode"));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResendCode = async () => {
+        setError("");
+        setNotice("");
+        setLoading(true);
+
+        try {
+            await signIn("password", { email, flow: "email-verification" });
+            setNotice(t("auth.verificationSent"));
+        } catch (err) {
+            console.error("Verification resend failed:", err);
+            setError(t("auth.resendError"));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        setNotice("");
+        setLoading(true);
+
+        try {
+            await signIn("password", { email, flow: "reset" });
+        } catch (err) {
+            console.error("Password reset request failed:", err);
+        } finally {
+            setMode("resetSent");
+            setNotice(t("auth.resetLinkSent"));
+            setLoading(false);
+        }
+    };
+
+    const title = mode === "forgot" || mode === "resetSent" ? t("auth.resetTitle") : t("login.title");
+    const subtitle = mode === "forgot" || mode === "resetSent" ? t("auth.resetSubtitle") : t("login.subtitle");
 
     return (
         <>
@@ -154,10 +225,10 @@ export default function LoginPage() {
 
                             {/* Heading */}
                             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-center mb-2">
-                                <span className="gradient-text">{t("login.title")}</span>
+                                <span className="gradient-text">{title}</span>
                             </h1>
                             <p className="text-sm text-(--text-secondary) text-center mb-8">
-                                {t("login.subtitle")}
+                                {subtitle}
                             </p>
 
                             {/* Error message */}
@@ -167,7 +238,102 @@ export default function LoginPage() {
                                 </div>
                             )}
 
-                            {/* Form */}
+                            {notice && (
+                                <div className="mb-4 p-3 rounded-xl bg-accent-500/10 border border-accent-500/20 text-accent-600 dark:text-accent-400 text-sm text-center">
+                                    {notice}
+                                </div>
+                            )}
+
+                            {mode === "verify" ? (
+                                <form onSubmit={handleVerify} className="space-y-4">
+                                    <div className="flex justify-center mb-2">
+                                        <div className="w-12 h-12 rounded-full bg-primary-500/15 flex items-center justify-center text-primary-500">
+                                            <ShieldCheck size={22} />
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-(--text-secondary) text-center">
+                                        {t("auth.enterCode")} <span className="font-semibold text-(--text-primary)">{email}</span>
+                                    </p>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-(--text-secondary) mb-1.5 ml-1">
+                                            {t("auth.code")}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            autoComplete="one-time-code"
+                                            className="glass-input text-center text-xl font-bold tracking-[0.35em]"
+                                            placeholder="000000"
+                                            value={code}
+                                            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                            required
+                                            disabled={loading}
+                                        />
+                                    </div>
+                                    <Button size="lg" className="w-full" disabled={loading || code.length !== 6}>
+                                        {loading ? <Loader2 size={16} className="animate-spin" /> : t("auth.verifyEmail")}
+                                    </Button>
+                                    <button
+                                        type="button"
+                                        onClick={handleResendCode}
+                                        disabled={loading}
+                                        className="w-full text-sm text-primary-500 hover:text-primary-400 font-semibold transition-colors disabled:opacity-50"
+                                    >
+                                        {t("auth.resendCode")}
+                                    </button>
+                                </form>
+                            ) : mode === "forgot" ? (
+                                <form onSubmit={handleForgotPassword} className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-(--text-secondary) mb-1.5 ml-1">
+                                            {t("login.email")}
+                                        </label>
+                                        <div className="relative">
+                                            <Mail
+                                                size={16}
+                                                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-(--text-tertiary)"
+                                            />
+                                            <input
+                                                type="email"
+                                                className="glass-input pl-10"
+                                                placeholder="you@example.com"
+                                                value={email}
+                                                onChange={(e) => setEmail(e.target.value)}
+                                                required
+                                                disabled={loading}
+                                            />
+                                        </div>
+                                    </div>
+                                    <Button size="lg" className="w-full" disabled={loading}>
+                                        {loading ? <Loader2 size={16} className="animate-spin" /> : t("auth.sendResetLink")}
+                                    </Button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setMode("signIn");
+                                            setError("");
+                                            setNotice("");
+                                        }}
+                                        className="w-full text-sm text-primary-500 hover:text-primary-400 font-semibold transition-colors"
+                                    >
+                                        {t("auth.backToLogin")}
+                                    </button>
+                                </form>
+                            ) : mode === "resetSent" ? (
+                                <div className="space-y-4">
+                                    <Button
+                                        type="button"
+                                        size="lg"
+                                        className="w-full"
+                                        onClick={() => {
+                                            setMode("signIn");
+                                            setNotice("");
+                                        }}
+                                    >
+                                        {t("auth.backToLogin")}
+                                    </Button>
+                                </div>
+                            ) : (
                             <form
                                 onSubmit={handleSubmit}
                                 className="space-y-4"
@@ -200,6 +366,17 @@ export default function LoginPage() {
                                         <label className="block text-xs font-semibold text-(--text-secondary)">
                                             {t("login.password")}
                                         </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setMode("forgot");
+                                                setError("");
+                                                setNotice("");
+                                            }}
+                                            className="text-xs text-primary-500 hover:text-primary-400 font-semibold transition-colors"
+                                        >
+                                            {t("login.forgotPassword")}
+                                        </button>
                                     </div>
                                     <div className="relative">
                                         <Lock
@@ -242,6 +419,7 @@ export default function LoginPage() {
                                     </Button>
                                 </div>
                             </form>
+                            )}
 
                             {/* Register link */}
                             <p className="text-center text-sm text-(--text-secondary) mt-6">

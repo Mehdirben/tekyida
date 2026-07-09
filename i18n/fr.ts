@@ -95,6 +95,26 @@ const fr: Record<TranslationKey, string> = {
     "register.error.invalidEmail": "Veuillez entrer une adresse e-mail valide.",
     "register.error.passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères.",
 
+    // Auth Verification & Reset
+    "auth.verificationSent": "Nous avons envoyé un code de vérification à votre e-mail.",
+    "auth.enterCode": "Entrez le code à 6 chiffres envoyé à",
+    "auth.code": "Code de vérification",
+    "auth.verifyEmail": "Vérifier l'e-mail",
+    "auth.resendCode": "Renvoyer le code",
+    "auth.invalidCode": "Code invalide ou expiré. Veuillez en demander un nouveau.",
+    "auth.resendError": "Impossible d'envoyer un nouveau code. Veuillez réessayer.",
+    "auth.resetTitle": "Réinitialiser le mot de passe",
+    "auth.resetSubtitle": "Entrez votre e-mail et nous enverrons les instructions si un compte existe.",
+    "auth.sendResetLink": "Envoyer le lien",
+    "auth.resetLinkSent": "Si un compte existe, nous avons envoyé les instructions de réinitialisation.",
+    "auth.backToLogin": "Retour à la connexion",
+    "auth.resetSuccess": "Votre mot de passe a été mis à jour. Connectez-vous avec le nouveau mot de passe.",
+    "auth.newPasswordTitle": "Choisir un nouveau mot de passe",
+    "auth.newPasswordSubtitle": "Entrez un nouveau mot de passe pour votre compte Tekyida.",
+    "auth.invalidResetLink": "Ce lien de réinitialisation est invalide ou expiré. Veuillez en demander un nouveau.",
+    "auth.resetPasswordMismatch": "Les mots de passe ne correspondent pas.",
+    "auth.updatePassword": "Modifier le mot de passe",
+
     // App Navigation
     "nav.dashboard": "Tableau de bord",
     "nav.contacts": "Contacts",

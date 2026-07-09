@@ -151,8 +151,10 @@ cp .env.example .env.local
 | `CONVEX_DEPLOYMENT` | Your Convex deployment identifier (set by `npx convex dev`) |
 | `NEXT_PUBLIC_CONVEX_URL` | Your Convex cloud endpoint URL |
 | `NEXT_PUBLIC_CONVEX_SITE_URL` | Your Convex site endpoint (for auth callbacks) |
+| `AUTH_RESEND_KEY` | Convex backend env var for Resend auth emails; set with `npx convex env set`, not in frontend hosting |
+| `AUTH_EMAIL_FROM` | Convex backend env var for the verified Resend sender, for example `Tekyida <auth@yourdomain.com>` |
 
-> These are automatically configured when you run `npx convex dev` for the first time.
+> The Convex URL variables are automatically configured when you run `npx convex dev` for the first time. The Resend variables are backend secrets and must be set on the Convex deployment with `npx convex env set`.
 
 ---
 
@@ -224,6 +226,10 @@ npx convex env set JWKS '{"keys":[...]}' --prod
 
 # Copy the JWT private key from your dev deployment
 npx convex env set --prod JWT_PRIVATE_KEY -- '-----BEGIN PRIVATE KEY----- ... -----END PRIVATE KEY-----'
+
+# Resend email delivery for verification and password reset
+npx convex env set AUTH_RESEND_KEY re_your_resend_api_key --prod
+npx convex env set AUTH_EMAIL_FROM 'Tekyida <auth@yourdomain.com>' --prod
 ```
 
 > **Tip:** Run `npx convex env list` to see your dev environment variables, then copy `JWKS` and `JWT_PRIVATE_KEY` to production.

@@ -93,6 +93,26 @@ const en = {
     "register.error.invalidEmail": "Please enter a valid email address.",
     "register.error.passwordTooShort": "Password must be at least 8 characters.",
 
+    // Auth Verification & Reset
+    "auth.verificationSent": "We sent a verification code to your email.",
+    "auth.enterCode": "Enter the 6-digit code sent to",
+    "auth.code": "Verification code",
+    "auth.verifyEmail": "Verify Email",
+    "auth.resendCode": "Resend code",
+    "auth.invalidCode": "Invalid or expired code. Please request a new one.",
+    "auth.resendError": "Could not send a new code. Please try again.",
+    "auth.resetTitle": "Reset Password",
+    "auth.resetSubtitle": "Enter your email and we will send reset instructions if an account exists.",
+    "auth.sendResetLink": "Send Reset Link",
+    "auth.resetLinkSent": "If an account exists, we sent password reset instructions.",
+    "auth.backToLogin": "Back to Sign In",
+    "auth.resetSuccess": "Your password was updated. Please sign in with the new password.",
+    "auth.newPasswordTitle": "Choose New Password",
+    "auth.newPasswordSubtitle": "Enter a new password for your Tekyida account.",
+    "auth.invalidResetLink": "This reset link is invalid or expired. Please request a new one.",
+    "auth.resetPasswordMismatch": "Passwords do not match.",
+    "auth.updatePassword": "Update Password",
+
     // App Navigation
     "nav.dashboard": "Dashboard",
     "nav.contacts": "Contacts",
