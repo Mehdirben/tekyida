@@ -79,11 +79,6 @@ body {
   will-change: transform;
 }
 
-/* Leave enough room to reach the final item behind the floating navigation. */
-.app-shell {
-  padding-bottom: 6rem;
-}
-
 /*
  * `viewport-fit=cover` lets an installed iOS app draw beneath the system UI.
  * Safari then exposes the unobscured area through these inset variables. Keep
@@ -119,15 +114,9 @@ body {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* An installed PWA has no Safari toolbar. iOS already reserves the home
-     gesture region, so adding its safe-area inset here creates a second,
-     visibly empty band below the floating navigation. */
+  /* Keep the dock controls clear of the iOS home indicator. */
   .app-bottom-nav {
-    padding-bottom: 0.5rem;
-  }
-
-  .app-shell {
-    padding-bottom: 4.5rem;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   body:has(.bottom-sheet-frame) .app-shell {
@@ -294,6 +283,15 @@ body {
   overflow: hidden;
   pointer-events: none;
   contain: strict;
+}
+
+/* In an installed iOS PWA, the fixed layout viewport can stop above the
+   home-indicator safe area. Extend the decorative layer through that area so
+   it does not fall back to body's flat background color. */
+@media (display-mode: standalone) {
+  .mesh-gradient {
+    bottom: calc(0px - max(3rem, env(safe-area-inset-bottom, 0px)));
+  }
 }
 
 .mesh-gradient::before {
