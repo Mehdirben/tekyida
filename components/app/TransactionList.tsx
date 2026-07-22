@@ -214,7 +214,7 @@ export default function TransactionList({
     const balance = directBalance + experienceBalance;
 
     return createPortal(
-        <div className="bottom-sheet-overlay fixed inset-0 z-[200] flex items-end sm:items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
+        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"

@@ -91,53 +91,10 @@ body {
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
 }
 
-/*
- * iOS standalone mode can initially size fixed elements against a taller
- * layout viewport, then correct them only after the document is scrolled.
- * Keep the PWA document fixed and make the app shell the scroll container so
- * bottom chrome is anchored correctly from the first frame.
- */
 @media (display-mode: standalone) {
-  html,
-  body {
-    height: 100dvh;
-    min-height: 100dvh;
-    overflow: hidden;
-    overscroll-behavior: none;
-  }
-
-  body {
-    position: relative;
-  }
-
-  .app-shell {
-    height: 100dvh;
-    min-height: 0;
-    padding-bottom: 0;
-    overflow: hidden;
-  }
-
-  .app-shell > main {
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Keep the dock in normal flex flow. This anchors it to the full dynamic
-     viewport instead of iOS's shorter fixed-position layout viewport. */
+  /* An installed PWA has no Safari toolbar, so only retain the system inset. */
   .app-bottom-nav {
-    position: relative;
-    inset: auto;
-    flex-shrink: 0;
-    margin-top: auto;
     padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-
-  /* Sheets are portalled to body. Absolute positioning makes them use body's
-     full 100dvh box instead of the clipped fixed-position viewport on iOS. */
-  .bottom-sheet-overlay {
-    position: absolute;
   }
 }
 
@@ -304,14 +261,6 @@ body {
   overflow: hidden;
   pointer-events: none;
   contain: strict;
-}
-
-@media (display-mode: standalone) {
-  .mesh-gradient {
-    position: absolute;
-    bottom: auto;
-    height: 100dvh;
-  }
 }
 
 .mesh-gradient::before {
