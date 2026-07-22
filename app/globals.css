@@ -124,6 +124,33 @@ body {
   }
 }
 
+/* iOS standalone anchors fixed bottom elements to a layout viewport that can
+   end above the physical screen edge. Move the floating dock through that
+   artificial gap; its own safe-area padding still keeps controls clear of the
+   home indicator. */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) and (hover: none) and (pointer: coarse) {
+    .app-bottom-nav {
+      bottom: calc(0px - max(3rem, env(safe-area-inset-bottom, 0px)));
+    }
+
+    /* Keep the sheet controls where they are, but continue its glass surface
+       through the otherwise unpainted strip at the bottom of the screen. */
+    .bottom-sheet-frame::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: calc(100% - 1px);
+      left: 0;
+      right: 0;
+      height: max(3rem, env(safe-area-inset-bottom, 0px));
+      background: var(--glass-bg-heavy);
+      -webkit-backdrop-filter: blur(32px) saturate(2);
+      backdrop-filter: blur(32px) saturate(2);
+    }
+  }
+}
+
 /* Bottom sheets stay flush with the viewport; only their controls need to be
    lifted above the iOS home indicator. */
 .sheet-safe-scroll {
