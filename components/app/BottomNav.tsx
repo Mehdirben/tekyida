@@ -32,7 +32,7 @@ export default function BottomNav() {
     ];
 
     return (
-        <nav className="app-safe-bottom-nav fixed bottom-0 left-0 right-0 z-70">
+        <nav className="app-bottom-nav app-safe-bottom-nav fixed bottom-0 left-0 right-0 z-70">
             <div className="flex justify-center px-4">
                 <div
                     className="inline-flex items-center gap-2 p-1.5 rounded-full"

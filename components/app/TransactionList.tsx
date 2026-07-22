@@ -222,7 +222,8 @@ export default function TransactionList({
             />
 
             {/* Sheet */}
-            <div className={`relative z-10 w-full sm:max-w-md h-[92dvh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl ${isClosing ? "animate-sheet-down" : animateIn ? "animate-sheet-up" : ""} overflow-hidden`}>
+            <div className={`bottom-sheet-frame relative z-10 w-full sm:max-w-md h-[92dvh] ${isClosing ? "animate-sheet-down" : animateIn ? "animate-sheet-up" : ""}`}>
+              <div className="h-full flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
                 {/* Header */}
                 <div className="sheet-safe-x flex items-center justify-between pt-5 pb-3 border-b border-(--border) gap-2">
                     <div className="flex-1 min-w-0 pr-3">
@@ -413,7 +414,7 @@ export default function TransactionList({
                 )}
 
                 {/* Add Transaction */}
-                <div className={`${keyboardInset > 0 ? "pb-3" : "sheet-safe-footer"} sheet-safe-x pt-2 border-t border-(--border)`}>
+                <div className="sheet-safe-x pt-2 pb-5 border-t border-(--border)">
                     {adding ? (
                         <div className="space-y-3 animate-scale-in">
                             {/* Amount + Direction Toggle */}
@@ -495,6 +496,7 @@ export default function TransactionList({
                         </button>
                     )}
                 </div>
+              </div>
             </div>
         </div>,
         document.body
