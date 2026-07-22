@@ -81,10 +81,32 @@ body {
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
 }
 
-.app-safe-bottom-nav {
-  padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
+/*
+ * iOS standalone mode can initially size fixed elements against a taller
+ * layout viewport, then correct them only after the document is scrolled.
+ * Keep the PWA document fixed and make the app shell the scroll container so
+ * bottom chrome is anchored correctly from the first frame.
+ */
+@media (display-mode: standalone) {
+  html,
+  body {
+    height: 100%;
+    min-height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  .app-shell {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body:has(.bottom-sheet-frame) .app-shell {
+    overflow: hidden;
+  }
 }
 
 /* Bottom sheets stay flush with the viewport; only their controls need to be
@@ -98,30 +120,10 @@ body {
   padding-right: max(1.25rem, env(safe-area-inset-right, 0px));
 }
 
-/* iOS standalone can leave an unpainted strip below a fixed bottom sheet.
-   Extend only the visual surface; the sheet's layout and controls stay put. */
-.bottom-sheet-frame::after {
-  content: "";
-  position: absolute;
-  top: calc(100% - 1px);
-  left: 0;
-  right: 0;
-  height: max(3rem, env(safe-area-inset-bottom, 0px));
-  background: var(--glass-bg-heavy);
-  -webkit-backdrop-filter: blur(32px) saturate(2);
-  backdrop-filter: blur(32px) saturate(2);
-}
-
 /* The navigation is not actionable while a sheet is open and should not show
    through the translucent sheet material. */
 body:has(.bottom-sheet-frame) .app-bottom-nav {
   visibility: hidden;
-}
-
-@media (min-width: 640px) {
-  .bottom-sheet-frame::after {
-    display: none;
-  }
 }
 
 /* Auth pages have fixed controls above a potentially scrollable card. */

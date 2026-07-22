@@ -32,7 +32,16 @@ export default function BottomNav() {
     ];
 
     return (
-        <nav className="app-bottom-nav app-safe-bottom-nav fixed bottom-0 left-0 right-0 z-70">
+        <nav
+            className="app-bottom-nav fixed bottom-0 left-0 right-0 z-70"
+            style={{
+                // Keep the controls above the iPhone home indicator while the
+                // navbar surface itself remains attached to the viewport edge.
+                paddingBottom: "max(1.25rem, env(safe-area-inset-bottom, 0px))",
+                paddingLeft: "env(safe-area-inset-left, 0px)",
+                paddingRight: "env(safe-area-inset-right, 0px)",
+            }}
+        >
             <div className="flex justify-center px-4">
                 <div
                     className="inline-flex items-center gap-2 p-1.5 rounded-full"
