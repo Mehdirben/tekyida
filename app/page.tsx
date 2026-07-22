@@ -33,7 +33,7 @@ export default function Home() {
       <div className="mesh-gradient" />
 
       {/* Content */}
-      <div className="relative z-10">
+      <div className="safe-content-x relative z-10">
         <Header />
         <main>
           <HeroSection />

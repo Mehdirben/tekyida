@@ -447,7 +447,7 @@ export default function ExperienceList({
 
             {/* Delete Confirmation Popup */}
             {deleteTarget && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
+                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={() => {
@@ -490,7 +490,7 @@ export default function ExperienceList({
 
             {/* Edit Experience Popup */}
             {editTarget && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
+                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={handleCloseEdit}
@@ -549,7 +549,7 @@ export default function ExperienceList({
 
             {/* Transfer Experience Popup */}
             {transferTarget && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
+                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={handleCloseTransfer}

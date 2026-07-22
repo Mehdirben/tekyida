@@ -26,7 +26,7 @@ export default function Header() {
     ];
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 pt-4 px-5 sm:px-8">
+        <header className="landing-safe-header fixed top-0 left-0 right-0 z-50 sm:px-8">
             <div
                 className={`max-w-6xl mx-auto liquid-glass-card rounded-2xl px-5 py-3 transition-all duration-500 ${mounted ? "animate-slide-up" : "opacity-0"
                     }`}

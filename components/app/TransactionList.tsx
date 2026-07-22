@@ -222,9 +222,9 @@ export default function TransactionList({
             />
 
             {/* Sheet */}
-            <div className={`relative z-10 w-full sm:max-w-md h-[92dvh] sm:h-[92vh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl ${isClosing ? "animate-sheet-down" : animateIn ? "animate-sheet-up" : ""} overflow-hidden`}>
+            <div className={`relative z-10 w-full sm:max-w-md h-[92dvh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl ${isClosing ? "animate-sheet-down" : animateIn ? "animate-sheet-up" : ""} overflow-hidden`}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border) gap-2">
+                <div className="sheet-safe-x flex items-center justify-between pt-5 pb-3 border-b border-(--border) gap-2">
                     <div className="flex-1 min-w-0 pr-3">
                         <h2 className="text-lg font-bold whitespace-normal break-words">{contactName}</h2>
                         <button
@@ -253,7 +253,7 @@ export default function TransactionList({
                 </div>
 
                 {/* Transaction List — merged timeline of transactions + experience cards sorted by date */}
-                <div className="sheet-safe-scroll flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 pt-4 space-y-2.5">
+                <div className="sheet-safe-x sheet-safe-scroll flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] pt-4 space-y-2.5">
                     {!transactions ? (
                         <div className="flex flex-col items-center justify-center py-12 gap-3 text-sm text-(--text-secondary)">
                             <Loader2 size={24} className="animate-spin text-primary-500" />
@@ -287,7 +287,7 @@ export default function TransactionList({
 
                 {/* Delete Confirmation Popup */}
                 {deleteTargetId && createPortal(
-                    <div className="fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
+                    <div className="safe-dialog fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                         <div
                             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                             onClick={() => {
@@ -329,7 +329,7 @@ export default function TransactionList({
 
                 {/* Edit Transaction Popup */}
                 {editTarget && createPortal(
-                    <div className="fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
+                    <div className="safe-dialog fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                         <div
                             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                             onClick={handleCloseEdit}
@@ -413,7 +413,7 @@ export default function TransactionList({
                 )}
 
                 {/* Add Transaction */}
-                <div className={`${keyboardInset > 0 ? "pb-3" : "sheet-safe-footer"} px-5 pt-2 border-t border-(--border)`}>
+                <div className={`${keyboardInset > 0 ? "pb-3" : "sheet-safe-footer"} sheet-safe-x pt-2 border-t border-(--border)`}>
                     {adding ? (
                         <div className="space-y-3 animate-scale-in">
                             {/* Amount + Direction Toggle */}

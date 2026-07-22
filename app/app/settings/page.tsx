@@ -654,7 +654,7 @@ export default function SettingsPage() {
             {/* PIN Setup & Verify Overlay Modal */}
             {showPinSetup && (
                 <div 
-                    className={`fixed inset-0 z-[1000] flex items-center justify-center bg-black/10 dark:bg-black/30 backdrop-blur-md px-4 py-6 ${
+                    className={`safe-dialog fixed inset-0 z-[1000] flex items-center justify-center bg-black/10 dark:bg-black/30 backdrop-blur-md ${
                         isClosingModal ? "animate-fade-out" : "animate-fade-in"
                     }`}
                 >

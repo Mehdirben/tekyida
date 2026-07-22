@@ -8,7 +8,7 @@ export default function Footer() {
     const { t } = useTranslation();
 
     return (
-        <footer className="relative py-8">
+        <footer className="landing-safe-footer relative pt-8">
             <div className="max-w-6xl mx-auto px-5 sm:px-8">
                 <div className="liquid-glass-card rounded-2xl px-6 py-5">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

@@ -218,9 +218,9 @@ export default function ExperienceDetail({
             />
 
             {/* Sheet */}
-            <div className={`relative z-10 w-full sm:max-w-md h-[92dvh] sm:h-[92vh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl ${isClosing ? "animate-sheet-down" : animateIn ? "animate-sheet-up" : ""} overflow-hidden`}>
+            <div className={`relative z-10 w-full sm:max-w-md h-[92dvh] flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl ${isClosing ? "animate-sheet-down" : animateIn ? "animate-sheet-up" : ""} overflow-hidden`}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border) gap-2">
+                <div className="sheet-safe-x flex items-center justify-between pt-5 pb-3 border-b border-(--border) gap-2">
                     <div className="flex-1 min-w-0 pr-3">
                         <h2 className="text-lg font-bold whitespace-normal break-words">{experienceName}</h2>
                         <div className="flex flex-wrap items-center gap-2 mt-0.5">
@@ -275,7 +275,7 @@ export default function ExperienceDetail({
                 )}
 
                 {/* Transaction List */}
-                <div className="sheet-safe-scroll flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 pt-4 space-y-2.5">
+                <div className="sheet-safe-x sheet-safe-scroll flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] pt-4 space-y-2.5">
                     {transactions.length === 0 && !adding ? (
                         <div className="text-center py-8">
                             <div className="inline-flex p-3 rounded-2xl liquid-glass mb-3">
@@ -360,7 +360,7 @@ export default function ExperienceDetail({
 
                 {/* Delete Confirmation Popup */}
                 {deleteTargetId && createPortal(
-                    <div className="fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
+                    <div className="safe-dialog fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                         <div
                             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                             onClick={() => {
@@ -402,7 +402,7 @@ export default function ExperienceDetail({
 
                 {/* Edit Transaction Popup */}
                 {editTarget && createPortal(
-                    <div className="fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
+                    <div className="safe-dialog fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                         <div
                             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                             onClick={handleCloseEdit}
@@ -487,7 +487,7 @@ export default function ExperienceDetail({
 
                 {/* Add Transaction (disabled when closed) */}
                 {!closed && (
-                    <div className={`${keyboardInset > 0 ? "pb-3" : "sheet-safe-footer"} px-5 pt-2 border-t border-(--border)`}>
+                    <div className={`${keyboardInset > 0 ? "pb-3" : "sheet-safe-footer"} sheet-safe-x pt-2 border-t border-(--border)`}>
                         {adding ? (
                             <div className="space-y-3 animate-scale-in">
                                 <div className="flex gap-2">

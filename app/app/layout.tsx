@@ -75,7 +75,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         return (
             <>
                 <div className="mesh-gradient" />
-                <div className="relative z-10 min-h-screen flex items-center justify-center">
+                <div className="safe-dialog relative z-10 min-h-dvh flex items-center justify-center">
                     <div className="liquid-glass-card p-8 flex flex-col items-center gap-4 animate-scale-in">
                         <Loader2 size={28} className="animate-spin text-primary-500" />
                         <p className="text-sm text-(--text-secondary)">{t("dashboard.loading")}</p>

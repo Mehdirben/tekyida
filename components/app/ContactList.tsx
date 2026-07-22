@@ -277,7 +277,7 @@ export default function ContactList({
 
             {/* Delete Confirmation Popup */}
             {deleteTarget && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
+                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={() => {
@@ -320,7 +320,7 @@ export default function ContactList({
 
             {/* Edit Contact Popup */}
             {editTarget && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
+                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={handleCloseEdit}

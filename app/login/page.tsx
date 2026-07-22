@@ -202,9 +202,9 @@ export default function LoginPage() {
             </div>
 
             {/* Page content */}
-            <div className="relative z-20 min-h-screen flex flex-col items-center justify-center px-5 py-12">
+            <div className="auth-safe-page relative z-20 flex flex-col items-center justify-start sm:justify-center">
                 {/* Top-right controls */}
-                <div className="fixed top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 z-50">
+                <div className="safe-fixed-top fixed left-1/2 -translate-x-1/2 flex items-center gap-2 z-50">
                     <LanguageToggle />
                     <ThemeToggle />
                 </div>

@@ -10,7 +10,7 @@ export default function HeroSection() {
     const { t } = useTranslation();
 
     return (
-        <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+        <section className="landing-safe-hero relative flex items-center justify-center overflow-hidden">
 
             {/* ── Floating Glass Product Cards ── */}
 

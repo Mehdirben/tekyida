@@ -691,7 +691,7 @@ export default function NotebookSwitcher({
 
             {/* Delete Notebook Confirmation */}
             {deleteTarget && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center">
+                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center">
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={() => {
@@ -736,7 +736,7 @@ export default function NotebookSwitcher({
 
             {/* Archive Notebook Confirmation */}
             {archiveTarget && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center">
+                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center">
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={() => {
@@ -786,7 +786,7 @@ export default function NotebookSwitcher({
 
             {/* Unarchive/Restore Notebook Confirmation */}
             {unarchiveTarget && createPortal(
-                <div className="fixed inset-0 z-[200] flex items-center justify-center">
+                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center">
                     <div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={() => {

@@ -99,7 +99,7 @@ export default function AppLock({ children }: { children: React.ReactNode }) {
     if (isLocked) {
         return (
             <div 
-                className={`fixed inset-0 z-[1000] flex flex-col items-center justify-center p-6 border-b border-(--glass-border) shadow-2xl overflow-y-auto ${
+                className={`safe-dialog fixed inset-0 z-[1000] flex flex-col items-center justify-center border-b border-(--glass-border) shadow-2xl overflow-y-auto ${
                     isClosingLock ? "animate-fade-out" : "animate-fade-in"
                 }`}
                 style={{
