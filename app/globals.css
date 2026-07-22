@@ -92,9 +92,21 @@ body {
 }
 
 @media (display-mode: standalone) {
+  /* WebKit reports dvh/svh without the bottom safe-area height for installed
+     apps. Its full `vh` unit includes that area from the first frame. */
+  html,
+  body,
+  .app-shell {
+    min-height: 100vh;
+  }
+
   /* An installed PWA has no Safari toolbar, so only retain the system inset. */
   .app-bottom-nav {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .bottom-sheet-frame {
+    height: 92vh;
   }
 }
 
