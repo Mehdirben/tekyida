@@ -66,7 +66,7 @@ export default function DashboardPage() {
         <>
             {/* Invisible: pre-caches contacts & transactions for ALL notebooks */}
             <CacheWarmer notebookIds={safeNotebooks.map((n) => n._id)} />
-            <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
+            <main className="app-safe-top flex-1 sm:px-6 pb-4 max-w-2xl mx-auto w-full">
                 {/* Dashboard Header: Logo left, Notebook Switcher right */}
                 <div className={`mb-6 ${animateIn ? "animate-slide-up" : ""} flex items-center justify-between relative z-50`}>
                     <div className="flex items-center gap-2">

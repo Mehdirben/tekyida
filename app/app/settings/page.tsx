@@ -295,7 +295,7 @@ export default function SettingsPage() {
     };
 
     return (
-        <main className="flex-1 px-4 sm:px-6 pt-6 pb-4 max-w-2xl mx-auto w-full">
+        <main className="app-safe-top flex-1 sm:px-6 pb-4 max-w-2xl mx-auto w-full">
             {/* Title */}
             <div className={`mb-8 ${animateIn ? "animate-slide-up" : ""} text-center`}>
                 <h1 className="text-2xl font-extrabold tracking-tight">
