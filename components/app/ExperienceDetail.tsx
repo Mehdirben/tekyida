@@ -210,7 +210,7 @@ export default function ExperienceDetail({
     const balance = transactions.reduce((sum, t) => sum + t.amount, 0);
 
     return createPortal(
-        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
+        <div className="bottom-sheet-overlay fixed inset-0 z-[200] flex items-end sm:items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -488,7 +488,7 @@ export default function ExperienceDetail({
 
                 {/* Add Transaction (disabled when closed) */}
                 {!closed && (
-                    <div className="sheet-safe-x pt-2 pb-5 border-t border-(--border)">
+                    <div className="sheet-safe-x sheet-safe-footer pt-2 border-t border-(--border)">
                         {adding ? (
                             <div className="space-y-3 animate-scale-in">
                                 <div className="flex gap-2">
