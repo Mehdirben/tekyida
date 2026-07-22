@@ -19,6 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     // and safely update them from localStorage in a useEffect after client mount.
     const [wasAuthenticated, setWasAuthenticated] = useState(false);
     const prevAuthenticatedRef = useRef(false);
+    const viewportRefreshedRef = useRef(false);
 
     useEffect(() => {
         try {
@@ -70,6 +71,57 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             router.push("/login");
         }
     }, [timedOut, wasAuthenticated, isAuthenticated, router]);
+
+    useEffect(() => {
+        const appIsReady = !((isLoading || !isAuthenticated) && !wasAuthenticated && !timedOut);
+        if (!appIsReady || viewportRefreshedRef.current) return;
+
+        const standaloneNavigator = navigator as Navigator & { standalone?: boolean };
+        const isStandalone =
+            window.matchMedia("(display-mode: standalone)").matches ||
+            standaloneNavigator.standalone === true;
+        const isIOS =
+            /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+        if (!isStandalone || !isIOS) return;
+        viewportRefreshedRef.current = true;
+
+        let settleFrame = 0;
+        let previousBodyMinHeight = "";
+        let previousScrollBehavior = "";
+        let stylesApplied = false;
+
+        const frame = window.requestAnimationFrame(() => {
+            const root = document.documentElement;
+            const body = document.body;
+            previousScrollBehavior = root.style.scrollBehavior;
+            previousBodyMinHeight = body.style.minHeight;
+            const scrollY = window.scrollY;
+
+            root.style.scrollBehavior = "auto";
+            body.style.minHeight = "calc(100dvh + 1px)";
+            stylesApplied = true;
+            void body.offsetHeight;
+            window.scrollTo(0, scrollY + 1);
+
+            settleFrame = window.requestAnimationFrame(() => {
+                window.scrollTo(0, scrollY);
+                body.style.minHeight = previousBodyMinHeight;
+                root.style.scrollBehavior = previousScrollBehavior;
+                stylesApplied = false;
+            });
+        });
+
+        return () => {
+            window.cancelAnimationFrame(frame);
+            window.cancelAnimationFrame(settleFrame);
+            if (stylesApplied) {
+                document.body.style.minHeight = previousBodyMinHeight;
+                document.documentElement.style.scrollBehavior = previousScrollBehavior;
+            }
+        };
+    }, [isAuthenticated, isLoading, timedOut, wasAuthenticated]);
 
     if ((isLoading || !isAuthenticated) && !wasAuthenticated && !timedOut) {
         return (
