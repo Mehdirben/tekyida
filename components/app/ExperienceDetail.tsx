@@ -275,7 +275,7 @@ export default function ExperienceDetail({
                 )}
 
                 {/* Transaction List */}
-                <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 py-4 space-y-2.5">
+                <div className="sheet-safe-scroll flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 pt-4 space-y-2.5">
                     {transactions.length === 0 && !adding ? (
                         <div className="text-center py-8">
                             <div className="inline-flex p-3 rounded-2xl liquid-glass mb-3">
@@ -487,7 +487,7 @@ export default function ExperienceDetail({
 
                 {/* Add Transaction (disabled when closed) */}
                 {!closed && (
-                    <div className="px-5 pb-5 pt-2 border-t border-(--border)">
+                    <div className={`${keyboardInset > 0 ? "pb-3" : "sheet-safe-footer"} px-5 pt-2 border-t border-(--border)`}>
                         {adding ? (
                             <div className="space-y-3 animate-scale-in">
                                 <div className="flex gap-2">

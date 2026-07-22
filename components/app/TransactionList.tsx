@@ -253,7 +253,7 @@ export default function TransactionList({
                 </div>
 
                 {/* Transaction List — merged timeline of transactions + experience cards sorted by date */}
-                <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 py-4 space-y-2.5">
+                <div className="sheet-safe-scroll flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 pt-4 space-y-2.5">
                     {!transactions ? (
                         <div className="flex flex-col items-center justify-center py-12 gap-3 text-sm text-(--text-secondary)">
                             <Loader2 size={24} className="animate-spin text-primary-500" />
@@ -413,7 +413,7 @@ export default function TransactionList({
                 )}
 
                 {/* Add Transaction */}
-                <div className="px-5 pb-5 pt-2 border-t border-(--border)">
+                <div className={`${keyboardInset > 0 ? "pb-3" : "sheet-safe-footer"} px-5 pt-2 border-t border-(--border)`}>
                     {adding ? (
                         <div className="space-y-3 animate-scale-in">
                             {/* Amount + Direction Toggle */}
