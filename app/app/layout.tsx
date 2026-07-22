@@ -89,7 +89,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <AppLock>
             <AmountsVisibilityProvider>
                 <div className="mesh-gradient" />
-                <div className="app-shell relative z-[60] min-h-dvh flex flex-col pb-24">
+                <div className="app-shell relative z-[60] min-h-dvh flex flex-col">
                     {children}
                     <BottomNav />
                 </div>

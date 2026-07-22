@@ -74,6 +74,14 @@ body {
   padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Leave enough room to reach the final item behind the floating navigation. */
+.app-shell {
+  padding-bottom: 6rem;
 }
 
 /*
@@ -111,10 +119,15 @@ body {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* An installed PWA has no Safari toolbar. Keep only the home-indicator
-     inset instead of carrying over the browser's extra bottom spacing. */
+  /* An installed PWA has no Safari toolbar. iOS already reserves the home
+     gesture region, so adding its safe-area inset here creates a second,
+     visibly empty band below the floating navigation. */
   .app-bottom-nav {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: 0.5rem;
+  }
+
+  .app-shell {
+    padding-bottom: 4.5rem;
   }
 
   body:has(.bottom-sheet-frame) .app-shell {
