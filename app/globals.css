@@ -69,6 +69,13 @@ body {
   margin: 0;
 }
 
+/* Safari needs a little clearance from its bottom toolbar. */
+.app-bottom-nav {
+  padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
 /*
  * `viewport-fit=cover` lets an installed iOS app draw beneath the system UI.
  * Safari then exposes the unobscured area through these inset variables. Keep
@@ -102,6 +109,12 @@ body {
     overflow-y: auto;
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* An installed PWA has no Safari toolbar. Keep only the home-indicator
+     inset instead of carrying over the browser's extra bottom spacing. */
+  .app-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   body:has(.bottom-sheet-frame) .app-shell {
