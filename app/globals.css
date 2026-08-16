@@ -100,9 +100,11 @@ body {
     min-height: 100vh;
   }
 
-  /* An installed PWA has no Safari toolbar, so only retain the system inset. */
+  /* Installed PWAs have no browser toolbar. Android can report a zero
+     safe-area inset, so retain a small gesture/navigation-bar clearance while
+     still allowing iOS's larger home-indicator inset to win. */
   .app-bottom-nav {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   }
 
   .bottom-sheet-frame {
