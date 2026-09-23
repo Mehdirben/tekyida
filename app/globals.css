@@ -107,6 +107,17 @@ body {
     padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   }
 
+  /* iOS 27 composites a progressive blur over the top edge of installed apps
+     with a black-translucent status bar. The band reaches below
+     env(safe-area-inset-top) and has no opt-out, so keep top chrome clear of
+     it. 16px is the measured band overflow; revisit if Apple changes it. */
+  .app-safe-top {
+    padding-top: max(
+      1.5rem,
+      calc(env(safe-area-inset-top, 0px) + 0.75rem + 16px)
+    );
+  }
+
   .bottom-sheet-frame {
     height: 92vh;
   }
