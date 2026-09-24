@@ -35,13 +35,30 @@ describe("notebooks", () => {
 
     // Test sort fallback when order is equal
     await t.run(async (ctx) => {
-      await ctx.db.patch(nb1, { order: 0, createdAt: 1000 });
+      await ctx.db.patch(nb1, { order: 0, createdAt: 0 });
       await ctx.db.patch(nb2, { order: 0, createdAt: 2000 });
     });
 
     let list = await asUser.query(api.notebooks.list);
     expect(list[0]._id).toBe(nb2);
     expect(list[1]._id).toBe(nb1);
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(nb2, { order: 0, createdAt: 0 });
+      await ctx.db.patch(nb1, { order: 0, createdAt: 1000 });
+    });
+    list = await asUser.query(api.notebooks.list);
+    expect(list[0]._id).toBe(nb1);
+
+    const nb3 = await asUser.mutation(api.notebooks.create, { name: "Third" });
+    await t.run(async (ctx) => {
+      await ctx.db.patch(nb1, { order: undefined, createdAt: 1000 });
+      await ctx.db.patch(nb2, { order: 0, createdAt: 2000 });
+      await ctx.db.patch(nb3, { order: undefined, createdAt: 3000 });
+    });
+    list = await asUser.query(api.notebooks.list);
+    expect(list[0]._id).toBe(nb2);
+    await asUser.mutation(api.notebooks.remove, { id: nb3 });
 
     // Add contact and transaction to nb1
     const c1 = await t.run((ctx) =>

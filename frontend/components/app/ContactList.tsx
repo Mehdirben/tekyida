@@ -2,7 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { UserPlus, User, Phone, ChevronRight, Trash2, Pencil, X, CloudOff } from "lucide-react";
+import { UserPlus, User, Phone, ChevronRight, Trash2, Pencil } from "lucide-react";
+import UnsyncedBadge from "@/components/ui/UnsyncedBadge";
+import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
+import EditModalDialog from "@/components/ui/EditModalDialog";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { useMutation } from "convex/react";
@@ -12,10 +15,6 @@ import { useSync } from "@/contexts/SyncContext";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import { triggerHaptic } from "@/lib/haptics";
-
-function UnsyncedBadge() {
-    return <CloudOff size={12} className="text-warning-500 shrink-0" />;
-}
 
 interface Contact {
     _id: Id<"contacts">;
@@ -102,12 +101,9 @@ export default function ContactList({
     }, [deleteTarget, editTarget, adding, handleCloseEdit]);
 
     useEffect(() => {
-        if (adding && nameRef.current) nameRef.current.focus();
-    }, [adding]);
-
-    useEffect(() => {
-        if (editTarget && editNameRef.current) editNameRef.current.focus();
-    }, [editTarget]);
+        if (adding) nameRef.current?.focus();
+        else if (editTarget) editNameRef.current?.focus();
+    }, [adding, editTarget]);
 
     const handleAdd = async () => {
         const name = newName.trim();
@@ -276,115 +272,56 @@ export default function ContactList({
             ))}
 
             {/* Delete Confirmation Popup */}
-            {deleteTarget && createPortal(
-                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
-                    <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                        onClick={() => {
-                            triggerHaptic("light");
-                            setDeleteTarget(null);
-                        }}
-                    />
-                    <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
-                        <div className="p-5 text-center">
-                            <div className="inline-flex p-3 rounded-full bg-danger-500/10 mb-3">
-                                <Trash2 size={22} className="text-danger-500" />
-                            </div>
-                            <h3 className="text-base font-bold mb-1">{t("contact.delete")}</h3>
-                            <p className="text-sm text-(--text-secondary)">
-                                {t("contact.deleteConfirm")}
-                            </p>
-                            <p className="text-sm font-semibold mt-2 break-words whitespace-normal">{deleteTarget.name}</p>
-                        </div>
-                        <div className="flex border-t border-(--border)">
-                            <button
-                                onClick={() => {
-                                    triggerHaptic("light");
-                                    setDeleteTarget(null);
-                                }}
-                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
-                            >
-                                {t("common.cancel")}
-                            </button>
-                            <button
-                                onClick={confirmDelete}
-                                className="flex-1 py-3.5 text-sm font-semibold text-danger-500 border-l border-(--border) transition-all active:bg-danger-500/10 cursor-pointer"
-                            >
-                                {t("common.delete")}
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+            <ConfirmDeleteModal
+                isOpen={!!deleteTarget}
+                title={t("contact.delete")}
+                description={t("contact.deleteConfirm")}
+                itemName={deleteTarget?.name}
+                onCancel={() => setDeleteTarget(null)}
+                onConfirm={confirmDelete}
+                style={keyboardOffsetStyle}
+            />
 
             {/* Edit Contact Popup */}
-            {editTarget && createPortal(
-                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
-                    <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                        onClick={handleCloseEdit}
-                    />
-                    <div className={`relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl overflow-hidden ${isEditClosing ? "animate-scale-out" : "animate-scale-in"}`}>
-                        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
-                            <h3 className="text-base font-bold">{t("contact.edit")}</h3>
-                            <button
-                                onClick={handleCloseEdit}
-                                className="p-1.5 rounded-lg active:bg-white/10 transition-all cursor-pointer"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-                        <div className="p-5 space-y-3">
-                            <input
-                                ref={editNameRef}
-                                type="text"
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleEdit();
-                                    if (e.key === "Escape") {
-                                        e.stopPropagation();
-                                        handleCloseEdit();
-                                    }
-                                }}
-                                placeholder={t("contact.name")}
-                                className="glass-input py-2.5 text-sm"
-                            />
-                            <input
-                                type="tel"
-                                value={editPhone}
-                                onChange={(e) => setEditPhone(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleEdit();
-                                    if (e.key === "Escape") {
-                                        e.stopPropagation();
-                                        handleCloseEdit();
-                                    }
-                                }}
-                                placeholder={t("contact.phone")}
-                                className="glass-input py-2.5 text-sm"
-                            />
-                        </div>
-                        <div className="flex border-t border-(--border)">
-                            <button
-                                onClick={handleCloseEdit}
-                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
-                            >
-                                {t("common.cancel")}
-                            </button>
-                            <button
-                                onClick={handleEdit}
-                                disabled={!editName.trim()}
-                                className="flex-1 py-3.5 text-sm font-semibold text-primary-500 border-l border-(--border) transition-all active:bg-primary-500/10 disabled:opacity-40 cursor-pointer"
-                            >
-                                {t("common.save")}
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+            <EditModalDialog
+                isOpen={!!editTarget}
+                isClosing={isEditClosing}
+                title={t("contact.edit")}
+                onClose={handleCloseEdit}
+                onSave={handleEdit}
+                saveDisabled={!editName.trim()}
+                style={keyboardOffsetStyle}
+            >
+                <input
+                    ref={editNameRef}
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") handleEdit();
+                        if (e.key === "Escape") {
+                            e.stopPropagation();
+                            handleCloseEdit();
+                        }
+                    }}
+                    placeholder={t("contact.name")}
+                    className="glass-input py-2.5 text-sm"
+                />
+                <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") handleEdit();
+                        if (e.key === "Escape") {
+                            e.stopPropagation();
+                            handleCloseEdit();
+                        }
+                    }}
+                    placeholder={t("contact.phone")}
+                    className="glass-input py-2.5 text-sm"
+                />
+            </EditModalDialog>
 
             {/* Add Contact Section */}
             {adding ? (
@@ -396,12 +333,7 @@ export default function ContactList({
                         onChange={(e) => setNewName(e.target.value)}
                         onKeyDown={(e) => {
                             if (e.key === "Enter") handleAdd();
-                            if (e.key === "Escape") {
-                                e.stopPropagation();
-                                setAdding(false);
-                                setNewName("");
-                                setNewPhone("");
-                            }
+                            else if (e.key === "Escape") { e.stopPropagation(); setAdding(false); setNewName(""); setNewPhone(""); }
                         }}
                         placeholder={t("contact.name")}
                         className="glass-input py-2.5 text-sm"

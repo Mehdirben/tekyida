@@ -90,6 +90,9 @@ describe("transactions", () => {
     await expect(asUser.mutation(api.transactions.update, { id: txExpId, amount: 500 })).rejects.toThrow("Experience is closed");
     await expect(asUser.mutation(api.transactions.remove, { id: txExpId })).rejects.toThrow("Experience is closed");
     await asUser.mutation(api.experiences.reopen, { id: expId });
+    // Update and remove linked to open experience
+    await asUser.mutation(api.transactions.update, { id: txExpId, amount: 450 });
+    await asUser.mutation(api.transactions.remove, { id: txExpId });
 
     // Remove transactions
     await expect(t.mutation(api.transactions.remove, { id: txContactId })).rejects.toThrow("Not authenticated");

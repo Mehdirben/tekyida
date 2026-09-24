@@ -59,15 +59,35 @@ describe("experiences", () => {
         date: 200,
         createdAt: 150,
       });
+      await ctx.db.insert("transactions", {
+        userId,
+        notebookId: nbId,
+        experienceId: expId,
+        amount: 10,
+        date: 50,
+        createdAt: 50,
+      });
+    });
+
+    const expEmpty = await asUser.mutation(api.experiences.create, {
+      notebookId: nbId,
+      name: "Empty Exp",
     });
 
     let list = await asUser.query(api.experiences.list, { notebookId: nbId });
-    expect(list).toHaveLength(1);
-    expect(list[0].name).toBe("Dinner Party");
-    expect(list[0].balance).toBe(200);
-    expect(list[0].transactionCount).toBe(2);
-    expect(list[0].lastTransactionDate).toBe(200);
-    expect(list[0].closed).toBe(false);
+    expect(list).toHaveLength(2);
+    const dinnerExp = list.find((e) => e._id === expId);
+    expect(dinnerExp?.name).toBe("Dinner Party");
+    expect(dinnerExp?.balance).toBe(210);
+    expect(dinnerExp?.transactionCount).toBe(3);
+    expect(dinnerExp?.lastTransactionDate).toBe(200);
+    expect(dinnerExp?.closed).toBe(false);
+
+    const emptyExp = list.find((e) => e._id === expEmpty);
+    expect(emptyExp?.transactionCount).toBe(0);
+    expect(emptyExp?.lastTransactionDate).toBeUndefined();
+
+    await asUser.mutation(api.experiences.remove, { id: expEmpty });
 
     // Update experience
     await expect(t.mutation(api.experiences.update, { id: expId, name: "New" })).rejects.toThrow("Not authenticated");
@@ -75,7 +95,13 @@ describe("experiences", () => {
     await expect(asOther.mutation(api.experiences.update, { id: expId, name: "New" })).rejects.toThrow("Experience not found");
     await expect(asUser.mutation(api.experiences.update, { id: expId, name: "New", contactId: otherContact })).rejects.toThrow("Contact not found");
 
-    await asUser.mutation(api.experiences.update, { id: expId, name: "Gala Dinner" });
+    // Contact does not exist (!contact)
+    const deletedContact = await asUser.mutation(api.contacts.create, { notebookId: nbId, name: "Temp" });
+    await asUser.mutation(api.contacts.remove, { id: deletedContact });
+    await expect(asUser.mutation(api.experiences.update, { id: expId, name: "New", contactId: deletedContact })).rejects.toThrow("Contact not found");
+
+    await asUser.mutation(api.experiences.update, { id: expId, name: "Gala Dinner No Contact" });
+await asUser.mutation(api.experiences.update, { id: expId, name: "Gala Dinner", contactId });
     list = await asUser.query(api.experiences.list, { notebookId: nbId });
     expect(list[0].name).toBe("Gala Dinner");
 

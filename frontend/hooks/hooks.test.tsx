@@ -7,6 +7,7 @@ import { useLocalAmountsVisibility } from "./useLocalAmountsVisibility";
 import {
   AmountsVisibilityProvider,
   useAmountsVisibility,
+  getInitialAmountsHidden,
 } from "@/contexts/AmountsVisibilityContext";
 
 describe("custom hooks & contexts", () => {
@@ -28,18 +29,62 @@ describe("custom hooks & contexts", () => {
   });
 
   describe("useKeyboardInset", () => {
-    it("tracks keyboard inset via visualViewport", () => {
+    it("returns 0 when visualViewport is undefined", () => {
+      const originalVv = window.visualViewport;
+      // @ts-expect-error mock missing
+      delete window.visualViewport;
+
+      const { result } = renderHook(() => useKeyboardInset());
+      expect(result.current).toBe(0);
+
+      window.visualViewport = originalVv;
+    });
+
+    it("tracks keyboard inset via visualViewport and handles cleanup", () => {
+      let resizeCb: () => void = () => {};
+      let scrollCb: () => void = () => {};
+      let orientCb: () => void = () => {};
+
       // @ts-expect-error mock visualViewport
       window.visualViewport = {
-        height: 400,
+        height: 750,
         offsetTop: 0,
-        addEventListener: vi.fn(),
+        addEventListener: vi.fn((event, cb) => {
+          if (event === "resize") resizeCb = cb;
+          if (event === "scroll") scrollCb = cb;
+        }),
         removeEventListener: vi.fn(),
       };
       window.innerHeight = 800;
+      const orientSpy = vi.spyOn(window, "addEventListener").mockImplementation((event, cb) => {
+        if (event === "orientationchange") orientCb = cb as () => void;
+      });
+      const orientRemoveSpy = vi.spyOn(window, "removeEventListener");
 
-      const { result } = renderHook(() => useKeyboardInset());
-      expect(result.current).toBe(400); // 800 - 400 = 400 > threshold 120
+      const { result, unmount } = renderHook(() => useKeyboardInset());
+      expect(result.current).toBe(0);
+
+      act(() => {
+        // @ts-expect-error mock
+        window.visualViewport.height = 400;
+        resizeCb();
+      });
+      expect(result.current).toBe(400);
+
+      act(() => {
+        scrollCb();
+      });
+      expect(result.current).toBe(400);
+
+      act(() => {
+        orientCb();
+      });
+      expect(result.current).toBe(400);
+
+      unmount();
+      expect(window.visualViewport?.removeEventListener).toHaveBeenCalled();
+      orientSpy.mockRestore();
+      orientRemoveSpy.mockRestore();
     });
   });
 
@@ -49,6 +94,10 @@ describe("custom hooks & contexts", () => {
       expect(result.current.hidden).toBe(false);
       expect(result.current.mask("test")).toBe("test");
       expect(() => result.current.toggle()).not.toThrow();
+    });
+
+    it("handles SSR fallback when isClient is false", () => {
+      expect(getInitialAmountsHidden(false)).toBe(true);
     });
 
     it("respects remember behavior from localStorage", () => {
@@ -66,7 +115,7 @@ describe("custom hooks & contexts", () => {
         );
       };
 
-      render(
+      const { unmount } = render(
         <AmountsVisibilityProvider>
           <TestComponent />
         </AmountsVisibilityProvider>
@@ -79,6 +128,35 @@ describe("custom hooks & contexts", () => {
       expect(screen.getByTestId("hidden").textContent).toBe("true");
       expect(screen.getByTestId("mask").textContent).toBe("••••••");
 
+      unmount();
+
+      localStorage.setItem("tekyida-amounts-load-behavior", "remember");
+      localStorage.setItem("tekyida-hide-amounts", "true");
+      const { unmount: unmount2 } = render(
+        <AmountsVisibilityProvider>
+          <TestComponent />
+        </AmountsVisibilityProvider>
+      );
+      expect(screen.getByTestId("hidden").textContent).toBe("true");
+      unmount2();
+      localStorage.clear();
+    });
+
+    it("respects default always-hide when behavior is not remember", () => {
+      localStorage.setItem("tekyida-amounts-load-behavior", "always-hide");
+
+      const TestComponent = () => {
+        const { hidden } = useAmountsVisibility();
+        return <span data-testid="hidden">{String(hidden)}</span>;
+      };
+
+      render(
+        <AmountsVisibilityProvider>
+          <TestComponent />
+        </AmountsVisibilityProvider>
+      );
+
+      expect(screen.getByTestId("hidden").textContent).toBe("true");
       localStorage.clear();
     });
 

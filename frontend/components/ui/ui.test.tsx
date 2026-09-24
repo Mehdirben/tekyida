@@ -72,9 +72,9 @@ describe("UI Components", () => {
 
   describe("Logo", () => {
     it("renders SVG logo", () => {
-      const { container } = render(<Logo className="w-10 h-10" />);
-      const svg = container.querySelector("svg");
-      expect(svg).toBeDefined();
+      const { container } = render(<Logo size="md" />);
+      const img = container.querySelector("img");
+      expect(img).toBeDefined();
     });
   });
 });

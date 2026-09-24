@@ -45,6 +45,10 @@ function openDB(): Promise<IDBDatabase> {
     return dbPromise;
 }
 
+export function resetDB(): void {
+    dbPromise = null;
+}
+
 /** Add a mutation to the offline queue */
 export async function enqueue(mutation: Omit<QueuedMutation, "id">): Promise<void> {
     const db = await openDB();

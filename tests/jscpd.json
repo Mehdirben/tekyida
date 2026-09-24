@@ -1,5 +1,5 @@
 {
-  "threshold": 15,
+  "threshold": 0,
   "minLines": 15,
   "minTokens": 75,
   "reporters": ["console", "json"],
@@ -14,7 +14,14 @@
     "**/frontend/convex/**",
     "**/tests/reports/**",
     "**/package-lock.json",
-    "**/.git/**"
+    "**/.git/**",
+    "**/*.md",
+    "**/*.mdx",
+    "**/docs/**",
+    "**/doc/**",
+    "**/README*",
+    "**/LICENSE*",
+    "**/*.txt"
   ],
   "absolute": false
 }

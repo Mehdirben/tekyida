@@ -5,16 +5,13 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import Logo from "@/components/ui/Logo";
-import SyncIndicator from "@/components/app/SyncIndicator";
-import NotebookSwitcher from "@/components/app/NotebookSwitcher";
+import AppLayout from "@/components/app/AppLayout";
 import ExperienceList from "@/components/app/ExperienceList";
 import ExperienceBalanceCard from "@/components/app/ExperienceBalanceCard";
 import ExperienceDetail from "@/components/app/ExperienceDetail";
 import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import { useActiveNotebook } from "@/hooks/useActiveNotebook";
-import CacheWarmer from "@/components/app/CacheWarmer";
 
 interface ExperienceSummary {
     _id: Id<"experiences">;
@@ -27,19 +24,8 @@ interface ExperienceSummary {
 }
 
 export default function ExperiencesPage() {
-    const {
-        notebooks,
-        safeNotebooks,
-        resolvedActiveId,
-        setActiveNotebookId,
-        handleCreateNotebook,
-        handleEditNotebook,
-        handleDeleteNotebook,
-        handleArchiveNotebook,
-        handleReorderNotebooks,
-        isItemPending,
-        isOffline,
-    } = useActiveNotebook();
+    const notebookManager = useActiveNotebook();
+    const { notebooks, resolvedActiveId, setActiveNotebookId, isOffline } = notebookManager;
 
     const closeExperience = useMutation(api.experiences.close);
     const reopenExperience = useMutation(api.experiences.reopen);
@@ -122,31 +108,7 @@ export default function ExperiencesPage() {
     if (!dataReady && !isOffline) return null;
 
     return (
-        <>
-            <CacheWarmer notebookIds={safeNotebooks.map((n) => n._id)} />
-            <main className="app-safe-top flex-1 sm:px-6 pb-4 max-w-2xl mx-auto w-full">
-                {/* Header */}
-                <div className={`mb-6 ${animateIn ? "animate-slide-up" : ""} flex items-center justify-between relative z-50`}>
-                    <div className="flex items-center gap-2">
-                        <Logo size="md" />
-                        <SyncIndicator />
-                    </div>
-                    <NotebookSwitcher
-                        notebooks={notebooks ? notebooks.map((n) => ({
-                            id: n._id,
-                            name: n.name,
-                            archived: n.archived,
-                        })) : []}
-                        activeNotebookId={resolvedActiveId}
-                        onSelect={(id) => setActiveNotebookId(id ? id as Id<"notebooks"> : undefined)}
-                        onAdd={handleCreateNotebook}
-                        onEdit={handleEditNotebook}
-                        onDelete={handleDeleteNotebook}
-                        onArchive={handleArchiveNotebook}
-                        onReorder={handleReorderNotebooks}
-                        isItemPending={isItemPending}
-                    />
-                </div>
+        <AppLayout notebookManager={notebookManager} animateIn={animateIn}>
 
                 {/* Open Experiences Balance Card */}
                 {resolvedActiveId && experiences !== undefined && experiences.length > 0 && (
@@ -190,7 +152,6 @@ export default function ExperiencesPage() {
                         onToggleClosed={handleToggleClosed}
                     />
                 )}
-            </main>
-        </>
+        </AppLayout>
     );
 }

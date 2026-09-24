@@ -19,6 +19,10 @@ describe("users", () => {
     const asUser = t.withIdentity({ subject: userId });
     expect(await asUser.query(api.users.currentEmail)).toBe("test@example.com");
 
+    const noEmailId = await t.run((ctx) => ctx.db.insert("users", { name: "NoEmail" }));
+    const asNoEmail = t.withIdentity({ subject: noEmailId });
+    expect(await asNoEmail.query(api.users.currentEmail)).toBeNull();
+
     const email = await t.query(internal.users.getUserEmail, { userId });
     expect(email).toBe("test@example.com");
   });
@@ -79,7 +83,7 @@ describe("users", () => {
     expect(account?.providerAccountId).toBe("updated@example.com");
   });
 
-  it("changeEmail - validates email format and duplicate checks", async () => {
+  it("changeEmail - validates email format, missing user email, and duplicate checks", async () => {
     const t = convexTest(schema);
     const user1 = await t.run((ctx) =>
       ctx.db.insert("users", { name: "User 1", email: "user1@example.com" })
@@ -87,13 +91,20 @@ describe("users", () => {
     const user2 = await t.run((ctx) =>
       ctx.db.insert("users", { name: "User 2", email: "user2@example.com" })
     );
+    const userNoEmail = await t.run((ctx) =>
+      ctx.db.insert("users", { name: "NoEmail" })
+    );
     const asUser1 = t.withIdentity({ subject: user1 });
+    const asUserNoEmail = t.withIdentity({ subject: userNoEmail });
 
     // Unauthenticated
     await expect(t.action(api.users.changeEmail, { newEmail: "valid@email.com" })).rejects.toThrow("Not authenticated");
 
     // Invalid format
     await expect(asUser1.action(api.users.changeEmail, { newEmail: "invalid-email" })).rejects.toThrow("Invalid email address");
+
+    // Missing current email
+    await expect(asUserNoEmail.action(api.users.changeEmail, { newEmail: "any@example.com" })).rejects.toThrow("Could not determine current email");
 
     // Already in use
     await expect(asUser1.action(api.users.changeEmail, { newEmail: "user2@example.com" })).rejects.toThrow("Email address is already in use");
@@ -103,14 +114,33 @@ describe("users", () => {
     expect(await asUser1.query(api.users.currentEmail)).toBe("newuser1@example.com");
   });
 
-  it("changePassword - validates password length and unauthenticated check", async () => {
+  it("changePassword - validates password length, unauthenticated check, missing email, and current password verification", async () => {
     const t = convexTest(schema);
     const userId = await t.run((ctx) =>
       ctx.db.insert("users", { name: "User", email: "user@example.com" })
     );
+    const userNoEmail = await t.run((ctx) =>
+      ctx.db.insert("users", { name: "NoEmail" })
+    );
     const asUser = t.withIdentity({ subject: userId });
+    const asUserNoEmail = t.withIdentity({ subject: userNoEmail });
 
     await expect(t.action(api.users.changePassword, { currentPassword: "old", newPassword: "newpassword" })).rejects.toThrow("Not authenticated");
     await expect(asUser.action(api.users.changePassword, { currentPassword: "old", newPassword: "123" })).rejects.toThrow("Password must be at least 6 characters");
+    await expect(asUserNoEmail.action(api.users.changePassword, { currentPassword: "old", newPassword: "newpassword" })).rejects.toThrow("Could not determine user email");
+    await expect(asUser.action(api.users.changePassword, { currentPassword: "wrongpassword", newPassword: "newpassword" })).rejects.toThrow("Current password is incorrect");
+
+    const { Scrypt } = await import("lucia");
+    const secret = await new Scrypt().hash("currentpassword");
+    await t.run((ctx) =>
+      ctx.db.insert("authAccounts", {
+        userId,
+        provider: "password",
+        providerAccountId: "user@example.com",
+        secret,
+      })
+    );
+
+    await asUser.action(api.users.changePassword, { currentPassword: "currentpassword", newPassword: "newpassword123" });
   });
 });

@@ -26,6 +26,14 @@ import { useCachedQuery } from "@/hooks/useCachedQuery";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import { triggerHaptic } from "@/lib/haptics";
+import { toLocalDatetime } from "@/lib/dateUtils";
+import BottomSheetModal from "@/components/ui/BottomSheetModal";
+import TransactionModals from "@/components/app/TransactionModals";
+import AddTransactionFooter from "@/components/app/AddTransactionFooter";
+import { useTransactionCreator } from "@/hooks/useTransactionCreator";
+import { useTransactionMutations } from "@/hooks/useTransactionMutations";
+import { useSheetAnimation } from "@/hooks/useSheetAnimation";
+import { useTransactionEditor, useTransactionSheetEscape } from "@/hooks/useTransactionEditor";
 
 interface ExperienceDetailProps {
     experienceId: Id<"experiences">;
@@ -35,12 +43,6 @@ interface ExperienceDetailProps {
     closed: boolean;
     onClose: () => void;
     onToggleClosed: () => void;
-}
-
-function toLocalDatetime(ts: number) {
-    const d = new Date(ts);
-    const pad = (n: number) => n.toString().padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export default function ExperienceDetail({
@@ -67,77 +69,12 @@ export default function ExperienceDetail({
         const txs = rawTransactions ?? [];
         return [...txs].sort((a, b) => (b.date ?? b.createdAt) - (a.date ?? a.createdAt));
     }, [rawTransactions]);
-    const createTransaction = useMutation(api.transactions.create);
-    const deleteTransaction = useMutation(api.transactions.remove);
-    const updateTransaction = useMutation(api.transactions.update);
-    const { offlineMutation, isItemPending } = useSync();
+    const { createTransaction, deleteTransaction, updateTransaction, offlineMutation, isItemPending } = useTransactionMutations();
 
-    const [adding, setAdding] = useState(false);
-    const [isClosing, setIsClosing] = useState(false);
-    const [animateIn, setAnimateIn] = useState(true);
-    const [amount, setAmount] = useState("");
-    const [isPositive, setIsPositive] = useState(true);
-    const [description, setDescription] = useState("");
-    const [date, setDate] = useState(() => toLocalDatetime(Date.now()));
+    const { isClosing, animateIn, handleAnimatedClose } = useSheetAnimation(onClose);
     const [deleteTargetId, setDeleteTargetId] = useState<Id<"transactions"> | null>(null);
-    const [editTarget, setEditTarget] = useState<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number } | null>(null);
-    const [editAmount, setEditAmount] = useState("");
-    const [editIsPositive, setEditIsPositive] = useState(true);
-    const [editDescription, setEditDescription] = useState("");
-    const [editDate, setEditDate] = useState("");
-    const [isEditClosing, setIsEditClosing] = useState(false);
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setAnimateIn(false);
-        }, 450);
-        return () => clearTimeout(timer);
-    }, []);
-
-    const handleCloseEdit = useCallback(() => {
-        triggerHaptic("light");
-        setIsEditClosing(true);
-        setTimeout(() => {
-            setEditTarget(null);
-            setIsEditClosing(false);
-        }, 250);
-    }, []);
-
-    const handleAnimatedClose = useCallback(() => {
-        triggerHaptic("light");
-        setIsClosing(true);
-        setTimeout(() => {
-            onClose();
-        }, 300);
-    }, [onClose]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                if (deleteTargetId) {
-                    triggerHaptic("light");
-                    setDeleteTargetId(null);
-                } else if (editTarget) {
-                    handleCloseEdit();
-                } else if (adding) {
-                    triggerHaptic("light");
-                    setAdding(false);
-                } else {
-                    handleAnimatedClose();
-                }
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [deleteTargetId, editTarget, adding, handleCloseEdit, handleAnimatedClose]);
-
-    const handleAdd = async () => {
-        const parsedAmount = parseFloat(amount);
-        if (isNaN(parsedAmount) || parsedAmount <= 0) return;
-        triggerHaptic("success");
-
-        const parsedDate = date ? new Date(date).getTime() : Date.now();
-
+    const txCreator = useTransactionCreator(async (args) => {
         await offlineMutation(
             "transactions:create",
             createTransaction,
@@ -145,16 +82,30 @@ export default function ExperienceDetail({
                 notebookId,
                 ...(contactId ? { contactId } : {}),
                 experienceId,
-                amount: isPositive ? parsedAmount : -parsedAmount,
-                description: description.trim() || undefined,
-                date: isNaN(parsedDate) ? Date.now() : parsedDate,
+                ...args,
             }
         );
-        setAmount("");
-        setDescription("");
-        setDate(toLocalDatetime(Date.now()));
-        setAdding(false);
-    };
+    });
+
+    const txEditor = useTransactionEditor(async (args) => {
+        await offlineMutation(
+            "transactions:update",
+            updateTransaction,
+            args,
+            { experienceId, notebookId }
+        );
+    });
+
+    useTransactionSheetEscape({
+        deleteTargetId,
+        setDeleteTargetId,
+        txEditor,
+        adding: txCreator.adding,
+        setAdding: txCreator.setAdding,
+        onClose: handleAnimatedClose,
+    });
+
+
 
     const confirmDelete = async () => {
         if (!deleteTargetId) return;
@@ -168,34 +119,7 @@ export default function ExperienceDetail({
         setDeleteTargetId(null);
     };
 
-    const openEditTx = (tx: { _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }) => {
-        triggerHaptic("light");
-        setEditTarget(tx);
-        setEditAmount(Math.abs(tx.amount).toString());
-        setEditIsPositive(tx.amount >= 0);
-        setEditDescription(tx.description || "");
-        setEditDate(toLocalDatetime(tx.date ?? tx.createdAt));
-    };
 
-    const handleEditTx = async () => {
-        if (!editTarget) return;
-        const parsedAmount = parseFloat(editAmount);
-        if (isNaN(parsedAmount) || parsedAmount <= 0) return;
-        triggerHaptic("success");
-        const parsedDate = editDate ? new Date(editDate).getTime() : Date.now();
-        await offlineMutation(
-            "transactions:update",
-            updateTransaction,
-            {
-                id: editTarget._id,
-                amount: editIsPositive ? parsedAmount : -parsedAmount,
-                description: editDescription.trim() || undefined,
-                date: isNaN(parsedDate) ? Date.now() : parsedDate,
-            },
-            { experienceId, notebookId }
-        );
-        handleCloseEdit();
-    };
 
     const formatDate = (ts: number) => {
         return new Date(ts).toLocaleString(undefined, {
@@ -209,17 +133,13 @@ export default function ExperienceDetail({
 
     const balance = transactions.reduce((sum, t) => sum + t.amount, 0);
 
-    return createPortal(
-        <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
-            {/* Backdrop */}
-            <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                onClick={handleAnimatedClose}
-            />
-
-            {/* Sheet */}
-            <div className={`bottom-sheet-frame relative z-10 w-full sm:max-w-md h-[92dvh] ${isClosing ? "animate-sheet-down" : animateIn ? "animate-sheet-up" : ""}`}>
-              <div className="h-full flex flex-col liquid-glass-heavy rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
+    return (
+        <BottomSheetModal
+            isClosing={isClosing}
+            animateIn={animateIn}
+            onClose={handleAnimatedClose}
+            style={keyboardOffsetStyle}
+        >
                 {/* Header */}
                 <div className="sheet-safe-x flex items-center justify-between pt-5 pb-3 border-b border-(--border) gap-2">
                     <div className="flex-1 min-w-0 pr-3">
@@ -277,7 +197,7 @@ export default function ExperienceDetail({
 
                 {/* Transaction List */}
                 <div className="sheet-safe-x sheet-safe-scroll flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] pt-4 space-y-2.5">
-                    {transactions.length === 0 && !adding ? (
+                    {transactions.length === 0 && !txCreator.adding ? (
                         <div className="text-center py-8">
                             <div className="inline-flex p-3 rounded-2xl liquid-glass mb-3">
                                 <Receipt size={24} className="text-primary-500" />
@@ -336,7 +256,7 @@ export default function ExperienceDetail({
                                         <>
                                             <button
                                                 onClick={() => {
-                                                    openEditTx(tx);
+                                                    txEditor.handleOpenEdit(tx);
                                                 }}
                                                 className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
                                             >
@@ -359,220 +279,15 @@ export default function ExperienceDetail({
                     )}
                 </div>
 
-                {/* Delete Confirmation Popup */}
-                {deleteTargetId && createPortal(
-                    <div className="safe-dialog fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
-                        <div
-                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                            onClick={() => {
-                                triggerHaptic("light");
-                                setDeleteTargetId(null);
-                            }}
-                        />
-                        <div className="relative z-10 w-[85%] max-w-xs liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
-                            <div className="p-5 text-center">
-                                <div className="inline-flex p-3 rounded-full bg-danger-500/10 mb-3">
-                                    <Trash2 size={20} className="text-danger-500" />
-                                </div>
-                                <h3 className="text-sm font-bold mb-1">{t("transaction.delete")}</h3>
-                                <p className="text-xs text-(--text-secondary)">
-                                    {t("transaction.deleteConfirm")}
-                                </p>
-                            </div>
-                            <div className="flex border-t border-(--border)">
-                                <button
-                                    onClick={() => {
-                                        triggerHaptic("light");
-                                        setDeleteTargetId(null);
-                                    }}
-                                    className="flex-1 py-3 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
-                                >
-                                    {t("common.cancel")}
-                                </button>
-                                <button
-                                    onClick={confirmDelete}
-                                    className="flex-1 py-3 text-sm font-semibold text-danger-500 border-l border-(--border) transition-all active:bg-danger-500/10 cursor-pointer"
-                                >
-                                    {t("common.delete")}
-                                </button>
-                            </div>
-                        </div>
-                    </div>,
-                    document.body
-                )}
+                <TransactionModals
+                    deleteTargetId={deleteTargetId}
+                    onCancelDelete={() => setDeleteTargetId(null)}
+                    onConfirmDelete={confirmDelete}
+                    txEditor={txEditor}
+                    keyboardOffsetStyle={keyboardOffsetStyle}
+                />
 
-                {/* Edit Transaction Popup */}
-                {editTarget && createPortal(
-                    <div className="safe-dialog fixed inset-0 z-[300] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
-                        <div
-                            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                            onClick={handleCloseEdit}
-                        />
-                        <div className={`relative z-10 w-[85%] max-w-xs liquid-glass-heavy rounded-2xl shadow-2xl overflow-hidden ${isEditClosing ? "animate-scale-out" : "animate-scale-in"}`}>
-                            <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-(--border)">
-                                <h3 className="text-sm font-bold">{t("transaction.edit")}</h3>
-                                <button
-                                    onClick={handleCloseEdit}
-                                    className="p-1 rounded-lg active:bg-white/10 transition-all cursor-pointer"
-                                >
-                                    <X size={14} />
-                                </button>
-                            </div>
-                            <div className="p-4 space-y-3">
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => {
-                                            setEditIsPositive(!editIsPositive);
-                                            triggerHaptic("selection");
-                                        }}
-                                        className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${editIsPositive
-                                            ? "bg-accent-500/15 text-accent-500 border border-accent-500/30"
-                                            : "bg-danger-500/15 text-danger-500 border border-danger-500/30"
-                                            }`}
-                                    >
-                                        {editIsPositive
-                                            ? t("transaction.theyOweYou")
-                                            : t("transaction.youOweThem")}
-                                    </button>
-                                    <input
-                                        type="number"
-                                        inputMode="decimal"
-                                        value={editAmount}
-                                        onChange={(e) => setEditAmount(e.target.value)}
-                                        placeholder={t("transaction.amount")}
-                                        className="glass-input py-2 text-sm flex-1"
-                                        min="0"
-                                        step="0.01"
-                                    />
-                                </div>
-                                <textarea
-                                    value={editDescription}
-                                    onChange={(e) => setEditDescription(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleEditTx();
-                                        if (e.key === "Escape") {
-                                            e.stopPropagation();
-                                            handleCloseEdit();
-                                        }
-                                    }}
-                                    placeholder={t("transaction.description")}
-                                    className="glass-input py-2 text-sm resize-none"
-                                    rows={4}
-                                />
-                                <input
-                                    type="datetime-local"
-                                    value={editDate}
-                                    onChange={(e) => setEditDate(e.target.value)}
-                                    className="glass-input py-2 text-sm w-full min-w-0 appearance-none"
-                                />
-                            </div>
-                            <div className="flex border-t border-(--border)">
-                                <button
-                                    onClick={handleCloseEdit}
-                                    className="flex-1 py-3 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
-                                >
-                                    {t("common.cancel")}
-                                </button>
-                                <button
-                                    onClick={handleEditTx}
-                                    disabled={!editAmount || parseFloat(editAmount) <= 0}
-                                    className="flex-1 py-3 text-sm font-semibold text-primary-500 border-l border-(--border) transition-all active:bg-primary-500/10 disabled:opacity-40 cursor-pointer"
-                                >
-                                    {t("common.save")}
-                                </button>
-                            </div>
-                        </div>
-                    </div>,
-                    document.body
-                )}
-
-                {/* Add Transaction (disabled when closed) */}
-                {!closed && (
-                    <div className="sheet-safe-x sheet-safe-footer pt-2 border-t border-(--border)">
-                        {adding ? (
-                            <div className="space-y-3 animate-scale-in">
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => {
-                                            setIsPositive(!isPositive);
-                                            triggerHaptic("selection");
-                                        }}
-                                        className={`shrink-0 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isPositive
-                                            ? "bg-accent-500/15 text-accent-500 border border-accent-500/30"
-                                            : "bg-danger-500/15 text-danger-500 border border-danger-500/30"
-                                            }`}
-                                    >
-                                        {isPositive
-                                            ? t("transaction.theyOweYou")
-                                            : t("transaction.youOweThem")}
-                                    </button>
-                                    <input
-                                        type="number"
-                                        inputMode="decimal"
-                                        value={amount}
-                                        onChange={(e) => setAmount(e.target.value)}
-                                        placeholder={t("transaction.amount")}
-                                        className="glass-input py-2.5 text-sm flex-1"
-                                        min="0"
-                                        step="0.01"
-                                    />
-                                </div>
-                                <textarea
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleAdd();
-                                        if (e.key === "Escape") {
-                                            e.stopPropagation();
-                                            setAdding(false);
-                                        }
-                                    }}
-                                    placeholder={t("transaction.description")}
-                                    className="glass-input py-2.5 text-sm resize-none"
-                                    rows={4}
-                                />
-                                <input
-                                    type="datetime-local"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    className="glass-input py-2.5 text-sm w-full min-w-0 appearance-none"
-                                />
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => {
-                                            triggerHaptic("light");
-                                            setAdding(false);
-                                        }}
-                                        className="flex-1 py-2.5 rounded-xl text-sm font-medium text-(--text-secondary) liquid-glass-flat hover:bg-white/10 transition-all cursor-pointer"
-                                    >
-                                        {t("common.cancel")}
-                                    </button>
-                                    <button
-                                        onClick={handleAdd}
-                                        disabled={!amount || parseFloat(amount) <= 0}
-                                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary-800/80 dark:bg-primary-500/70 text-white transition-all hover:shadow-md disabled:opacity-40 cursor-pointer"
-                                    >
-                                        {t("transaction.add")}
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => {
-                                    triggerHaptic("selection");
-                                    setAdding(true);
-                                }}
-                                className="w-full py-3 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold bg-primary-800/80 dark:bg-primary-500/70 text-white transition-all hover:shadow-md active:scale-[0.97] cursor-pointer"
-                            >
-                                <Plus size={16} />
-                                {t("transaction.add")}
-                            </button>
-                        )}
-                    </div>
-                )}
-              </div>
-            </div>
-        </div>,
-        document.body
+                {!closed && <AddTransactionFooter creator={txCreator} />}
+        </BottomSheetModal>
     );
 }

@@ -18,6 +18,9 @@ import {
     ArchiveRestore,
 } from "lucide-react";
 import Select from "@/components/ui/Select";
+import UnsyncedBadge from "@/components/ui/UnsyncedBadge";
+import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
+import EditModalDialog from "@/components/ui/EditModalDialog";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { useMutation } from "convex/react";
@@ -27,10 +30,6 @@ import { useSync } from "@/contexts/SyncContext";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import { triggerHaptic } from "@/lib/haptics";
-
-function UnsyncedBadge() {
-    return <CloudOff size={12} className="text-warning-500 shrink-0" />;
-}
 
 interface ExperienceSummary {
     _id: Id<"experiences">;

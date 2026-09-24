@@ -14,16 +14,18 @@ const AmountsVisibilityContext = createContext<AmountsVisibilityContextType>({
     mask: (v) => v,
 });
 
-export function AmountsVisibilityProvider({ children }: { children: ReactNode }) {
-    const [hidden, setHidden] = useState(() => {
-        if (typeof window !== "undefined") {
-            const behavior = localStorage.getItem("tekyida-amounts-load-behavior");
-            if (behavior === "remember") {
-                return localStorage.getItem("tekyida-hide-amounts") === "true";
-            }
+export function getInitialAmountsHidden(isClient = typeof window !== "undefined"): boolean {
+    if (isClient) {
+        const behavior = localStorage.getItem("tekyida-amounts-load-behavior");
+        if (behavior === "remember") {
+            return localStorage.getItem("tekyida-hide-amounts") === "true";
         }
-        return true;
-    });
+    }
+    return true;
+}
+
+export function AmountsVisibilityProvider({ children }: { children: ReactNode }) {
+    const [hidden, setHidden] = useState(() => getInitialAmountsHidden());
 
     const toggle = () =>
         setHidden((prev) => {

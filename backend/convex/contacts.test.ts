@@ -61,6 +61,19 @@ describe("contacts", () => {
         date: 200,
         createdAt: 150,
       });
+      await ctx.db.insert("transactions", {
+        userId,
+        notebookId: nbId,
+        contactId,
+        amount: -10,
+        date: 50,
+        createdAt: 50,
+      });
+    });
+
+    const contactBob = await asUser.mutation(api.contacts.create, {
+      notebookId: nbId,
+      name: "Bob",
     });
 
     // Closed experience linked to contact
@@ -83,17 +96,57 @@ describe("contacts", () => {
         date: 300,
         createdAt: 300,
       });
+      await ctx.db.insert("transactions", {
+        userId,
+        notebookId: nbId,
+        experienceId: expId,
+        amount: 20,
+        createdAt: 100,
+      });
+      // Experience with no contact
+      await ctx.db.insert("experiences", {
+        userId,
+        notebookId: nbId,
+        name: "No Contact Exp",
+        closed: false,
+        createdAt: 100,
+      });
+      // Open experience linked to contact
+      await ctx.db.insert("experiences", {
+        userId,
+        notebookId: nbId,
+        name: "Open Exp",
+        contactId,
+        closed: false,
+        createdAt: 100,
+      });
+      // Closed experience linked to contact but no transactions
+      await ctx.db.insert("experiences", {
+        userId,
+        notebookId: nbId,
+        name: "Empty Closed Exp",
+        contactId,
+        closed: true,
+        createdAt: 100,
+      });
     });
 
     // Query list
     const list = await asUser.query(api.contacts.list, { notebookId: nbId });
-    expect(list).toHaveLength(1);
-    expect(list[0].name).toBe("Alice");
-    expect(list[0].balance).toBe(60 + 300); // direct 60 + exp 300
-    expect(list[0].transactionCount).toBe(2);
-    expect(list[0].lastTransactionDate).toBe(200);
-    expect(list[0].experiences).toHaveLength(1);
-    expect(list[0].experiences[0].balance).toBe(300);
+    expect(list).toHaveLength(2);
+    const alice = list.find((c) => c._id === contactId);
+    expect(alice?.name).toBe("Alice");
+    expect(alice?.balance).toBe(50 + 320);
+    expect(alice?.transactionCount).toBe(3);
+    expect(alice?.lastTransactionDate).toBe(200);
+    expect(alice?.experiences).toHaveLength(2);
+
+    const bob = list.find((c) => c._id === contactBob);
+    expect(bob?.transactionCount).toBe(0);
+    expect(bob?.balance).toBe(0);
+    expect(bob?.lastTransactionDate).toBeUndefined();
+
+    await asUser.mutation(api.contacts.remove, { id: contactBob });
 
     // Update contact
     await expect(t.mutation(api.contacts.update, { id: contactId, name: "New" })).rejects.toThrow("Not authenticated");

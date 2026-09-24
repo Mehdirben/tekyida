@@ -9,7 +9,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reportsDirectory: "../tests/reports/frontend",
-      reporter: ["text", "json", "html"],
+      reporter: ["text", "json", "html", "json-summary"],
       include: [
         "lib/crypto.ts",
         "lib/offlineQueue.ts",
@@ -24,10 +24,10 @@ export default defineConfig({
         "components/ui/Logo.tsx",
       ],
       thresholds: {
-        lines: 90,
-        functions: 80,
-        branches: 70,
-        statements: 90,
+        lines: 100,
+        functions: 100,
+        branches: 100,
+        statements: 100,
       },
     },
   },

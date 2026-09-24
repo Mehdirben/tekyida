@@ -7,7 +7,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reportsDirectory: "../tests/reports/backend",
-      reporter: ["text", "json", "html"],
+      reporter: ["text", "json", "html", "json-summary"],
       include: [
         "convex/notebooks.ts",
         "convex/contacts.ts",
@@ -17,10 +17,10 @@ export default defineConfig({
         "convex/schema.ts",
       ],
       thresholds: {
-        lines: 95,
-        functions: 95,
-        branches: 85,
-        statements: 95,
+        lines: 100,
+        functions: 100,
+        branches: 100,
+        statements: 100,
       },
     },
   },

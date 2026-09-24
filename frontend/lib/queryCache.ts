@@ -23,7 +23,7 @@ function notifyListeners(key: string) {
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
-function openDB(): Promise<IDBDatabase> {
+export function openDB(): Promise<IDBDatabase> {
     if (dbPromise) return dbPromise;
 
     dbPromise = new Promise((resolve, reject) => {
@@ -96,9 +96,13 @@ export function preloadCache(): Promise<void> {
     return preloadPromise;
 }
 
-if (typeof window !== "undefined") {
-    preloadCache();
+export function initQueryCache(isClient = typeof window !== "undefined"): void {
+    if (isClient) {
+        preloadCache();
+    }
 }
+
+initQueryCache();
 
 /** Synchronous read from the in-memory cache */
 export function getInMemory<T>(key: string): T | undefined {
@@ -132,7 +136,7 @@ export async function get<T>(key: string): Promise<T | undefined> {
     }
     try {
         const db = await openDB();
-        return new Promise((resolve, reject) => {
+        return await new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readonly");
             const request = tx.objectStore(STORE_NAME).get(key);
             request.onsuccess = () => {
@@ -157,7 +161,7 @@ export async function remove(key: string): Promise<void> {
     }
     try {
         const db = await openDB();
-        return new Promise((resolve, reject) => {
+        return await new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readwrite");
             tx.objectStore(STORE_NAME).delete(key);
             tx.oncomplete = () => resolve();
@@ -176,7 +180,7 @@ export async function clear(): Promise<void> {
     }
     try {
         const db = await openDB();
-        return new Promise((resolve, reject) => {
+        return await new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, "readwrite");
             tx.objectStore(STORE_NAME).clear();
             tx.oncomplete = () => resolve();
@@ -185,4 +189,13 @@ export async function clear(): Promise<void> {
     } catch {
         // Silently fail
     }
+}
+
+export function _resetPreloadStateForTesting(): void {
+    isPreloading = true;
+    preloadAborted = false;
+    mutatedKeys.clear();
+    preloadPromise = null;
+    dbPromise = null;
+    memoryCache.clear();
 }

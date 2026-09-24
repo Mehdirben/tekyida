@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
-import Logo from "@/components/ui/Logo";
-import SyncIndicator from "@/components/app/SyncIndicator";
-import NotebookSwitcher from "@/components/app/NotebookSwitcher";
+import AppLayout from "@/components/app/AppLayout";
 import QuickStats from "@/components/app/QuickStats";
 import EmptyState from "@/components/app/EmptyState";
 import ContactList from "@/components/app/ContactList";
@@ -12,22 +10,10 @@ import TransactionList from "@/components/app/TransactionList";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import { useActiveNotebook } from "@/hooks/useActiveNotebook";
 import { api } from "@/convex/_generated/api";
-import CacheWarmer from "@/components/app/CacheWarmer";
 
 export default function DashboardPage() {
-    const {
-        notebooks,
-        safeNotebooks,
-        resolvedActiveId,
-        setActiveNotebookId,
-        handleCreateNotebook,
-        handleEditNotebook,
-        handleDeleteNotebook,
-        handleArchiveNotebook,
-        handleReorderNotebooks,
-        isItemPending,
-        isOffline,
-    } = useActiveNotebook();
+    const notebookManager = useActiveNotebook();
+    const { notebooks, resolvedActiveId, handleCreateNotebook, isOffline } = notebookManager;
 
     // Get contacts for active notebook
     const contacts = useCachedQuery<{ _id: Id<"contacts">; name: string; phone?: string; balance: number; transactionCount: number; experiences: { _id: Id<"experiences">; name: string; closed: boolean; balance: number; transactionCount: number; lastTransactionDate?: number }[] }[]>(
@@ -63,84 +49,57 @@ export default function DashboardPage() {
     if (!dataReady && !isOffline) return null;
 
     return (
-        <>
-            {/* Invisible: pre-caches contacts & transactions for ALL notebooks */}
-            <CacheWarmer notebookIds={safeNotebooks.map((n) => n._id)} />
-            <main className="app-safe-top flex-1 sm:px-6 pb-4 max-w-2xl mx-auto w-full">
-                {/* Dashboard Header: Logo left, Notebook Switcher right */}
-                <div className={`mb-6 ${animateIn ? "animate-slide-up" : ""} flex items-center justify-between relative z-50`}>
-                    <div className="flex items-center gap-2">
-                        <Logo size="md" />
-                        <SyncIndicator />
-                    </div>
-                    <NotebookSwitcher
-                        notebooks={notebooks ? notebooks.map((n) => ({
-                            id: n._id,
-                            name: n.name,
-                            archived: n.archived,
-                        })) : []}
-                        activeNotebookId={resolvedActiveId}
-                        onSelect={(id) => setActiveNotebookId(id ? id as Id<"notebooks"> : undefined)}
-                        onAdd={handleCreateNotebook}
-                        onEdit={handleEditNotebook}
-                        onDelete={handleDeleteNotebook}
-                        onArchive={handleArchiveNotebook}
-                        onReorder={handleReorderNotebooks}
-                        isItemPending={isItemPending}
+        <AppLayout notebookManager={notebookManager} animateIn={animateIn}>
+            {!resolvedActiveId ? (
+                /* Empty State */
+                <div className={animateIn ? "animate-slide-up delay-100" : ""}>
+                    <EmptyState
+                        onCreateNotebook={() => {
+                            const name = prompt("Notebook name:");
+                            if (name?.trim()) handleCreateNotebook(name.trim());
+                        }}
                     />
                 </div>
-
-                {!resolvedActiveId ? (
-                    /* Empty State */
-                    <div className={animateIn ? "animate-slide-up delay-100" : ""}>
-                        <EmptyState
-                            onCreateNotebook={() => {
-                                const name = prompt("Notebook name:");
-                                if (name?.trim()) handleCreateNotebook(name.trim());
-                            }}
+            ) : (
+                <>
+                    {/* Stats */}
+                    <div className={`mb-6 ${animateIn ? "animate-slide-up delay-100" : ""}`}>
+                        <QuickStats
+                            moneyGiven={moneyGiven}
+                            moneyOwed={moneyOwed}
+                            netBalance={netBalance}
                         />
                     </div>
-                ) : (
-                    <>
-                        {/* Stats */}
-                        <div className={`mb-6 ${animateIn ? "animate-slide-up delay-100" : ""}`}>
-                            <QuickStats
-                                moneyGiven={moneyGiven}
-                                moneyOwed={moneyOwed}
-                                netBalance={netBalance}
+
+                    {/* Contact List */}
+                    {resolvedActiveId && contacts !== undefined && (
+                        <div className={animateIn ? "animate-slide-up delay-200" : ""}>
+                            <ContactList
+                                contacts={contacts}
+                                notebookId={resolvedActiveId}
+                                onSelectContact={(c) =>
+                                    setSelectedContact({
+                                        _id: c._id,
+                                        name: c.name,
+                                        experiences: (c as { experiences?: { _id: Id<"experiences">; name: string; closed: boolean; balance: number; transactionCount: number; lastTransactionDate?: number }[] }).experiences ?? [],
+                                    })
+                                }
                             />
                         </div>
+                    )}
+                </>
+            )}
 
-                        {/* Contact List */}
-                        {resolvedActiveId && contacts !== undefined && (
-                            <div className={animateIn ? "animate-slide-up delay-200" : ""}>
-                                <ContactList
-                                    contacts={contacts}
-                                    notebookId={resolvedActiveId}
-                                    onSelectContact={(c) =>
-                                        setSelectedContact({
-                                            _id: c._id,
-                                            name: c.name,
-                                            experiences: (c as { experiences?: { _id: Id<"experiences">; name: string; closed: boolean; balance: number; transactionCount: number; lastTransactionDate?: number }[] }).experiences ?? [],
-                                        })
-                                    }
-                                />
-                            </div>
-                        )}
-                    </>
-                )}
-
-                {/* Transaction Sheet */}
-                {selectedContact && resolvedActiveId && (
-                    <TransactionList
-                        contactId={selectedContact._id}
-                        contactName={selectedContact.name}
-                        notebookId={resolvedActiveId}
-                        onClose={() => setSelectedContact(null)}
-                        experiences={selectedContact.experiences}
-                    />
-                )}
-            </main>
-        </>
+            {/* Transaction Sheet */}
+            {selectedContact && resolvedActiveId && (
+                <TransactionList
+                    contactId={selectedContact._id}
+                    contactName={selectedContact.name}
+                    notebookId={resolvedActiveId}
+                    onClose={() => setSelectedContact(null)}
+                    experiences={selectedContact.experiences}
+                />
+            )}
+        </AppLayout>
     );
 }
