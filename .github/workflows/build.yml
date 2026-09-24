@@ -14,19 +14,66 @@ on:
 
 jobs:
   # -------------------------------------------------------------
-  # Job 1: iOS Build (SwiftUI, XcodeGen, Unsigned IPA)
+  # Job 1: Initialize GitHub Release (No Artifact Storage Used)
+  # -------------------------------------------------------------
+  init-release:
+    name: Initialize Release
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Create or Update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "build-${{ github.run_number }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "Release build-${{ github.run_number }} already exists."
+          else
+            gh release create "build-${{ github.run_number }}" \
+              --repo "${{ github.repository }}" \
+              --title "Build ${{ github.run_number }}" \
+              --generate-notes
+          fi
+
+          # Seed previous assets so both APK and IPA are always present
+          LATEST_TAG=$(gh release list --repo "${{ github.repository }}" --limit 2 --json tagName -q '.[].tagName' 2>/dev/null | grep -v "build-${{ github.run_number }}" | head -n 1 || true)
+          if [ -n "$LATEST_TAG" ]; then
+            echo "Carrying forward assets from previous release: $LATEST_TAG"
+            mkdir -p previous-assets
+            gh release download "$LATEST_TAG" --repo "${{ github.repository }}" --pattern "Tekyida.*" --pattern "apps.json" --dir previous-assets || true
+            if ls previous-assets/* >/dev/null 2>&1; then
+              gh release upload "build-${{ github.run_number }}" \
+                --repo "${{ github.repository }}" \
+                previous-assets/* \
+                --clobber || true
+            fi
+          fi
+
+  # -------------------------------------------------------------
+  # Job 2: iOS Build (SwiftUI, XcodeGen, Unsigned IPA)
   # -------------------------------------------------------------
   build-ios:
     name: Build & Package iOS IPA
-    # GitHub's free hosted macOS runner — required because only macOS/Xcode can build iOS apps
+    needs: [ init-release ]
+    if: |
+      always() &&
+      !cancelled() &&
+      (needs.init-release.result == 'success' || needs.init-release.result == 'skipped')
     runs-on: macos-15
+
+    permissions:
+      contents: write
 
     defaults:
       run:
         working-directory: ios
 
     steps:
-      # Downloads this repository's code into the runner's workspace
       - name: Checkout repository
         uses: actions/checkout@v5
 
@@ -40,19 +87,14 @@ jobs:
         run: xcodebuild -version
 
       # Installs XcodeGen, which converts project.yml into a real .xcodeproj file.
-      # This keeps the repo free of generated, merge-conflict-prone Xcode project files.
       - name: Install XcodeGen
         run: brew install xcodegen
 
       # Generates Tekyida.xcodeproj from project.yml.
-      # Any new .swift file added under Sources/App/ is picked up automatically at this step.
       - name: Generate Xcode Project
         run: xcodegen generate
 
       # Compiles an optimized Release build for physical iPhones into an .xcarchive.
-      # The CODE_SIGNING_* flags disable code signing: CI has no Apple certificates,
-      # so the app is built UNSIGNED — a sideloading tool (Impactor/Sideloadly/LiveContainer)
-      # signs it later with your personal Apple ID at install time.
       - name: Build Archive
         run: |
           xcodebuild archive \
@@ -66,7 +108,6 @@ jobs:
             CODE_SIGN_IDENTITY=""
 
       # Wraps the compiled app into an IPA — the format iPhones install.
-      # An IPA is simply a zip archive containing a Payload/ folder with the .app bundle inside.
       - name: Package Payload to IPA
         run: |
           mkdir -p build/Payload
@@ -104,28 +145,32 @@ jobs:
           }
           EOF
 
-      # Publishes the IPA as a downloadable artifact on the workflow run page
-      - name: Upload IPA Artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: Tekyida-unsigned-ipa
-          path: ios/build/Tekyida.ipa
-          retention-days: 14
-
-      # Publishes apps.json for LiveContainer integration
-      - name: Upload LiveContainer Source Artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: livecontainer-source
-          path: ios/build/apps.json
-          retention-days: 14
+      # Directly uploads IPA and apps.json to GitHub Release (No actions storage used)
+      - name: Upload iOS Assets Directly to GitHub Release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "build-${{ github.run_number }}" \
+            --repo "${{ github.repository }}" \
+            build/Tekyida.ipa \
+            build/apps.json \
+            --clobber
 
   # -------------------------------------------------------------
-  # Job 2: Android Build (Kotlin, Jetpack Compose, Release APK)
+  # Job 3: Android Build (Kotlin, Jetpack Compose, Release APK)
   # -------------------------------------------------------------
   build-android:
     name: Build & Package Android APK
+    needs: [ init-release ]
+    if: |
+      always() &&
+      !cancelled() &&
+      (needs.init-release.result == 'success' || needs.init-release.result == 'skipped')
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
 
     defaults:
       run:
@@ -137,7 +182,7 @@ jobs:
 
       # Sets up Java JDK 17 for Android Gradle Plugin
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -158,62 +203,19 @@ jobs:
             gradle assembleRelease --no-daemon
           fi
 
-      # Renames and stages the APK file for artifacts & releases
+      # Stages Android APK with standard release name
       - name: Stage Android APK
         run: |
           mkdir -p build
           cp app/build/outputs/apk/release/app-release.apk build/Tekyida.apk
 
-      # Publishes the APK as a downloadable artifact on the workflow run page
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: Tekyida-android-apk
-          path: android/build/Tekyida.apk
-          retention-days: 14
-
-  # -------------------------------------------------------------
-  # Job 3: Publish Unified GitHub Release (iOS IPA + Android APK)
-  # -------------------------------------------------------------
-  release:
-    name: Publish Release Assets
-    needs: [ build-ios, build-android ]
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Download iOS IPA Artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: Tekyida-unsigned-ipa
-          path: release-assets
-
-      - name: Download LiveContainer Source Artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: livecontainer-source
-          path: release-assets
-
-      - name: Download Android APK Artifact
-        uses: actions/download-artifact@v6
-        with:
-          name: Tekyida-android-apk
-          path: release-assets
-
-      - name: Publish to GitHub Release
+      # Directly uploads APK to GitHub Release (No actions storage used)
+      - name: Upload Android APK Directly to GitHub Release
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "build-${{ github.run_number }}" \
-            release-assets/Tekyida.ipa \
-            release-assets/apps.json \
-            release-assets/Tekyida.apk \
+          gh release upload "build-${{ github.run_number }}" \
             --repo "${{ github.repository }}" \
-            --title "Build ${{ github.run_number }}" \
-            --generate-notes
+            build/Tekyida.apk \
+            --clobber
