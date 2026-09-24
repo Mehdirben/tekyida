@@ -185,6 +185,9 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
       - name: Download iOS IPA Artifact
         uses: actions/download-artifact@v6
         with:
@@ -211,5 +214,6 @@ jobs:
             release-assets/Tekyida.ipa \
             release-assets/apps.json \
             release-assets/Tekyida.apk \
+            --repo "${{ github.repository }}" \
             --title "Build ${{ github.run_number }}" \
             --generate-notes
