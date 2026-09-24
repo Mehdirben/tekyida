@@ -1,0 +1,14 @@
+{
+  "name": "tekyida-root",
+  "private": true,
+  "scripts": {
+    "test": "./tests/run.sh",
+    "test:backend": "npm --prefix backend test -- --coverage",
+    "test:frontend": "npm --prefix frontend test -- --coverage",
+    "duplication": "npx jscpd --config tests/jscpd.json backend frontend/app frontend/components frontend/hooks frontend/lib ios android",
+    "quality": "./tests/run.sh"
+  },
+  "devDependencies": {
+    "jscpd": "^4.0.5"
+  }
+}

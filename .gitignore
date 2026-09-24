@@ -10,8 +10,12 @@ node_modules/
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
+# testing & coverage
+coverage/
+**/coverage/
+.jscpd/
+tests/reports/
+*.lcov
 
 # next.js
 .next/

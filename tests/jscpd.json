@@ -1,0 +1,20 @@
+{
+  "threshold": 15,
+  "minLines": 15,
+  "minTokens": 75,
+  "reporters": ["console", "json"],
+  "output": "tests/reports/duplication",
+  "ignore": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/_generated/**",
+    "**/build/**",
+    "**/dist/**",
+    "**/.gradle/**",
+    "**/frontend/convex/**",
+    "**/tests/reports/**",
+    "**/package-lock.json",
+    "**/.git/**"
+  ],
+  "absolute": false
+}

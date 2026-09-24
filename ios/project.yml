@@ -27,3 +27,17 @@ targets:
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
         ENABLE_BITCODE: NO
+
+  TekyidaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/TekyidaTests
+    dependencies:
+      - target: Tekyida
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tekyida.tests
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO

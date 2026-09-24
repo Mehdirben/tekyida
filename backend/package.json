@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "convex dev",
     "deploy": "convex deploy",
-    "sync-to-frontend": "cp -r convex/ ../frontend/convex/"
+    "sync-to-frontend": "cp -r convex/ ../frontend/convex/",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@auth/core": "^0.37.4",
@@ -13,6 +15,9 @@
     "convex": "^1.31.7"
   },
   "devDependencies": {
-    "typescript": "^5"
+    "@vitest/coverage-v8": "^5.0.1",
+    "convex-test": "^0.0.60",
+    "typescript": "^5",
+    "vitest": "^5.0.1"
   }
 }
