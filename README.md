@@ -30,6 +30,7 @@ The root directory contains only the dedicated platform and service folders:
 tekyida/
 ├── docs/                     # Specifications, migration guides, and architecture records
 │   ├── architecture.md
+│   ├── dokploy_guide.md
 │   ├── migration_guide.md
 │   └── README.md
 │
@@ -115,7 +116,7 @@ npx convex dev
 ```bash
 cd ios
 xcodegen generate
-open MyiOSApp.xcodeproj
+open Tekyida.xcodeproj
 ```
 
 CI builds are automatically triggered on push to main via `.github/workflows/build.yml`.
@@ -132,4 +133,5 @@ CI builds are automatically triggered on push to main via `.github/workflows/bui
 
 Detailed documentation is in [docs/](file:///home/mehdi/projects/tekyida/docs/):
 - [Architecture Overview](file:///home/mehdi/projects/tekyida/docs/architecture.md)
+- [Dokploy Deployment Guide](file:///home/mehdi/projects/tekyida/docs/dokploy_guide.md)
 - [Migration Guide](file:///home/mehdi/projects/tekyida/docs/migration_guide.md)

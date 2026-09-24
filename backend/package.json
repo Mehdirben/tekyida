@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "convex dev",
-    "deploy": "convex deploy"
+    "deploy": "convex deploy",
+    "sync-to-frontend": "cp -r convex/ ../frontend/convex/"
   },
   "dependencies": {
     "@auth/core": "^0.37.4",

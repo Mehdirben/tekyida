@@ -11,7 +11,7 @@ ios/
 │       ├── Assets.xcassets/
 │       ├── ContentView.swift
 │       ├── Info.plist
-│       └── iOSApp.swift
+│       └── TekyidaApp.swift
 └── project.yml            # XcodeGen configuration
 ```
 
@@ -26,9 +26,9 @@ ios/
    cd ios
    xcodegen generate
    ```
-3. Open `MyiOSApp.xcodeproj` in Xcode:
+3. Open `Tekyida.xcodeproj` in Xcode:
    ```bash
-   open MyiOSApp.xcodeproj
+   open Tekyida.xcodeproj
    ```
 
 ## CI/CD

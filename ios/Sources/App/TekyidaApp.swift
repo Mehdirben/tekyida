@@ -3,7 +3,7 @@ import SwiftUI
 // The app's entry point. @main tells iOS to launch the app from this struct —
 // SwiftUI apps have no main.swift or AppDelegate; this replaces them.
 @main
-struct MyiOSApp: App {
+struct TekyidaApp: App {
     // `body` describes the app's scene hierarchy. A Scene is a top-level
     // container; WindowGroup is the standard one for iPhone apps and
     // manages the app's main window (and its lifecycle).

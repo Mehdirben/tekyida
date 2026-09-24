@@ -1,10 +1,10 @@
-# Name of the workflow, shown in the GitHub "Actions" tab and on commit checks
-name: Build iOS App (Unsigned IPA)
+# Workflow to build and package both iOS (Unsigned IPA) and Android (APK) applications
+name: Build Mobile Apps (iOS & Android)
 
 # Events that trigger this workflow to run
 on:
   push:
-    # Rebuild the app on every push to the main/master branch
+    # Rebuild the apps on every push to the main/master branch
     branches: [ main, master ]
   pull_request:
     # Also build PRs targeting main/master, so breakage is caught before merging
@@ -13,14 +13,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: Build & Package IPA
+  # -------------------------------------------------------------
+  # Job 1: iOS Build (SwiftUI, XcodeGen, Unsigned IPA)
+  # -------------------------------------------------------------
+  build-ios:
+    name: Build & Package iOS IPA
     # GitHub's free hosted macOS runner — required because only macOS/Xcode can build iOS apps
     runs-on: macos-15
-
-    # Allows the workflow's built-in GITHUB_TOKEN to create Releases below
-    permissions:
-      contents: write
 
     defaults:
       run:
@@ -45,23 +44,23 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      # Generates MyiOSApp.xcodeproj from project.yml.
+      # Generates Tekyida.xcodeproj from project.yml.
       # Any new .swift file added under Sources/App/ is picked up automatically at this step.
       - name: Generate Xcode Project
         run: xcodegen generate
 
       # Compiles an optimized Release build for physical iPhones into an .xcarchive.
       # The CODE_SIGNING_* flags disable code signing: CI has no Apple certificates,
-      # so the app is built UNSIGNED — a sideloading tool (Impactor/Sideloadly) signs
-      # it later with your free personal Apple ID at install time.
+      # so the app is built UNSIGNED — a sideloading tool (Impactor/Sideloadly/LiveContainer)
+      # signs it later with your personal Apple ID at install time.
       - name: Build Archive
         run: |
           xcodebuild archive \
-            -project MyiOSApp.xcodeproj \
-            -scheme MyiOSApp \
+            -project Tekyida.xcodeproj \
+            -scheme Tekyida \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            -archivePath build/MyiOSApp.xcarchive \
+            -archivePath build/Tekyida.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
@@ -71,40 +70,24 @@ jobs:
       - name: Package Payload to IPA
         run: |
           mkdir -p build/Payload
-          cp -r build/MyiOSApp.xcarchive/Products/Applications/MyiOSApp.app build/Payload/
+          cp -r build/Tekyida.xcarchive/Products/Applications/Tekyida.app build/Payload/
           cd build
-          zip -r -q MyiOSApp.ipa Payload
+          zip -r -q Tekyida.ipa Payload
 
-      # Publishes the IPA as a downloadable artifact on the workflow run page
-      # (Actions tab -> this run -> Artifacts section). Deleted after 14 days.
-      # Mostly useful for pull-request builds, which skip the Release step below.
-      - name: Upload IPA Artifact
-        uses: actions/upload-artifact@v6
-        with:
-          name: MyiOSApp-unsigned-ipa
-          path: ios/build/MyiOSApp.ipa
-          retention-days: 14
-
-      # Generates an AltStore-format source (apps.json) describing this build.
-      # Added to LiveContainer ONCE (+ -> Add Source, or
-      # livecontainer://source?url=<encoded-json-url>), it makes LiveContainer list
-      # the app and offer a built-in Update button whenever a newer build is
-      # published here. The JSON ships on every Release, so this stable URL
-      # always serves the current app list:
-      #   https://github.com/Mehdirben/iosapp/releases/latest/download/apps.json
+      # Generates an AltStore-format source (apps.json) describing this build for LiveContainer.
       - name: Generate LiveContainer Source JSON
         run: |
           cat > build/apps.json <<EOF
           {
-            "name": "Mehdirben's Apps",
-            "identifier": "com.mehdirben.iosapp.source",
+            "name": "Tekyida Apps",
+            "identifier": "com.tekyida.ios.source",
             "apps": [
               {
-                "bundleIdentifier": "com.example.myiosapp",
-                "name": "MyiOSApp",
-                "developerName": "Mehdirben",
-                "localizedDescription": "SwiftUI starter app compiled in the cloud with GitHub Actions",
-                "iconURL": "https://raw.githubusercontent.com/Mehdirben/iosapp/main/Sources/App/Assets.xcassets/AppIcon.appiconset/icon-1024.png",
+                "bundleIdentifier": "com.tekyida.app",
+                "name": "Tekyida",
+                "developerName": "Tekyida",
+                "localizedDescription": "Modern IOU Tracker for iOS & Android",
+                "iconURL": "https://raw.githubusercontent.com/${{ github.repository }}/main/ios/Sources/App/Assets.xcassets/AppIcon.appiconset/icon-1024.png",
                 "versions": [
                   {
                     "version": "1.0",
@@ -112,8 +95,8 @@ jobs:
                     "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
                     "minOSVersion": "17.0",
                     "localizedDescription": "Automated build from commit ${{ github.sha }}",
-                    "downloadURL": "https://github.com/Mehdirben/iosapp/releases/download/build-${{ github.run_number }}/MyiOSApp.ipa",
-                    "size": $(stat -f%z build/MyiOSApp.ipa)
+                    "downloadURL": "https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_number }}/Tekyida.ipa",
+                    "size": $(stat -f%z build/Tekyida.ipa)
                   }
                 ]
               }
@@ -121,22 +104,112 @@ jobs:
           }
           EOF
 
-      # Attaches every push build to a GitHub Release. Because the assets are
-      # always named MyiOSApp.ipa and apps.json, these permanent URLs always
-      # serve the newest build and app list:
-      #   https://github.com/Mehdirben/iosapp/releases/latest/download/MyiOSApp.ipa
-      #   https://github.com/Mehdirben/iosapp/releases/latest/download/apps.json
-      # LiveContainer installs/updates straight from those URLs (unsigned IPAs
-      # are fine — LiveContainer re-signs apps with its own certificate at install).
-      # Runs on push and manual dispatch; skipped for pull_request events,
-      # which get a read-only token.
-      - name: Publish IPA to GitHub Release
-        if: github.event_name != 'pull_request'
+      # Publishes the IPA as a downloadable artifact on the workflow run page
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Tekyida-unsigned-ipa
+          path: ios/build/Tekyida.ipa
+          retention-days: 14
+
+      # Publishes apps.json for LiveContainer integration
+      - name: Upload LiveContainer Source Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: livecontainer-source
+          path: ios/build/apps.json
+          retention-days: 14
+
+  # -------------------------------------------------------------
+  # Job 2: Android Build (Kotlin, Jetpack Compose, Release APK)
+  # -------------------------------------------------------------
+  build-android:
+    name: Build & Package Android APK
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: android
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # Sets up Java JDK 17 for Android Gradle Plugin
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # Sets up Gradle with caching for fast incremental builds
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      # Compiles the Android application release APK
+      - name: Build Android Release APK
+        run: |
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew assembleRelease --no-daemon
+          else
+            gradle assembleRelease --no-daemon
+          fi
+
+      # Renames and stages the APK file for artifacts & releases
+      - name: Stage Android APK
+        run: |
+          mkdir -p build
+          cp app/build/outputs/apk/release/app-release.apk build/Tekyida.apk
+
+      # Publishes the APK as a downloadable artifact on the workflow run page
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: Tekyida-android-apk
+          path: android/build/Tekyida.apk
+          retention-days: 14
+
+  # -------------------------------------------------------------
+  # Job 3: Publish Unified GitHub Release (iOS IPA + Android APK)
+  # -------------------------------------------------------------
+  release:
+    name: Publish Release Assets
+    needs: [ build-ios, build-android ]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download iOS IPA Artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: Tekyida-unsigned-ipa
+          path: release-assets
+
+      - name: Download LiveContainer Source Artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: livecontainer-source
+          path: release-assets
+
+      - name: Download Android APK Artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: Tekyida-android-apk
+          path: release-assets
+
+      - name: Publish to GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "build-${{ github.run_number }}" \
-            build/MyiOSApp.ipa \
-            build/apps.json \
+            release-assets/Tekyida.ipa \
+            release-assets/apps.json \
+            release-assets/Tekyida.apk \
             --title "Build ${{ github.run_number }}" \
             --generate-notes
