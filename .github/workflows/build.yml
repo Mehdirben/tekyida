@@ -7,18 +7,65 @@ on:
     # Rebuild the apps on every push to the main/master branch
     branches: [ main, master ]
   pull_request:
-    # Also build PRs targeting main/master, so breakage is caught before merging
+    # Also test PRs targeting main/master, so breakage is caught before merging
     branches: [ main, master ]
   # Adds a "Run workflow" button in the Actions tab for manual builds
   workflow_dispatch:
 
 jobs:
   # -------------------------------------------------------------
-  # Job 1: Initialize GitHub Release (No Artifact Storage Used)
+  # Job 1: Quality Gate & Change Detection (Strict Quality Check)
+  # -------------------------------------------------------------
+  quality-gate:
+    name: Quality Gate & Change Detection
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      android: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' }}
+      ios: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.ios == 'true' }}
+      mobile: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' || steps.filter.outputs.ios == 'true' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect Changed Paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'package*.json'
+            frontend:
+              - 'frontend/**'
+              - 'package*.json'
+            android:
+              - 'android/**'
+              - 'package*.json'
+            ios:
+              - 'ios/**'
+              - 'package*.json'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run Tekyida Quality Gate (tests/run.sh)
+        run: |
+          chmod +x tests/run.sh
+          ./tests/run.sh
+
+  # -------------------------------------------------------------
+  # Job 2: Initialize GitHub Release (Asset Carry-Forward)
   # -------------------------------------------------------------
   init-release:
-    name: Initialize Release
-    if: github.event_name != 'pull_request'
+    name: Initialize Release & Carry Forward Assets
+    needs: [ quality-gate ]
+    if: github.event_name != 'pull_request' && needs.quality-gate.outputs.mobile == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -40,7 +87,7 @@ jobs:
               --generate-notes
           fi
 
-          # Seed previous assets so both APK and IPA are always present
+          # Carry forward previous release assets so both APK and IPA are guaranteed in every release
           LATEST_TAG=$(gh release list --repo "${{ github.repository }}" --limit 2 --json tagName -q '.[].tagName' 2>/dev/null | grep -v "build-${{ github.run_number }}" | head -n 1 || true)
           if [ -n "$LATEST_TAG" ]; then
             echo "Carrying forward assets from previous release: $LATEST_TAG"
@@ -55,14 +102,16 @@ jobs:
           fi
 
   # -------------------------------------------------------------
-  # Job 2: iOS Build (SwiftUI, XcodeGen, Unsigned IPA)
+  # Job 3: iOS Build (SwiftUI, XcodeGen, Unsigned IPA)
   # -------------------------------------------------------------
   build-ios:
     name: Build & Package iOS IPA
-    needs: [ init-release ]
+    needs: [ quality-gate, init-release ]
     if: |
       always() &&
       !cancelled() &&
+      needs.quality-gate.result == 'success' &&
+      needs.quality-gate.outputs.ios == 'true' &&
       (needs.init-release.result == 'success' || needs.init-release.result == 'skipped')
     runs-on: macos-15
 
@@ -158,14 +207,16 @@ jobs:
             --clobber
 
   # -------------------------------------------------------------
-  # Job 3: Android Build (Kotlin, Jetpack Compose, Release APK)
+  # Job 4: Android Build (Kotlin, Jetpack Compose, Release APK)
   # -------------------------------------------------------------
   build-android:
     name: Build & Package Android APK
-    needs: [ init-release ]
+    needs: [ quality-gate, init-release ]
     if: |
       always() &&
       !cancelled() &&
+      needs.quality-gate.result == 'success' &&
+      needs.quality-gate.outputs.android == 'true' &&
       (needs.init-release.result == 'success' || needs.init-release.result == 'skipped')
     runs-on: ubuntu-latest
 

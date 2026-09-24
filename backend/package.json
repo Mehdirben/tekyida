@@ -10,11 +10,12 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@auth/core": "^0.37.4",
-    "@convex-dev/auth": "^0.0.90",
+    "@auth/core": "^0.41.3",
+    "@convex-dev/auth": "^0.0.95",
     "convex": "^1.31.7"
   },
   "devDependencies": {
+    "@types/node": "^26.6.2",
     "@vitest/coverage-v8": "^5.0.1",
     "convex-test": "^0.0.60",
     "typescript": "^5",

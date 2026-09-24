@@ -2,8 +2,9 @@
 set -e
 
 # =========================================================
-# Master Test & Quality Suite for Tekyida
-# Runs Duplication check (jscpd) and Unit Tests with 100% Coverage
+# Master Test & Quality Suite for Tekyida (Quick Suite)
+# Runs Duplication check (jscpd), 100% Coverage Unit Tests,
+# SAST Vulnerability Audit, and TypeScript Checks.
 # =========================================================
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -12,6 +13,7 @@ REPORTS_DIR="$ROOT_DIR/tests/reports"
 mkdir -p "$REPORTS_DIR/duplication"
 mkdir -p "$REPORTS_DIR/backend"
 mkdir -p "$REPORTS_DIR/frontend"
+mkdir -p "$REPORTS_DIR/security"
 
 echo ""
 echo "===================================================="
@@ -22,7 +24,7 @@ echo ""
 # ---------------------------------------------------------
 # 1. Code Duplication Analysis (jscpd)
 # ---------------------------------------------------------
-echo "[1/4] Running Code Duplication Analysis (jscpd)..."
+echo "[1/6] Running Code Duplication Analysis (jscpd)..."
 echo "      • Threshold: 0.00% (Strict zero-tolerance)"
 echo "      • Excluded: Markdown, docs, README, license, and generated files"
 echo ""
@@ -47,7 +49,7 @@ echo ""
 # ---------------------------------------------------------
 # 2. Convex Backend Unit Tests & Coverage
 # ---------------------------------------------------------
-echo "[2/4] Running Convex Backend Tests & Coverage (Vitest)..."
+echo "[2/6] Running Convex Backend Tests & Coverage (Vitest)..."
 cd "$ROOT_DIR/backend"
 npx vitest run --coverage
 echo "✓ Backend tests and coverage thresholds passed."
@@ -57,7 +59,7 @@ echo ""
 # ---------------------------------------------------------
 # 3. Next.js Frontend Unit Tests & Coverage
 # ---------------------------------------------------------
-echo "[3/4] Running Frontend Tests & Coverage (Vitest)..."
+echo "[3/6] Running Frontend Tests & Coverage (Vitest)..."
 cd "$ROOT_DIR/frontend"
 npx vitest run --coverage
 echo "✓ Frontend tests and coverage thresholds passed."
@@ -65,11 +67,47 @@ echo "  → Report: tests/reports/frontend/index.html"
 echo ""
 
 # ---------------------------------------------------------
-# 4. iOS Unit Tests Check
+# 4. SAST Security Audit (Dependencies & Known CVEs)
 # ---------------------------------------------------------
-echo "[4/4] Checking iOS Unit Tests (TekyidaTests)..."
-if command -v xcodebuild >/dev/null 2>&1; then
-  echo "Running iOS tests with xcodebuild..."
+echo "[4/6] Running SAST Security Audit (npm audit)..."
+echo "      • Checking backend dependencies (audit-level=high)..."
+cd "$ROOT_DIR/backend"
+npm audit --audit-level=high > "$REPORTS_DIR/security/backend-audit.txt" 2>&1 || {
+  echo "❌ High/Critical vulnerabilities found in backend!"
+  cat "$REPORTS_DIR/security/backend-audit.txt"
+  exit 1
+}
+
+echo "      • Checking frontend dependencies (audit-level=high)..."
+cd "$ROOT_DIR/frontend"
+npm audit --audit-level=high > "$REPORTS_DIR/security/frontend-audit.txt" 2>&1 || {
+  echo "❌ High/Critical vulnerabilities found in frontend!"
+  cat "$REPORTS_DIR/security/frontend-audit.txt"
+  exit 1
+}
+echo "✓ SAST security audit passed (0 high/critical vulnerabilities)."
+echo ""
+
+# ---------------------------------------------------------
+# 5. TypeScript Compilation & Static Type Checking
+# ---------------------------------------------------------
+echo "[5/6] Running TypeScript Type Check (tsc --noEmit)..."
+echo "      • Checking Convex backend types..."
+cd "$ROOT_DIR/backend"
+npx tsc --noEmit -p convex/tsconfig.json
+
+echo "      • Checking Next.js frontend types..."
+cd "$ROOT_DIR/frontend"
+npx tsc --noEmit
+echo "✓ TypeScript type checking passed with 0 errors."
+echo ""
+
+# ---------------------------------------------------------
+# 6. iOS Unit Tests Check (OS Auto-Detection)
+# ---------------------------------------------------------
+echo "[6/6] Checking iOS Unit Tests (TekyidaTests)..."
+if [[ "$OSTYPE" == "darwin"* ]] && command -v xcodebuild >/dev/null 2>&1; then
+  echo "🍏 macOS detected: Running native iOS tests with xcodebuild..."
   xcodebuild test \
     -project "$ROOT_DIR/ios/Tekyida.xcodeproj" \
     -scheme Tekyida \
@@ -77,8 +115,8 @@ if command -v xcodebuild >/dev/null 2>&1; then
     -resultBundlePath "$REPORTS_DIR/ios/TestResults.xcresult"
   echo "✓ iOS tests passed."
 else
-  echo "ℹ Skipping native iOS test execution (macOS/Xcode required)."
-  echo "  Tests located at ios/Tests/TekyidaTests/TekyidaTests.swift."
+  echo "ℹ Non-macOS environment detected ($(uname -s)). Skipping native iOS test execution."
+  echo "  (Native iOS builds and simulator tests require macOS with Xcode)."
 fi
 
 # ---------------------------------------------------------
@@ -128,6 +166,9 @@ console.log(` Frontend Lines        | 100.00%            | ${fLines.toFixed(2)}%
 console.log(` Frontend Functions    | 100.00%            | ${fFuncs.toFixed(2)}%           | \x1b[32mPASSED\x1b[0m `);
 console.log(` Frontend Branches     | 100.00%            | ${fBranch.toFixed(2)}%           | \x1b[32mPASSED\x1b[0m `);
 console.log("-----------------------+--------------------+-------------------+--------");
+console.log(` SAST Security Audit   | 0 High/Critical    | 0 Vulnerabilities | \x1b[32mPASSED\x1b[0m `);
+console.log(` TypeScript Integrity  | 0 Type Errors      | Clean (0 errors)  | \x1b[32mPASSED\x1b[0m `);
+console.log("-----------------------+--------------------+-------------------+--------");
 console.log(` iOS Unit Tests        | Xcode Test Suite   | Configured        | READY  `);
 console.log("\x1b[1m\x1b[34m========================================================================\x1b[0m");
 '
@@ -137,4 +178,5 @@ echo "Centralized Reports Directory: tests/reports/"
 echo "  • Duplication: tests/reports/duplication/jscpd-report.json"
 echo "  • Backend Coverage: tests/reports/backend/index.html"
 echo "  • Frontend Coverage: tests/reports/frontend/index.html"
+echo "  • Security Reports: tests/reports/security/"
 echo ""
