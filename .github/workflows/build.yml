@@ -54,6 +54,11 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install Dependencies
+        run: |
+          npm ci --prefix backend
+          npm ci --prefix frontend
+
       - name: Run Tekyida Quality Gate (tests/run.sh)
         run: |
           chmod +x tests/run.sh
