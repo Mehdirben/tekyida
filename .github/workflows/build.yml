@@ -1,0 +1,142 @@
+# Name of the workflow, shown in the GitHub "Actions" tab and on commit checks
+name: Build iOS App (Unsigned IPA)
+
+# Events that trigger this workflow to run
+on:
+  push:
+    # Rebuild the app on every push to the main/master branch
+    branches: [ main, master ]
+  pull_request:
+    # Also build PRs targeting main/master, so breakage is caught before merging
+    branches: [ main, master ]
+  # Adds a "Run workflow" button in the Actions tab for manual builds
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Package IPA
+    # GitHub's free hosted macOS runner — required because only macOS/Xcode can build iOS apps
+    runs-on: macos-15
+
+    # Allows the workflow's built-in GITHUB_TOKEN to create Releases below
+    permissions:
+      contents: write
+
+    defaults:
+      run:
+        working-directory: ios
+
+    steps:
+      # Downloads this repository's code into the runner's workspace
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # Stamps the CI run number into CFBundleVersion so each build shows a
+      # distinct version inside LiveContainer (easy to confirm an update landed)
+      - name: Stamp Build Number
+        run: plutil -replace CFBundleVersion -string "${{ github.run_number }}" Sources/App/Info.plist
+
+      # Purely informational: logs which Xcode version compiled the app
+      - name: Show Xcode Version
+        run: xcodebuild -version
+
+      # Installs XcodeGen, which converts project.yml into a real .xcodeproj file.
+      # This keeps the repo free of generated, merge-conflict-prone Xcode project files.
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # Generates MyiOSApp.xcodeproj from project.yml.
+      # Any new .swift file added under Sources/App/ is picked up automatically at this step.
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      # Compiles an optimized Release build for physical iPhones into an .xcarchive.
+      # The CODE_SIGNING_* flags disable code signing: CI has no Apple certificates,
+      # so the app is built UNSIGNED — a sideloading tool (Impactor/Sideloadly) signs
+      # it later with your free personal Apple ID at install time.
+      - name: Build Archive
+        run: |
+          xcodebuild archive \
+            -project MyiOSApp.xcodeproj \
+            -scheme MyiOSApp \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/MyiOSApp.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      # Wraps the compiled app into an IPA — the format iPhones install.
+      # An IPA is simply a zip archive containing a Payload/ folder with the .app bundle inside.
+      - name: Package Payload to IPA
+        run: |
+          mkdir -p build/Payload
+          cp -r build/MyiOSApp.xcarchive/Products/Applications/MyiOSApp.app build/Payload/
+          cd build
+          zip -r -q MyiOSApp.ipa Payload
+
+      # Publishes the IPA as a downloadable artifact on the workflow run page
+      # (Actions tab -> this run -> Artifacts section). Deleted after 14 days.
+      # Mostly useful for pull-request builds, which skip the Release step below.
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: MyiOSApp-unsigned-ipa
+          path: ios/build/MyiOSApp.ipa
+          retention-days: 14
+
+      # Generates an AltStore-format source (apps.json) describing this build.
+      # Added to LiveContainer ONCE (+ -> Add Source, or
+      # livecontainer://source?url=<encoded-json-url>), it makes LiveContainer list
+      # the app and offer a built-in Update button whenever a newer build is
+      # published here. The JSON ships on every Release, so this stable URL
+      # always serves the current app list:
+      #   https://github.com/Mehdirben/iosapp/releases/latest/download/apps.json
+      - name: Generate LiveContainer Source JSON
+        run: |
+          cat > build/apps.json <<EOF
+          {
+            "name": "Mehdirben's Apps",
+            "identifier": "com.mehdirben.iosapp.source",
+            "apps": [
+              {
+                "bundleIdentifier": "com.example.myiosapp",
+                "name": "MyiOSApp",
+                "developerName": "Mehdirben",
+                "localizedDescription": "SwiftUI starter app compiled in the cloud with GitHub Actions",
+                "iconURL": "https://raw.githubusercontent.com/Mehdirben/iosapp/main/Sources/App/Assets.xcassets/AppIcon.appiconset/icon-1024.png",
+                "versions": [
+                  {
+                    "version": "1.0",
+                    "buildVersion": "${{ github.run_number }}",
+                    "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+                    "minOSVersion": "17.0",
+                    "localizedDescription": "Automated build from commit ${{ github.sha }}",
+                    "downloadURL": "https://github.com/Mehdirben/iosapp/releases/download/build-${{ github.run_number }}/MyiOSApp.ipa",
+                    "size": $(stat -f%z build/MyiOSApp.ipa)
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+
+      # Attaches every push build to a GitHub Release. Because the assets are
+      # always named MyiOSApp.ipa and apps.json, these permanent URLs always
+      # serve the newest build and app list:
+      #   https://github.com/Mehdirben/iosapp/releases/latest/download/MyiOSApp.ipa
+      #   https://github.com/Mehdirben/iosapp/releases/latest/download/apps.json
+      # LiveContainer installs/updates straight from those URLs (unsigned IPAs
+      # are fine — LiveContainer re-signs apps with its own certificate at install).
+      # Runs on push and manual dispatch; skipped for pull_request events,
+      # which get a read-only token.
+      - name: Publish IPA to GitHub Release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${{ github.run_number }}" \
+            build/MyiOSApp.ipa \
+            build/apps.json \
+            --title "Build ${{ github.run_number }}" \
+            --generate-notes

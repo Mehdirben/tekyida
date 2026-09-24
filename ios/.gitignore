@@ -1,0 +1,29 @@
+# Xcode build artifacts & generated projects
+build/
+DerivedData/
+*.xcodeproj
+*.xcworkspace
+!default.xcworkspace
+
+# User-specific Xcode settings
+xcuserdata/
+*.xcuserdatad/
+*.xccheckout
+*.moved-aside
+
+# Symbols & IPAs
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Package managers
+Pods/
+.build/
+Packages/
+
+# CI / LiveContainer outputs
+apps.json
+
+# OS files
+.DS_Store

@@ -1,0 +1,17 @@
+{
+  "name": "@tekyida/backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "convex dev",
+    "deploy": "convex deploy"
+  },
+  "dependencies": {
+    "@auth/core": "^0.37.4",
+    "@convex-dev/auth": "^0.0.90",
+    "convex": "^1.31.7"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
