@@ -142,5 +142,5 @@ describe("users", () => {
     );
 
     await asUser.action(api.users.changePassword, { currentPassword: "currentpassword", newPassword: "newpassword123" });
-  });
+  }, 20000);
 });

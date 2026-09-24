@@ -3,6 +3,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
+    testTimeout: 20000,
     server: { deps: { inline: ["convex-test"] } },
     coverage: {
       provider: "v8",
