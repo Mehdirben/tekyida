@@ -674,6 +674,17 @@ jobs:
           rm -f site-pages/fdroid/keystore.p12 site-pages/fdroid/config.yml
           rm -f site-pages/fdroid/beta/keystore.p12 site-pages/fdroid/beta/config.yml
 
+      # Clean up any existing github-pages artifact from previous attempts of this run to prevent duplicates on rerun
+      - name: Clean up existing Pages artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          EXISTING_ARTIFACTS=$(gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts -q ".artifacts[] | select(.name == \"github-pages\") | .id" 2>/dev/null || true)
+          for ARTIFACT_ID in $EXISTING_ARTIFACTS; do
+            echo "Deleting prior github-pages artifact ID: $ARTIFACT_ID"
+            gh api --method DELETE repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID || true
+          done
+
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
