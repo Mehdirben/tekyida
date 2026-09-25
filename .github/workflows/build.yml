@@ -308,16 +308,15 @@ jobs:
           mkdir -p build
           RELEASE_TAG="${{ needs.init-release.outputs.release_tag }}"
           IS_BETA="${{ needs.init-release.outputs.is_beta }}"
+          VERSION_STR=$(plutil -extract CFBundleShortVersionString raw Sources/App/Info.plist 2>/dev/null || echo "1.0")
 
           if [ "$IS_BETA" = "true" ]; then
             FEED_NAME="Tekyida (Beta)"
             FEED_ID="com.tekyida.ios.source.beta"
-            VERSION_STR="1.0-beta"
             VERSION_DESC="Beta build from branch ${{ github.ref_name }} (commit ${{ github.sha }})"
           else
             FEED_NAME="Tekyida (Stable)"
             FEED_ID="com.tekyida.ios.source"
-            VERSION_STR="1.0"
             VERSION_DESC="Automated build from commit ${{ github.sha }}"
           fi
 

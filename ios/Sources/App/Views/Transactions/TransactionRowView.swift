@@ -59,29 +59,10 @@ public struct TransactionRowView: View {
             )
 
             // Actions (Edit, Delete)
-            HStack(spacing: 6) {
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onEdit()
-                }) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.secondary)
-                        .frame(width: 30, height: 30)
-                        .liquidGlassPill()
-                }
-
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    onDelete()
-                }) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(AppTheme.danger.opacity(0.85))
-                        .frame(width: 30, height: 30)
-                        .liquidGlassPill()
-                }
-            }
+            RowActionButtons(
+                onEdit: onEdit,
+                onDelete: onDelete
+            )
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)

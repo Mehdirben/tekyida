@@ -51,7 +51,7 @@ public struct DashboardView: View {
                     ContactDetailView(contact: contact)
                 }
                 .environmentObject(state)
-                .liquidGlassSheet(detents: [.large])
+                .liquidGlassSheet(detents: [.fraction(0.94)])
             }
             .sheet(isPresented: $showNotebookManager) {
                 NotebookManagerSheet()

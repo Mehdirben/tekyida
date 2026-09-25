@@ -1,21 +1,22 @@
 import SwiftUI
 
-// MARK: - Brand Logo Header (plain, no glass)
+// MARK: - Brand Logo Header (navbar-sized, plain, no glass)
 public struct BrandLogoHeader: View {
     public init() {}
 
     public var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 7) {
             Image("AppLogo")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 28, height: 28)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .frame(width: 26, height: 26)
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
 
             Text("Tekyida")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .font(.system(size: 17, weight: .semibold, design: .rounded))
                 .foregroundColor(.primary)
         }
+        .fixedSize()
     }
 }
 

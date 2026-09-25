@@ -54,7 +54,7 @@ public struct ExperiencesView: View {
                     ExperienceDetailView(experience: exp)
                 }
                 .environmentObject(state)
-                .liquidGlassSheet(detents: [.large])
+                .liquidGlassSheet(detents: [.fraction(0.94)])
             }
             .sheet(isPresented: $showNotebookManager) {
                 NotebookManagerSheet()

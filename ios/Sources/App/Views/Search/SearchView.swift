@@ -40,12 +40,10 @@ public struct SearchView: View {
                 .scrollDismissesKeyboard(.immediately)
                 .simultaneousGesture(
                     TapGesture().onEnded {
-                        // Hide the keyboard when touching the results area,
-                        // keeping the search field in its presented (glass) state
-                        UIApplication.shared.sendAction(
-                            #selector(UIResponder.resignFirstResponder),
-                            to: nil, from: nil, for: nil
-                        )
+                        // Touching away closes the search bar (and its keyboard)
+                        if isSearchPresented {
+                            isSearchPresented = false
+                        }
                     }
                 )
                 .tabBarMinimizeBehaviorOnScroll()
@@ -74,14 +72,14 @@ public struct SearchView: View {
                     ContactDetailSheet(contact: contact)
                         .environmentObject(state)
                 }
-                .liquidGlassSheet(detents: [.large])
+                .liquidGlassSheet(detents: [.fraction(0.94)])
             }
             .sheet(item: $selectedExperience) { exp in
                 NavigationStack {
                     ExperienceDetailSheet(experience: exp)
                         .environmentObject(state)
                 }
-                .liquidGlassSheet(detents: [.large])
+                .liquidGlassSheet(detents: [.fraction(0.94)])
             }
             .transactionModals(
                 editingTransaction: $editingTransaction,
