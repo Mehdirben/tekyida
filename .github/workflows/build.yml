@@ -249,6 +249,23 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-derived-data-
 
+      # Prepares the CoreSimulator daemon and identifies a concrete simulator destination ID
+      - name: Prepare iOS Simulator
+        run: |
+          xcrun simctl list devices available
+          SIM_ID=$(xcrun simctl list devices available | grep -i "iPhone" | grep -oE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -n 1 || true)
+          if [ -z "$SIM_ID" ]; then
+            echo "No existing iPhone simulator found, attempting to create one..."
+            SIM_ID=$(xcrun simctl create "CI-iPhone" "com.apple.CoreSimulator.SimDeviceType.iPhone-16" || true)
+          fi
+          echo "Selected simulator ID: $SIM_ID"
+          if [ -n "$SIM_ID" ]; then
+            xcrun simctl boot "$SIM_ID" || true
+            echo "SIMULATOR_DESTINATION=id=$SIM_ID" >> "$GITHUB_ENV"
+          else
+            echo "SIMULATOR_DESTINATION=platform=iOS Simulator,name=iPhone 16" >> "$GITHUB_ENV"
+          fi
+
       # iOS Tests run here inside the iOS job:
       # On non-main (dev/feature): Fast unit tests only (skips TekyidaUITests simulator automation)
       - name: Run iOS Unit Tests (Fast - Feature/Beta Branch)
@@ -257,7 +274,7 @@ jobs:
           xcodebuild test \
             -project Tekyida.xcodeproj \
             -scheme Tekyida \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination "${SIMULATOR_DESTINATION}" \
             -only-testing:TekyidaTests \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -270,7 +287,7 @@ jobs:
           xcodebuild test \
             -project Tekyida.xcodeproj \
             -scheme Tekyida \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination "${SIMULATOR_DESTINATION}" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
