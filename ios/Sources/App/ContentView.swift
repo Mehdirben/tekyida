@@ -1,63 +1,58 @@
 import SwiftUI
 
-// The app's main screen.
+// MARK: - Root Content View
 struct ContentView: View {
-    @State private var tapCount = 0
+    @ObservedObject var state: AppState
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var selectedTab: AppTab = .dashboard
+
+    init(state: AppState? = nil) {
+        self.state = state ?? AppState()
+    }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                // App Logo with rounded squircle & subtle glow
-                Image("AppLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 96, height: 96)
-                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    .shadow(color: Color.blue.opacity(0.35), radius: 16, x: 0, y: 8)
-
-                // Main headline
-                Text("Tekyida")
-                    .font(.title)
-                    .fontWeight(.bold)
-
-                // Supporting text
-                Text("Modern IOU Tracker for iOS")
-                    .font(.subheadline)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal)
-
-                VStack(spacing: 12) {
-                    Text("Counter: \(tapCount)")
-                        .font(.title3)
-                        .fontWeight(.semibold)
-
-                    Button(action: {
-                        tapCount += 1
-                    }) {
-                        Label("Tap Me", systemImage: "plus.circle.fill")
-                            .font(.headline)
-                            .padding()
-                            .frame(maxWidth: 200)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.blue, Color.cyan],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                    }
+        ZStack(alignment: .bottom) {
+            // Main Content Tabs
+            Group {
+                switch selectedTab {
+                case .dashboard:
+                    DashboardView()
+                case .experiences:
+                    ExperiencesView()
+                case .settings:
+                    SettingsView()
                 }
-                .padding()
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(16)
-
-                Spacer()
             }
-            .padding(.top, 40)
-            .navigationTitle("Tekyida")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .environmentObject(state)
+
+            // Floating Liquid Glass Navigation Bar
+            FloatingTabBar(selectedTab: $selectedTab)
+        }
+        .preferredColorScheme(resolvedColorScheme)
+        .overlay {
+            if state.isAppLocked {
+                AppLockView()
+                    .environmentObject(state)
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: state.isAppLocked)
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                state.lockApp()
+            }
+        }
+    }
+
+    private var resolvedColorScheme: ColorScheme? {
+        switch state.themeMode {
+        case .system:
+            return nil
+        case .light:
+            return .light
+        case .dark:
+            return .dark
         }
     }
 }
