@@ -25,6 +25,7 @@ jobs:
       android: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' }}
       ios: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.ios == 'true' }}
       mobile: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' || steps.filter.outputs.ios == 'true' }}
+      web: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -275,3 +276,42 @@ jobs:
             --repo "${{ github.repository }}" \
             build/Tekyida.apk \
             --clobber
+
+  # -------------------------------------------------------------
+  # Job 5: Web Build, E2E & DAST Dynamic Security Verification
+  # -------------------------------------------------------------
+  build-web:
+    name: Build & Verify Web (E2E & DAST)
+    needs: [ quality-gate ]
+    if: |
+      always() &&
+      !cancelled() &&
+      needs.quality-gate.result == 'success' &&
+      needs.quality-gate.outputs.web == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        run: |
+          npm ci --prefix backend
+          npm ci --prefix frontend
+
+      - name: Install Playwright Browsers
+        run: |
+          npx --prefix frontend playwright install --with-deps chromium
+
+      - name: Build Next.js Production Web App
+        run: |
+          npm run build --prefix frontend
+
+      - name: Run Web E2E & DAST Security Suite
+        run: |
+          npm run test:e2e --prefix frontend

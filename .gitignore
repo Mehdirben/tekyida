@@ -16,6 +16,10 @@ coverage/
 .jscpd/
 tests/reports/
 *.lcov
+test-results/
+**/test-results/
+playwright-report/
+**/playwright-report/
 
 # next.js
 .next/
@@ -47,7 +51,3 @@ yarn-error.log*
 
 # vercel
 .vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts

@@ -16,7 +16,7 @@ export default function AuthSubmitButton({
 }: AuthSubmitButtonProps) {
     return (
         <div className="pt-2">
-            <Button size="lg" className="w-full" disabled={loading || disabled}>
+            <Button type="submit" size="lg" className="w-full" disabled={loading || disabled}>
                 {loading ? (
                     <Loader2 size={16} className="animate-spin" />
                 ) : (

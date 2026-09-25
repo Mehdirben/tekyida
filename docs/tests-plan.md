@@ -13,9 +13,10 @@ This document outlines the testing (Unit & E2E), security analysis (SAST & DAST)
    - Every GitHub Release **always contains both `Tekyida.apk` and `Tekyida.ipa`**.
    - If only Android changed, the new `.apk` is bundled with the carried-forward `.ipa` from the previous release.
    - If only iOS changed, the new `.ipa` is bundled with the carried-forward `.apk` from the previous release.
+   - Assets are uploaded directly to GitHub Releases, requiring **0 MB of GitHub Actions artifact storage**.
 3. **Two-Tier Script Model (Quick vs. Full)**:
    - `tests/run.sh`: Lightning-fast developer guardrail (~8–10s) with 0% duplication, 100% coverage, and quick SAST.
-   - `tests/full.sh`: Deep production compilation, mobile packaging, and E2E verification.
+   - `tests/full.sh`: Deep production compilation, mobile packaging, Playwright Web E2E, and DAST dynamic security audit.
 4. **OS Auto-Detection**:
    - Local scripts detect whether they are running on Linux or macOS. Native iOS tasks execute on macOS and log a clean informational skip on Linux without failing.
 
@@ -31,7 +32,7 @@ flowchart TD
         Filter -->|Changed| W1["Web Tests (100% Coverage)"]
         W1 --> W2["Web SAST (npm audit / ESLint)"]
         W2 --> W3["Next.js Production Build"]
-        W3 --> W4["Web E2E (Playwright)"]
+        W3 --> W4["Web E2E & DAST (Playwright)"]
     end
 
     subgraph Android["Android (android/**)"]
@@ -44,7 +45,6 @@ flowchart TD
         Filter -->|Changed| I1["iOS Unit Tests (xcodebuild)"]
         I1 --> I2["iOS SAST (SwiftLint / Analyzer)"]
         I2 --> I3["Build Archive & Package IPA (Tekyida.ipa)"]
-        I3 --> I4["iOS DAST / Dynamic Scan (Simulator)"]
     end
 
     subgraph Backend["Convex Backend (backend/**)"]
@@ -52,7 +52,7 @@ flowchart TD
         B1 --> B2["Backend SAST (npm audit)"]
     end
 
-    W4 & A3 & I4 --> Rel{"Mobile Release Triggered?"}
+    A3 & I3 --> Rel{"Mobile Release Triggered?"}
     Rel -->|Yes| CF["Asset Carry-Forward: Combine Fresh + Previous Assets"]
     CF --> GH["Publish Complete GitHub Release (.apk + .ipa)"]
 ```
@@ -63,10 +63,10 @@ flowchart TD
 
 | Target | Unit Tests & Coverage | SAST (Static Security) | E2E (End-to-End) | DAST (Dynamic Security) | Skip Condition |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Web Frontend** | `vitest` (100% Coverage) | `npm audit` + ESLint Security | Playwright (Headless Chrome/Firefox) | OWASP ZAP (Web API attack) | No changes in `frontend/**` |
-| **Convex Backend** | `vitest` + `convex-test` (100% Coverage) | `npm audit` + Schema rules | Tested via Web Frontend E2E | Specialized RPC security fuzzing | No changes in `backend/**` |
+| **Web Frontend** | `vitest` (100% Coverage) | `npm audit` + ESLint Security | Playwright (Headless Chromium) | Playwright DAST Suite (Headers, Traversal, Fuzzing, XSS/SQLi) | No changes in `frontend/**` |
+| **Convex Backend** | `vitest` + `convex-test` (100% Coverage) | `npm audit` + Schema rules | Tested via Web Frontend E2E | Fuzzing & Auth Boundary Validation | No changes in `backend/**` |
 | **Android** | JUnit & Compose Tests | Android Lint / Gradle Check | Maestro / Espresso (Emulator) | MobSF static/dynamic Android check | No changes in `android/**` |
-| **iOS** | `xcodebuild test` (XCTest) | SwiftLint / Xcode Analyzer | Maestro / XCUITest (Simulator) | MobSF Dynamic / OWASP ZAP Proxy (macOS Simulator) | No changes in `ios/**` |
+| **iOS** | `xcodebuild test` (XCTest) | SwiftLint / Xcode Analyzer | Maestro / XCUITest (Simulator) | Dynamic Check (macOS Simulator) | No changes in `ios/**` |
 
 ---
 
@@ -105,11 +105,12 @@ Meant to run continuously during development.
 Performs real compilations and E2E validations:
 1. Runs `./tests/run.sh`.
 2. Compiles Next.js production build (`npm run build --prefix frontend`).
-3. Compiles Android release APK (`cd android && ./gradlew assembleRelease`).
-4. Checks OS environment:
+3. Runs Web E2E (Playwright) & DAST Dynamic Security Verification (`frontend/e2e/`).
+4. Compiles Android release APK (`cd android && ./gradlew assembleRelease`).
+5. Checks OS environment:
    - If on macOS: Runs `xcodegen generate` and compiles iOS archive (`xcodebuild`).
    - If on Linux: Logs `ℹ Non-macOS environment detected ($(uname -s)). Skipping native iOS build.` and continues.
-5. Runs Web E2E smoke tests.
+6. Verifies Web Production Manifest & standalone assets.
 
 ---
 
@@ -119,87 +120,57 @@ Performs real compilations and E2E validations:
 
 ```mermaid
 graph TD
-    Push["Push to main / PR"] --> QualityGate["Job 1: quality-gate (Ubuntu ~30s)"]
+    Push["Push to main / PR"] --> QualityGate["Job 1: quality-gate (Ubuntu ~45s)"]
     
     subgraph "Lightweight Checks (Always Run)"
-        QualityGate --> Q1["Duplication: 0%"]
-        QualityGate --> Q2["Backend: 100%"]
-        QualityGate --> Q3["Frontend: 100%"]
-        QualityGate --> Q4["SAST Audit"]
+        QualityGate --> Q1["Duplication: 0.00%"]
+        QualityGate --> Q2["Backend Coverage: 100%"]
+        QualityGate --> Q3["Frontend Coverage: 100%"]
+        QualityGate --> Q4["SAST Audit (0 vulns)"]
+        QualityGate --> Q5["TypeScript Type Check (0 errors)"]
     end
 
     QualityGate -->|Pass & PR| PRDone["PR Verified (Stop here, 0 build mins)"]
 
     QualityGate -->|Pass & Branch == main| PathDetect["Detect Modified Paths"]
     
-    PathDetect -->|frontend/ changed| WebBuild["Job 2: build-web (Ubuntu)"]
-    PathDetect -->|android/ changed| AndroidBuild["Job 3: build-android (Ubuntu)"]
-    PathDetect -->|ios/ changed| iOSBuild["Job 4: build-ios (macOS-15)"]
-    PathDetect -->|ios/ changed & DAST flag| iOSDast["Job 5: ios-dast (macOS-15)"]
-
-    AndroidBuild & iOSBuild --> ReleaseJob["Job 6: release (Publish GitHub Release)"]
+    PathDetect -->|frontend/ or backend/ changed| WebBuild["Job 5: build-web (Ubuntu) -> Build + E2E + DAST"]
+    PathDetect -->|android/ changed| AndroidBuild["Job 4: build-android (Ubuntu) -> Release APK"]
+    PathDetect -->|ios/ changed| iOSBuild["Job 3: build-ios (macOS-15) -> Unsigned IPA"]
     
-    subgraph "Asset Carry-Forward Guarantee"
-        ReleaseJob --> CheckAPK{"Fresh Tekyida.apk built?"}
-        CheckAPK -->|No| FetchAPK["Download previous Tekyida.apk via gh cli"]
-        CheckAPK -->|Yes| UseAPK["Use fresh Tekyida.apk"]
-        
-        ReleaseJob --> CheckIPA{"Fresh Tekyida.ipa built?"}
-        CheckIPA -->|No| FetchIPA["Download previous Tekyida.ipa via gh cli"]
-        CheckIPA -->|Yes| UseIPA["Use fresh Tekyida.ipa"]
-        
-        FetchAPK & UseAPK & FetchIPA & UseIPA --> Bundle["Release contains BOTH .apk and .ipa"]
-    end
-```
+    PathDetect -->|android/ or ios/ changed| InitRelease["Job 2: init-release -> Carry Forward Previous Release Assets"]
 
-### 5.2. Concrete Carry-Forward Script in `release` Job
-```bash
-mkdir -p release-assets
-
-# Resolve Android APK
-if [ -f "android-artifact/Tekyida.apk" ]; then
-  echo "✓ Using freshly compiled Android APK."
-  cp android-artifact/Tekyida.apk release-assets/
-else
-  echo "ℹ Android was not modified. Carrying forward latest APK from previous release..."
-  gh release download --pattern "Tekyida.apk" --dir release-assets/ || true
-fi
-
-# Resolve iOS IPA
-if [ -f "ios-artifact/Tekyida.ipa" ]; then
-  echo "✓ Using freshly compiled iOS IPA."
-  cp ios-artifact/Tekyida.ipa release-assets/
-  [ -f "ios-artifact/apps.json" ] && cp ios-artifact/apps.json release-assets/
-else
-  echo "ℹ iOS was not modified. Carrying forward latest IPA from previous release..."
-  gh release download --pattern "Tekyida.ipa" --pattern "apps.json" --dir release-assets/ || true
-fi
-
-# Publish guaranteed dual-asset release
-gh release create "build-${{ github.run_number }}" release-assets/* \
-  --title "Tekyida Build ${{ github.run_number }}" \
-  --notes "Automated build from commit ${{ github.sha }}."
+    InitRelease --> AndroidBuild & iOSBuild
+    AndroidBuild --> UploadAPK["Direct Upload Tekyida.apk to Release"]
+    iOSBuild --> UploadIPA["Direct Upload Tekyida.ipa & apps.json to Release"]
 ```
 
 ---
 
 ## 6. Implementation Checklist
 
-- [ ] **Phase 1: Update `tests/run.sh` (Quick Suite)**
-  - Add SAST dependency audit (`npm audit --audit-level=high` for backend and frontend).
-  - Add TypeScript check (`tsc --noEmit`).
-  - Add OS detection block for iOS unit test check (`darwin` vs `linux`).
-  - Update Dashboard output table with SAST status.
-- [ ] **Phase 2: Create `tests/full.sh` (Full Pipeline Suite)**
-  - Execute `tests/run.sh` first.
-  - Compile Next.js production build (`npm run build --prefix frontend`).
-  - Compile Android Release APK (`cd android && ./gradlew assembleRelease`).
-  - Add iOS OS auto-detection (executes on macOS, logs graceful skip on Linux).
-  - Web E2E smoke tests.
-- [ ] **Phase 3: Update `.github/workflows/build.yml`**
-  - Add `quality-gate` job as prerequisite (`needs: [ quality-gate ]`).
-  - Add path filtering (`dorny/paths-filter`) to conditionally trigger:
-    - `build-android` only when `android/**` or `backend/**` change.
-    - `build-ios` and `ios-dast` only when `ios/**` or `backend/**` change.
-    - `build-web` only when `frontend/**` or `backend/**` change.
-  - Implement Asset Carry-Forward in `release` job using `gh release download` so every release has both `Tekyida.apk` and `Tekyida.ipa`.
+- [x] **Phase 1: Update `tests/run.sh` (Quick Suite)**
+  - [x] Add SAST dependency audit (`npm audit --audit-level=high` for backend and frontend).
+  - [x] Add TypeScript check (`tsc --noEmit`).
+  - [x] Add OS detection block for iOS unit test check (`darwin` vs `linux`).
+  - [x] Update Dashboard output table with SAST status.
+- [x] **Phase 2: Create `tests/full.sh` (Full Pipeline Suite)**
+  - [x] Execute `tests/run.sh` first.
+  - [x] Compile Next.js production build (`npm run build --prefix frontend`).
+  - [x] Compile Android Release APK (`cd android && ./gradlew assembleRelease`).
+  - [x] Add iOS OS auto-detection (executes on macOS, logs graceful skip on Linux).
+  - [x] Add Web E2E and DAST Dynamic Security Verification.
+- [x] **Phase 3: Update `.github/workflows/build.yml`**
+  - [x] Add `quality-gate` job as prerequisite (`needs: [ quality-gate ]`).
+  - [x] Add path filtering (`dorny/paths-filter`) to conditionally trigger:
+    - [x] `build-android` only when `android/**` changes.
+    - [x] `build-ios` only when `ios/**` changes.
+    - [x] `build-web` only when `frontend/**` or `backend/**` changes.
+  - [x] Implement Asset Carry-Forward in `init-release` job using `gh release download` so every release has both `Tekyida.apk` and `Tekyida.ipa`.
+  - [x] Remove GitHub Actions artifact storage; upload directly to GitHub Releases.
+- [x] **Phase 4: Web E2E & DAST Dynamic Application Security Testing**
+  - [x] Setup Playwright in `frontend/`.
+  - [x] E2E test suites: Landing page, authentication flows (login, register, reset-password), PWA manifest & service worker.
+  - [x] DAST dynamic security suite: Security headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy), sensitive path probe & traversal resistance, HTTP TRACE denial, XSS & SQLi payload fuzzing (graceful non-500 responses without stack traces), open redirect resistance.
+  - [x] Add Next.js HTTP security headers in `frontend/next.config.ts`.
+  - [x] Integrated into `tests/full.sh` and GitHub Actions `build-web` job.
