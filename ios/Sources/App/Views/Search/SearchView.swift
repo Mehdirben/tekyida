@@ -38,6 +38,16 @@ public struct SearchView: View {
                     .padding(.bottom, 96)
                 }
                 .scrollDismissesKeyboard(.immediately)
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        // Hide the keyboard when touching the results area,
+                        // keeping the search field in its presented (glass) state
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder),
+                            to: nil, from: nil, for: nil
+                        )
+                    }
+                )
                 .tabBarMinimizeBehaviorOnScroll()
             }
             .navigationTitle("Search")
@@ -48,32 +58,30 @@ public struct SearchView: View {
                 placement: .automatic,
                 prompt: Text("Contacts, experiences, amounts...")
             )
-            .onAppear {
-                // Focus the navbar search field (with keyboard) whenever the tab opens
-                if !isSearchPresented {
-                    isSearchPresented = true
-                }
-            }
-            .simultaneousGesture(
-                TapGesture().onEnded {
-                    // Dismiss the keyboard when touching outside the search field
-                    if isSearchPresented {
-                        isSearchPresented = false
-                    }
-                }
-            )
             .searchScopes($scope) {
                 ForEach(FilterScope.allCases, id: \.self) { item in
                     Text(item.rawValue).tag(item)
                 }
             }
+            .onAppear {
+                // Present the search field with the keyboard when the tab opens
+                if !isSearchPresented {
+                    isSearchPresented = true
+                }
+            }
             .sheet(item: $selectedContact) { contact in
-                ContactDetailSheet(contact: contact)
-                    .environmentObject(state)
+                NavigationStack {
+                    ContactDetailSheet(contact: contact)
+                        .environmentObject(state)
+                }
+                .liquidGlassSheet(detents: [.medium, .large])
             }
             .sheet(item: $selectedExperience) { exp in
-                ExperienceDetailSheet(experience: exp)
-                    .environmentObject(state)
+                NavigationStack {
+                    ExperienceDetailSheet(experience: exp)
+                        .environmentObject(state)
+                }
+                .liquidGlassSheet(detents: [.medium, .large])
             }
             .transactionModals(
                 editingTransaction: $editingTransaction,

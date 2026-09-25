@@ -45,8 +45,12 @@ public struct DashboardView: View {
                 notebookName: state.activeNotebook?.name ?? "Select Notebook",
                 onSelectNotebook: { showNotebookManager = true }
             )
-            .navigationDestination(item: $navigatedContact) { contact in
-                ContactDetailView(contact: contact)
+            .sheet(item: $navigatedContact) { contact in
+                NavigationStack {
+                    ContactDetailView(contact: contact)
+                }
+                .environmentObject(state)
+                .liquidGlassSheet(detents: [.medium, .large])
             }
             .sheet(isPresented: $showNotebookManager) {
                 NotebookManagerSheet()

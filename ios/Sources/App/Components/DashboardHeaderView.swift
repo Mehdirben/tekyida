@@ -15,11 +15,6 @@ public struct BrandLogoHeader: View {
             Text("Tekyida")
                 .font(.system(size: 20, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
-
-            Circle()
-                .fill(AppTheme.accent)
-                .frame(width: 7, height: 7)
-                .shadow(color: AppTheme.accent.opacity(0.6), radius: 3)
         }
     }
 }

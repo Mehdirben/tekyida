@@ -18,67 +18,64 @@ public struct ContactDetailView: View {
     }
 
     public var body: some View {
-        ZStack {
-            MeshGradientBackground()
+        // Transparent content so the glass sheet presentation shows through
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 16) {
+                    headerCard
 
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(spacing: 16) {
-                        headerCard
+                    // Title-Style Section Header
+                    HStack {
+                        Text("Activity Timeline")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                    .padding(.top, 4)
 
-                        // Title-Style Section Header
-                        HStack {
-                            Text("Activity Timeline")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 4)
-                        .padding(.top, 4)
+                    let directTxs = state.directTransactions(for: contact.id)
+                    let closedExps = state.closedExperiences(for: contact.id)
 
-                        let directTxs = state.directTransactions(for: contact.id)
-                        let closedExps = state.closedExperiences(for: contact.id)
+                    if directTxs.isEmpty && closedExps.isEmpty && !isAddingTransaction {
+                        GlassEmptyStateView(
+                            systemImage: "tray.fill",
+                            title: "No Transactions Yet",
+                            subtitle: "Tap the button below to add your first transaction."
+                        )
+                    } else {
+                        GlassEffectContainer {
+                            VStack(spacing: 10) {
+                                ForEach(closedExps) { exp in
+                                    closedExperienceRow(exp)
+                                }
 
-                        if directTxs.isEmpty && closedExps.isEmpty && !isAddingTransaction {
-                            GlassEmptyStateView(
-                                systemImage: "tray.fill",
-                                title: "No Transactions Yet",
-                                subtitle: "Tap the button below to add your first transaction."
-                            )
-                        } else {
-                            GlassEffectContainer {
-                                VStack(spacing: 10) {
-                                    ForEach(closedExps) { exp in
-                                        closedExperienceRow(exp)
-                                    }
-
-                                    ForEach(directTxs) { tx in
-                                        TransactionRowView(
-                                            transaction: tx,
-                                            isMasked: isLocalMasked || state.isAmountsHidden,
-                                            onEdit: { editingTransaction = tx },
-                                            onDelete: { deletingTransaction = tx }
-                                        )
-                                    }
+                                ForEach(directTxs) { tx in
+                                    TransactionRowView(
+                                        transaction: tx,
+                                        isMasked: isLocalMasked || state.isAmountsHidden,
+                                        onEdit: { editingTransaction = tx },
+                                        onDelete: { deletingTransaction = tx }
+                                    )
                                 }
                             }
                         }
                     }
-                    .padding(16)
-                }
-
-                // Floating Liquid Glass Action Bar
-                AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
-                    state.createTransaction(
-                        notebookId: contact.notebookId,
-                        contactId: contact.id,
-                        amount: amount,
-                        description: desc,
-                        date: date
-                    )
                 }
                 .padding(16)
             }
+
+            // Floating Liquid Glass Action Bar
+            AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
+                state.createTransaction(
+                    notebookId: contact.notebookId,
+                    contactId: contact.id,
+                    amount: amount,
+                    description: desc,
+                    date: date
+                )
+            }
+            .padding(16)
         }
         .navigationTitle(contact.name)
         .navigationBarTitleDisplayMode(.inline)

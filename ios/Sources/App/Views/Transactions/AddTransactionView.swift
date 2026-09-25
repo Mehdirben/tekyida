@@ -23,7 +23,7 @@ public struct AddTransactionView: View {
             if isAdding {
                 VStack(spacing: 14) {
                     // Row 1: Direction & Amount Field
-                    HStack(spacing: 10) {
+                    VStack(spacing: 10) {
                         Picker("Direction", selection: $isPositive) {
                             Text("They owe you").tag(true)
                             Text("You owe them").tag(false)

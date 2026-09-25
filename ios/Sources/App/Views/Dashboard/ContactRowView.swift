@@ -50,13 +50,6 @@ public struct ContactRowView: View {
                             .font(.headline)
                             .foregroundColor(.primary)
                             .lineLimit(1)
-
-                        if let phone = contact.phone, !phone.isEmpty {
-                            Text(phone)
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
                     }
 
                     Spacer()
