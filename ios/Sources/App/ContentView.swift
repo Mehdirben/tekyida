@@ -1,11 +1,11 @@
 import SwiftUI
 
 // MARK: - App Navigation Tabs (Modern Liquid Glass HIG)
-public enum AppTab: Int, CaseIterable, Identifiable {
+public enum AppTab: Int, CaseIterable, Identifiable, Sendable {
     case dashboard = 0
     case experiences = 1
-    case search = 2
-    case settings = 3
+    case settings = 2
+    case search = 3
 
     public var id: Int { rawValue }
 
@@ -13,17 +13,26 @@ public enum AppTab: Int, CaseIterable, Identifiable {
         switch self {
         case .dashboard: return "Dashboard"
         case .experiences: return "Experiences"
-        case .search: return "Search"
         case .settings: return "Settings"
+        case .search: return "Search"
         }
     }
 
     public var icon: String {
         switch self {
-        case .dashboard: return "person.2.crop.square.stack"
+        case .dashboard: return "house"
         case .experiences: return "safari"
-        case .search: return "magnifyingglass"
         case .settings: return "gearshape"
+        case .search: return "magnifyingglass"
+        }
+    }
+
+    public var activeIcon: String {
+        switch self {
+        case .dashboard: return "house.fill"
+        case .experiences: return "safari.fill"
+        case .settings: return "gearshape.fill"
+        case .search: return "magnifyingglass"
         }
     }
 }
@@ -36,39 +45,34 @@ struct ContentView: View {
 
     init(state: AppState? = nil) {
         self.state = state ?? AppState()
+        // Ensure legacy rectangular docked tab bar is hidden in favor of topmost Liquid Glass layer
+        UITabBar.appearance().isHidden = true
     }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             // Liquid Glass Multi-Tab Structure
             TabView(selection: $selectedTab) {
                 DashboardView()
-                    .tabItem {
-                        Label(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon)
-                    }
                     .tag(AppTab.dashboard)
 
                 ExperiencesView()
-                    .tabItem {
-                        Label(AppTab.experiences.title, systemImage: AppTab.experiences.icon)
-                    }
                     .tag(AppTab.experiences)
 
-                SearchView()
-                    .tabItem {
-                        Label(AppTab.search.title, systemImage: AppTab.search.icon)
-                    }
-                    .tag(AppTab.search)
-
                 SettingsView()
-                    .tabItem {
-                        Label(AppTab.settings.title, systemImage: AppTab.settings.icon)
-                    }
                     .tag(AppTab.settings)
+
+                SearchView()
+                    .tag(AppTab.search)
             }
+            .toolbar(.hidden, for: .tabBar)
             .tint(AppTheme.primary)
-            .tabBarMinimizeBehaviorOnScroll()
             .preferredColorScheme(resolvedColorScheme)
+
+            // Topmost Liquid Glass Layer: Floating Capsule Pill + Detached Search Bubble
+            FloatingLiquidGlassBar(selectedTab: $selectedTab)
+                .padding(.bottom, 12)
+                .zIndex(10)
 
             // Fullscreen App Lock Screen if configured & active
             if state.isAppLocked && state.isLockConfigured {

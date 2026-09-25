@@ -347,7 +347,7 @@ public struct LiquidGlassButtonStyle: ButtonStyle {
     }
 }
 
-// MARK: - ButtonStyle Extensions
+// MARK: - ButtonStyle Extensions (Apple Liquid Glass HIG Specification)
 public extension ButtonStyle where Self == LiquidGlassButtonStyle {
     static var liquidGlass: LiquidGlassButtonStyle {
         LiquidGlassButtonStyle(variant: .glass)
@@ -365,7 +365,27 @@ public extension ButtonStyle where Self == LiquidGlassButtonStyle {
         LiquidGlassButtonStyle(variant: .clear)
     }
 
+    static var glass: LiquidGlassButtonStyle {
+        LiquidGlassButtonStyle(variant: .glass)
+    }
+
+    static var glassProminent: LiquidGlassButtonStyle {
+        LiquidGlassButtonStyle(variant: .prominent)
+    }
+
+    static var glassDanger: LiquidGlassButtonStyle {
+        LiquidGlassButtonStyle(variant: .danger)
+    }
+
     static func liquidGlass(
+        variant: LiquidGlassButtonStyle.Variant = .glass,
+        size: LiquidGlassButtonStyle.Size = .large,
+        cornerRadius: CGFloat = AppTheme.radiusButton
+    ) -> LiquidGlassButtonStyle {
+        LiquidGlassButtonStyle(variant: variant, size: size, cornerRadius: cornerRadius)
+    }
+
+    static func glass(
         variant: LiquidGlassButtonStyle.Variant = .glass,
         size: LiquidGlassButtonStyle.Size = .large,
         cornerRadius: CGFloat = AppTheme.radiusButton
