@@ -93,7 +93,6 @@ struct ContentView: View {
                 SearchView()
             }
         }
-        .tint(AppTheme.primary)
     }
     #endif
 
@@ -116,7 +115,6 @@ struct ContentView: View {
                 .tabItem { Label(AppTab.search.title, systemImage: AppTab.search.icon) }
                 .tag(AppTab.search)
         }
-        .tint(AppTheme.primary)
     }
 
     private var resolvedColorScheme: ColorScheme? {

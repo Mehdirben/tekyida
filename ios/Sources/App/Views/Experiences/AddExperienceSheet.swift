@@ -94,7 +94,7 @@ public struct AddExperienceSheet: View {
             }
             .navigationTitle(initialExperience == nil ? "New Experience" : "Edit Experience")
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium, .large])
+            .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }

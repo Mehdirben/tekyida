@@ -51,7 +51,9 @@ public struct NotebookHeaderButton: View {
                     .font(.caption2.bold())
                     .foregroundColor(.secondary)
             }
-            .modifier(ConditionalPillBackground())
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .liquidGlassPill()
         }
     }
 
@@ -59,23 +61,3 @@ public struct NotebookHeaderButton: View {
         notebooks.first(where: { $0.id == activeNotebookId })?.name ?? "Select Notebook"
     }
 }
-
-// MARK: - Version-Adaptive Button Chrome
-/// Applies the material pill only on pre-iOS 26 (no double glass on the
-/// system Liquid Glass toolbar); plain on iOS 26+.
-struct ConditionalPillBackground: ViewModifier {
-    func body(content: Content) -> some View {
-        #if compiler(>=6.2)
-        if #available(iOS 26.0, *) {
-            content
-        } else {
-            content.liquidGlassPill()
-        }
-        #else
-        content.liquidGlassPill()
-        #endif
-    }
-}
-
-/// Scale press feedback only where the custom pill is used; iOS 26+ gets the
-/// native glass press interaction instead.

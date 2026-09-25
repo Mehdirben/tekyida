@@ -128,7 +128,7 @@ public struct NotebookManagerSheet: View {
             }
             .navigationTitle("Notebooks")
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium, .large])
+            .liquidGlassSheet(detents: [.fraction(0.94)])
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
@@ -216,7 +216,7 @@ public struct NotebookManagerSheet: View {
                         }) {
                             Image(systemName: "pencil")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(AppTheme.primary)
                                 .frame(width: 30, height: 30)
                                 .liquidGlassPill()
                         }
@@ -227,7 +227,7 @@ public struct NotebookManagerSheet: View {
                 }) {
                     Image(systemName: isArchived ? "tray.and.arrow.up" : "archivebox")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppTheme.primary)
                         .frame(width: 30, height: 30)
                         .liquidGlassPill()
                 }

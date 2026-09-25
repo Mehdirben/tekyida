@@ -78,7 +78,7 @@ public struct QuickStatsView: View {
                     }) {
                         Image(systemName: isHidden ? "eye.slash.fill" : "eye.fill")
                             .font(.subheadline.bold())
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppTheme.primary)
                             .frame(width: 36, height: 36)
                             .liquidGlassPill()
                     }

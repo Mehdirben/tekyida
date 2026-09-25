@@ -9,6 +9,7 @@ struct TekyidaApp: App {
         WindowGroup {
             ContentView(state: state)
                 .environmentObject(state)
+                .tint(AppTheme.primary)
         }
     }
 }

@@ -21,8 +21,9 @@ public struct BrandLogoHeader: View {
 }
 
 // MARK: - Shared Tekyida Navigation Bar Modifier
-// Trailing notebook dropdown menu only; the brand lives in the scroll
-// content (top-left) so it carries no toolbar glass.
+// Custom top line: brand (plain, no glass) left + notebook menu right.
+// Built with safeAreaInset over the native bar material, since iOS 26+
+// toolbars put Liquid Glass chrome on every toolbar item.
 public struct TekyidaNavigationBarModifier: ViewModifier {
     let notebooks: [Notebook]
     @Binding var activeNotebookId: String?
@@ -40,19 +41,23 @@ public struct TekyidaNavigationBarModifier: ViewModifier {
 
     public func body(content: Content) -> some View {
         content
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+            .toolbar(.hidden, for: .navigationBar)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                HStack(spacing: 12) {
                     BrandLogoHeader()
-                }
 
-                ToolbarItem(placement: .topBarTrailing) {
+                    Spacer()
+
                     NotebookHeaderButton(
                         notebooks: notebooks,
                         activeNotebookId: $activeNotebookId,
                         onManage: onManageNotebooks
                     )
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 10)
+                .background(.bar)
             }
     }
 }

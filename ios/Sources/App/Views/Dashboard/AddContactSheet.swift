@@ -83,7 +83,7 @@ public struct AddContactSheet: View {
             }
             .navigationTitle(initialContact == nil ? "New Contact" : "Edit Contact")
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium, .large])
+            .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
