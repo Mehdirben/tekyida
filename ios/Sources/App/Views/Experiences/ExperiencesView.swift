@@ -57,7 +57,7 @@ public struct ExperiencesView: View {
             .sheet(isPresented: $showAddExperience) {
                 if let activeNb = state.activeNotebook {
                     let nbContacts = state.contacts.filter { $0.notebookId == activeNb.id }
-                    AddExperienceSheet(contacts: nbContacts) { name, contactId in\
+                    AddExperienceSheet(contacts: nbContacts) { name, contactId in
                         state.createExperience(notebookId: activeNb.id, name: name, contactId: contactId)
                     }
                 }

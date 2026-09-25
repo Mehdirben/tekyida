@@ -13,6 +13,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # -------------------------------------------------------------
   # Job 1: Quality Gate & Change Detection
@@ -39,7 +42,7 @@ jobs:
 
       - name: Detect Changed Paths
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             backend:
@@ -72,13 +75,13 @@ jobs:
 
       - name: Set up Node.js runtime
         if: github.ref == 'refs/heads/main' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
       - name: Setup npm cache for quality checks
         if: github.ref == 'refs/heads/main' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: qg-npm-${{ runner.os }}-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json') }}
@@ -222,7 +225,7 @@ jobs:
 
       # Caches Homebrew downloads to avoid re-downloading bottles on macOS
       - name: Cache Homebrew Downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/Library/Caches/Homebrew
           key: ${{ runner.os }}-brew-xcodegen-${{ hashFiles('ios/project.yml') }}
@@ -239,7 +242,7 @@ jobs:
 
       # Caches Xcode DerivedData for faster simulator test & build times
       - name: Cache Xcode DerivedData
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/Library/Developer/Xcode/DerivedData
           key: ${{ runner.os }}-derived-data-${{ hashFiles('ios/project.yml', 'ios/Sources/**', 'ios/Tests/**') }}
@@ -385,7 +388,7 @@ jobs:
 
       # Sets up Gradle with caching for fast incremental builds
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Ensure Gradle wrapper is executable
         run: chmod +x gradlew
@@ -437,12 +440,12 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Set up Node.js runtime for web
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
       - name: Setup Web npm cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: web-npm-${{ runner.os }}-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json') }}
@@ -453,7 +456,7 @@ jobs:
           npm ci --prefix frontend --prefer-offline
 
       - name: Cache Next.js Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: frontend/.next/cache
           key: ${{ runner.os }}-nextjs-${{ hashFiles('frontend/package-lock.json', 'frontend/app/**', 'frontend/components/**', 'frontend/lib/**') }}
@@ -462,7 +465,7 @@ jobs:
 
       - name: Cache Playwright Browser Binaries
         id: playwright-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
