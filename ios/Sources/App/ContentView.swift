@@ -30,13 +30,18 @@ public enum AppTab: Int, CaseIterable, Identifiable {
 
 // MARK: - Root Content View
 struct ContentView: View {
-    @EnvironmentObject private var state: AppState
+    @ObservedObject var state: AppState
     @Environment(\.scenePhase) private var scenePhase
+    @State private var selectedTab: AppTab = .dashboard
+
+    init(state: AppState? = nil) {
+        self.state = state ?? AppState()
+    }
 
     var body: some View {
         ZStack {
             // Liquid Glass Multi-Tab Structure
-            TabView(selection: $state.selectedTab) {
+            TabView(selection: $selectedTab) {
                 DashboardView()
                     .tabItem {
                         Label(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon)
@@ -72,6 +77,7 @@ struct ContentView: View {
                     .zIndex(100)
             }
         }
+        .environmentObject(state)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: state.isAppLocked)
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {
