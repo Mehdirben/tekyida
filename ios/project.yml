@@ -7,10 +7,7 @@ options:
 
 settings:
   base:
-    PRODUCT_NAME: Tekyida
     SWIFT_VERSION: "5.10"
-    GENERATE_INFOPLIST_FILE: false
-    INFOPLIST_FILE: Sources/App/Info.plist
 
 targets:
   Tekyida:
@@ -20,7 +17,11 @@ targets:
       - path: Sources/App
     settings:
       base:
+        PRODUCT_NAME: Tekyida
+        PRODUCT_MODULE_NAME: Tekyida
         PRODUCT_BUNDLE_IDENTIFIER: com.tekyida.app
+        GENERATE_INFOPLIST_FILE: false
+        INFOPLIST_FILE: Sources/App/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         CODE_SIGN_STYLE: Manual
@@ -37,7 +38,10 @@ targets:
       - target: Tekyida
     settings:
       base:
+        PRODUCT_NAME: TekyidaTests
+        PRODUCT_MODULE_NAME: TekyidaTests
         PRODUCT_BUNDLE_IDENTIFIER: com.tekyida.tests
+        GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Manual
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
@@ -51,7 +55,10 @@ targets:
       - target: Tekyida
     settings:
       base:
+        PRODUCT_NAME: TekyidaUITests
+        PRODUCT_MODULE_NAME: TekyidaUITests
         PRODUCT_BUNDLE_IDENTIFIER: com.tekyida.uitests
+        GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Manual
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
