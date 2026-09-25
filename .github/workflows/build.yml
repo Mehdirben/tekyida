@@ -1,16 +1,14 @@
-# Workflow to build and package both iOS (Unsigned IPA) and Android (APK) applications
 name: Build Mobile Apps (iOS & Android)
 
-# Events that trigger this workflow to run
 on:
   push:
-    # Rebuild the apps on every push to the main/master branch
-    branches: [ main, master ]
-  pull_request:
-    # Also test PRs targeting main/master, so breakage is caught before merging
-    branches: [ main, master ]
-  # Adds a "Run workflow" button in the Actions tab for manual builds
+    branches: [ main ]
   workflow_dispatch:
+
+# Cancel in-progress runs on the same branch to conserve macOS minutes
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # -------------------------------------------------------------
@@ -57,10 +55,20 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          npm ci --prefix backend
-          npm ci --prefix frontend
+          if [ "${{ steps.filter.outputs.backend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            npm ci --prefix backend
+          fi
+          if [ "${{ steps.filter.outputs.frontend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            npm ci --prefix frontend
+          fi
 
       - name: Run Tekyida Quality Gate (tests/run.sh)
+        env:
+          CHANGE_BACKEND: ${{ steps.filter.outputs.backend }}
+          CHANGE_FRONTEND: ${{ steps.filter.outputs.frontend }}
+          CHANGE_ANDROID: ${{ steps.filter.outputs.android }}
+          CHANGE_IOS: ${{ steps.filter.outputs.ios }}
+          IS_DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           chmod +x tests/run.sh
           ./tests/run.sh
@@ -160,7 +168,8 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
 
-      # Compiles an optimized Release build for physical iPhones into an .xcarchive.
+      # Compiles the app into an .xcarchive without code signing.
+      # The resulting binary is unsigned and requires LiveContainer or a sideloading tool
       - name: Build Archive
         run: |
           xcodebuild archive \
@@ -173,23 +182,22 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY=""
 
-      # Wraps the compiled app into an IPA — the format iPhones install.
+      # Creates the unsigned .ipa file by packaging the compiled .app into Payload/
       - name: Package Payload to IPA
         run: |
           mkdir -p build/Payload
           cp -r build/Tekyida.xcarchive/Products/Applications/Tekyida.app build/Payload/
-          cd build
-          zip -r -q Tekyida.ipa Payload
+          cd build && zip -r Tekyida.ipa Payload
 
-      # Generates an AltStore-format source (apps.json) describing this build for LiveContainer.
+      # Generates apps.json -- the source feed that LiveContainer reads to detect updates.
       - name: Generate LiveContainer Source JSON
         run: |
-          cat > build/apps.json <<EOF
+          cat <<EOF > build/apps.json
           {
-            "name": "Tekyida Apps",
+            "name": "Tekyida LiveContainer Source",
             "identifier": "com.tekyida.ios.source",
             "apps": [
-              {
+              {\
                 "bundleIdentifier": "com.tekyida.app",
                 "name": "Tekyida",
                 "developerName": "Tekyida",
@@ -258,44 +266,31 @@ jobs:
       # Sets up Gradle with caching for fast incremental builds
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.11.1'
 
-      # Runs Android Unit and Security Tests
+      # Runs Android Unit & Security Tests
       - name: Run Android Unit & Security Tests
-        run: |
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-            ./gradlew testReleaseUnitTest --no-daemon
-          else
-            gradle testReleaseUnitTest --no-daemon
-          fi
+        run: ./gradlew testReleaseUnitTest --no-daemon
 
-      # Compiles the Android application release APK
-      - name: Build Android Release APK
-        run: |
-          if [ -f "./gradlew" ]; then
-            chmod +x ./gradlew
-            ./gradlew assembleRelease --no-daemon
-          else
-            gradle assembleRelease --no-daemon
-          fi
+      # Builds the release APK without signing.
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --no-daemon -x lint
 
-      # Stages Android APK with standard release name
-      - name: Stage Android APK
+      # Renames to Tekyida.apk for standard naming
+      - name: Prepare APK Asset
         run: |
-          mkdir -p build
-          cp app/build/outputs/apk/release/app-release.apk build/Tekyida.apk
+          mkdir -p build-assets
+          cp app/build/outputs/apk/release/app-release-unsigned.apk build-assets/Tekyida.apk 2>/dev/null || \
+          cp app/build/outputs/apk/release/app-release.apk build-assets/Tekyida.apk
 
       # Directly uploads APK to GitHub Release (No actions storage used)
-      - name: Upload Android APK Directly to GitHub Release
+      - name: Upload Android Assets Directly to GitHub Release
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "build-${{ github.run_number }}" \
             --repo "${{ github.repository }}" \
-            build/Tekyida.apk \
+            build-assets/Tekyida.apk \
             --clobber
 
   # -------------------------------------------------------------

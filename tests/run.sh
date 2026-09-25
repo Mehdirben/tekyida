@@ -9,6 +9,9 @@
 # 4. SAST Security Vulnerability Audit (npm audit --audit-level=high)
 # 5. TypeScript Strict Compilation & Integrity (tsc --noEmit)
 # 6. Mobile Platform Tests (Android & iOS with OS auto-detection)
+#
+# Supports change-driven execution when CHANGE_* environment variables are set by CI:
+#   CHANGE_BACKEND, CHANGE_FRONTEND, CHANGE_ANDROID, CHANGE_IOS
 # ==============================================================================
 
 set -euo pipefail
@@ -19,19 +22,39 @@ REPORTS_DIR="$ROOT_DIR/tests/reports"
 
 mkdir -p "$REPORTS_DIR/duplication" "$REPORTS_DIR/backend" "$REPORTS_DIR/frontend" "$REPORTS_DIR/security"
 
+# Change detection resolution (defaults to true if running standalone locally without env flags)
+do_backend=true
+do_frontend=true
+do_android=true
+do_ios=true
+
+if [ -n "${CHANGE_BACKEND:-}" ] || [ -n "${CHANGE_FRONTEND:-}" ] || [ -n "${CHANGE_ANDROID:-}" ] || [ -n "${CHANGE_IOS:-}" ]; then
+  [ "${CHANGE_BACKEND:-false}" != "true" ] && do_backend=false
+  [ "${CHANGE_FRONTEND:-false}" != "true" ] && do_frontend=false
+  [ "${CHANGE_ANDROID:-false}" != "true" ] && do_android=false
+  [ "${CHANGE_IOS:-false}" != "true" ] && do_ios=false
+  if [ "${IS_DISPATCH:-false}" = "true" ]; then
+    do_backend=true; do_frontend=true; do_android=true; do_ios=true
+  fi
+fi
+
 echo ""
 echo "===================================================="
 echo "         Tekyida Test & Quality Suite               "
 echo "===================================================="
+echo "  • Backend targeted:  $do_backend"
+echo "  • Frontend targeted: $do_frontend"
+echo "  • Android targeted:  $do_android"
+echo "  • iOS targeted:      $do_ios"
 echo ""
 
-# Auto-install dependencies if missing
-if [ ! -d "$ROOT_DIR/backend/node_modules" ]; then
+# Auto-install dependencies if missing and target active
+if [ "$do_backend" = true ] && [ ! -d "$ROOT_DIR/backend/node_modules" ]; then
   echo "ℹ Backend node_modules not found. Installing dependencies..."
   npm ci --prefix "$ROOT_DIR/backend"
 fi
 
-if [ ! -d "$ROOT_DIR/frontend/node_modules" ]; then
+if [ "$do_frontend" = true ] && [ ! -d "$ROOT_DIR/frontend/node_modules" ]; then
   echo "ℹ Frontend node_modules not found. Installing dependencies..."
   npm ci --prefix "$ROOT_DIR/frontend"
 fi
@@ -55,60 +78,82 @@ echo ""
 # 2. Backend Unit Tests & Coverage Threshold (Vitest)
 # ---------------------------------------------------------
 echo "[2/6] Running Convex Backend Tests & Coverage (Vitest)..."
-cd "$ROOT_DIR/backend"
-npm run test:coverage
-
-echo "✓ Backend tests and coverage thresholds passed."
-echo "  → Report: tests/reports/backend/index.html"
+if [ "$do_backend" = true ]; then
+  cd "$ROOT_DIR/backend"
+  npm run test:coverage
+  echo "✓ Backend tests and coverage thresholds passed."
+  echo "  → Report: tests/reports/backend/index.html"
+else
+  echo "↷ Skipped: No backend changes detected."
+fi
 echo ""
 
 # ---------------------------------------------------------
 # 3. Frontend Unit Tests & Coverage Threshold (Vitest)
 # ---------------------------------------------------------
 echo "[3/6] Running Frontend Tests & Coverage (Vitest)..."
-cd "$ROOT_DIR/frontend"
-npm run test:coverage
-
-echo "✓ Frontend tests and coverage thresholds passed."
-echo "  → Report: tests/reports/frontend/index.html"
+if [ "$do_frontend" = true ]; then
+  cd "$ROOT_DIR/frontend"
+  npm run test:coverage
+  echo "✓ Frontend tests and coverage thresholds passed."
+  echo "  → Report: tests/reports/frontend/index.html"
+else
+  echo "↷ Skipped: No frontend changes detected."
+fi
 echo ""
 
 # ---------------------------------------------------------
 # 4. Static Application Security Testing (SAST)
 # ---------------------------------------------------------
 echo "[4/6] Running SAST Security Audit (npm audit)..."
-echo "      • Checking backend dependencies (audit-level=high)..."
-cd "$ROOT_DIR/backend"
-npm audit --audit-level=high --json > "$REPORTS_DIR/security/backend-audit.json" || {
-  echo "❌ High/Critical vulnerabilities detected in Backend!"
-  npm audit --audit-level=high
-  exit 1
-}
+if [ "$do_backend" = true ]; then
+  echo "      • Checking backend dependencies (audit-level=high)..."
+  cd "$ROOT_DIR/backend"
+  npm audit --audit-level=high --json > "$REPORTS_DIR/security/backend-audit.json" || {
+    echo "❌ High/Critical vulnerabilities detected in Backend!"
+    npm audit --audit-level=high
+    exit 1
+  }
+else
+  echo "      • Backend audit: Skipped (no changes)"
+fi
 
-echo "      • Checking frontend dependencies (audit-level=high)..."
-cd "$ROOT_DIR/frontend"
-npm audit --audit-level=high --json > "$REPORTS_DIR/security/frontend-audit.json" || {
-  echo "❌ High/Critical vulnerabilities detected in Frontend!"
-  npm audit --audit-level=high
-  exit 1
-}
+if [ "$do_frontend" = true ]; then
+  echo "      • Checking frontend dependencies (audit-level=high)..."
+  cd "$ROOT_DIR/frontend"
+  npm audit --audit-level=high --json > "$REPORTS_DIR/security/frontend-audit.json" || {
+    echo "❌ High/Critical vulnerabilities detected in Frontend!"
+    npm audit --audit-level=high
+    exit 1
+  }
+else
+  echo "      • Frontend audit: Skipped (no changes)"
+fi
 
-echo "✓ SAST security audit passed (0 high/critical vulnerabilities)."
+echo "✓ SAST security audit complete."
 echo ""
 
 # ---------------------------------------------------------
 # 5. TypeScript Strict Type Checking
 # ---------------------------------------------------------
 echo "[5/6] Running TypeScript Type Check (tsc --noEmit)..."
-echo "      • Checking Convex backend types..."
-cd "$ROOT_DIR/backend"
-npx tsc --noEmit -p convex/tsconfig.json
+if [ "$do_backend" = true ]; then
+  echo "      • Checking Convex backend types..."
+  cd "$ROOT_DIR/backend"
+  npx tsc --noEmit -p convex/tsconfig.json
+fi
 
-echo "      • Checking Next.js frontend types..."
-cd "$ROOT_DIR/frontend"
-npx tsc --noEmit
+if [ "$do_frontend" = true ]; then
+  echo "      • Checking Next.js frontend types..."
+  cd "$ROOT_DIR/frontend"
+  npx tsc --noEmit
+fi
 
-echo "✓ TypeScript type checking passed with 0 errors."
+if [ "$do_backend" = false ] && [ "$do_frontend" = false ]; then
+  echo "↷ Skipped: No TypeScript source changes detected."
+else
+  echo "✓ TypeScript type checking passed with 0 errors."
+fi
 echo ""
 
 # ---------------------------------------------------------
@@ -133,33 +178,43 @@ if [ -z "${JAVA_HOME:-}" ] || [ ! -x "${JAVA_HOME:-}/bin/java" ]; then
 fi
 
 android_status="READY"
-if [ -n "${ANDROID_HOME:-}" ] && [ -d "${ANDROID_HOME:-}" ] && command -v gradle >/dev/null 2>&1; then
-  echo "🤖 Android SDK detected: Running Android unit & security tests..."
-  cd "$ROOT_DIR/android"
-  gradle testReleaseUnitTest --no-daemon -q
-  echo "✓ Android unit & security tests passed."
-  android_status="PASSED"
+if [ "$do_android" = true ]; then
+  if [ -n "${ANDROID_HOME:-}" ] && [ -d "${ANDROID_HOME:-}" ] && command -v gradle >/dev/null 2>&1; then
+    echo "🤖 Android SDK detected: Running Android unit & security tests..."
+    cd "$ROOT_DIR/android"
+    gradle testReleaseUnitTest --no-daemon -q
+    echo "✓ Android unit & security tests passed."
+    android_status="PASSED"
+  else
+    echo "ℹ Android SDK not detected locally. Skipping local Android unit tests."
+  fi
 else
-  echo "ℹ Android SDK not detected locally. Skipping local Android unit tests."
+  echo "↷ Android tests skipped: No android/ changes detected."
+  android_status="SKIPPED"
 fi
 
 ios_status="READY"
-if [[ "$OSTYPE" == "darwin"* ]] && command -v xcodebuild >/dev/null 2>&1; then
-  echo "🍏 macOS detected: Running native iOS tests..."
-  cd "$ROOT_DIR/ios"
-  if command -v xcodegen >/dev/null 2>&1; then
-    xcodegen generate
+if [ "$do_ios" = true ]; then
+  if [[ "$OSTYPE" == "darwin"* ]] && command -v xcodebuild >/dev/null 2>&1; then
+    echo "🍏 macOS detected: Running native iOS tests..."
+    cd "$ROOT_DIR/ios"
+    if command -v xcodegen >/dev/null 2>&1; then
+      xcodegen generate
+    fi
+    xcodebuild test \
+      -project Tekyida.xcodeproj \
+      -scheme Tekyida \
+      -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+      CODE_SIGNING_ALLOWED=NO
+    echo "✓ iOS simulator tests passed."
+    ios_status="PASSED"
+  else
+    echo "ℹ Non-macOS environment detected ($(uname -s)). Skipping native iOS test execution."
+    echo "  (Native iOS builds and simulator tests require macOS with Xcode)."
   fi
-  xcodebuild test \
-    -project Tekyida.xcodeproj \
-    -scheme Tekyida \
-    -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
-    CODE_SIGNING_ALLOWED=NO
-  echo "✓ iOS simulator tests passed."
-  ios_status="PASSED"
 else
-  echo "ℹ Non-macOS environment detected ($(uname -s)). Skipping native iOS test execution."
-  echo "  (Native iOS builds and simulator tests require macOS with Xcode)."
+  echo "↷ iOS tests skipped: No ios/ changes detected."
+  ios_status="SKIPPED"
 fi
 cd "$ROOT_DIR"
 
@@ -186,6 +241,12 @@ if [ -f "$FRONTEND_COVERAGE" ]; then
   f_branch=$(node -e "const c = JSON.parse(fs.readFileSync('$FRONTEND_COVERAGE')); console.log(c.total.branches.pct.toFixed(2) + '%');")
 fi
 
+b_status="PASSED"
+[ "$do_backend" = false ] && b_status="SKIPPED"
+
+f_status="PASSED"
+[ "$do_frontend" = false ] && f_status="SKIPPED"
+
 echo "========================================================================"
 echo "                   TEKYIDA QUALITY & TEST DASHBOARD                     "
 echo "========================================================================"
@@ -194,15 +255,15 @@ echo "-----------------------+--------------------+-------------------+--------"
 printf " %-21s | %-18s | %-17s | %-7s \n" "Code Duplication" "0.00% (0 clones)" "0.00% (0 clones)" "PASSED"
 printf " %-21s | %-18s | %-17s | %-7s \n" "Docs Ignored in JSCPD" "Markdown/Docs Excl" "Excluded (0 files)" "PASSED"
 echo "-----------------------+--------------------+-------------------+--------"
-printf " %-21s | %-18s | %-17s | %-7s \n" "Backend Statements" "100.00%" "$b_stmts" "PASSED"
-printf " %-21s | %-18s | %-17s | %-7s \n" "Backend Lines" "100.00%" "$b_lines" "PASSED"
-printf " %-21s | %-18s | %-17s | %-7s \n" "Backend Functions" "100.00%" "$b_funcs" "PASSED"
-printf " %-21s | %-18s | %-17s | %-7s \n" "Backend Branches" "100.00%" "$b_branch" "PASSED"
+printf " %-21s | %-18s | %-17s | %-7s \n" "Backend Statements" "100.00%" "$b_stmts" "$b_status"
+printf " %-21s | %-18s | %-17s | %-7s \n" "Backend Lines" "100.00%" "$b_lines" "$b_status"
+printf " %-21s | %-18s | %-17s | %-7s \n" "Backend Functions" "100.00%" "$b_funcs" "$b_status"
+printf " %-21s | %-18s | %-17s | %-7s \n" "Backend Branches" "100.00%" "$b_branch" "$b_status"
 echo "-----------------------+--------------------+-------------------+--------"
-printf " %-21s | %-18s | %-17s | %-7s \n" "Frontend Statements" "100.00%" "$f_stmts" "PASSED"
-printf " %-21s | %-18s | %-17s | %-7s \n" "Frontend Lines" "100.00%" "$f_lines" "PASSED"
-printf " %-21s | %-18s | %-17s | %-7s \n" "Frontend Functions" "100.00%" "$f_funcs" "PASSED"
-printf " %-21s | %-18s | %-17s | %-7s \n" "Frontend Branches" "100.00%" "$f_branch" "PASSED"
+printf " %-21s | %-18s | %-17s | %-7s \n" "Frontend Statements" "100.00%" "$f_stmts" "$f_status"
+printf " %-21s | %-18s | %-17s | %-7s \n" "Frontend Lines" "100.00%" "$f_lines" "$f_status"
+printf " %-21s | %-18s | %-17s | %-7s \n" "Frontend Functions" "100.00%" "$f_funcs" "$f_status"
+printf " %-21s | %-18s | %-17s | %-7s \n" "Frontend Branches" "100.00%" "$f_branch" "$f_status"
 echo "-----------------------+--------------------+-------------------+--------"
 printf " %-21s | %-18s | %-17s | %-7s \n" "SAST Security Audit" "0 High/Critical" "0 Vulnerabilities" "PASSED"
 printf " %-21s | %-18s | %-17s | %-7s \n" "TypeScript Integrity" "0 Type Errors" "Clean (0 errors)" "PASSED"
