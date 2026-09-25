@@ -1,7 +1,7 @@
 import Foundation
 
 // MARK: - Notebook Model
-public struct Notebook: Identifiable, Codable, Equatable, Hashable {
+public struct Notebook: Identifiable, Codable, Equatable, Hashable, Sendable {
     public let id: String
     public var name: String
     public var order: Int?
@@ -24,7 +24,7 @@ public struct Notebook: Identifiable, Codable, Equatable, Hashable {
 }
 
 // MARK: - Contact Model
-public struct Contact: Identifiable, Codable, Equatable, Hashable {
+public struct Contact: Identifiable, Codable, Equatable, Hashable, Sendable {
     public let id: String
     public var notebookId: String
     public var name: String
@@ -47,7 +47,7 @@ public struct Contact: Identifiable, Codable, Equatable, Hashable {
 }
 
 // MARK: - Experience Model
-public struct Experience: Identifiable, Codable, Equatable, Hashable {
+public struct Experience: Identifiable, Codable, Equatable, Hashable, Sendable {
     public let id: String
     public var notebookId: String
     public var contactId: String?
@@ -73,7 +73,7 @@ public struct Experience: Identifiable, Codable, Equatable, Hashable {
 }
 
 // MARK: - Transaction Model
-public struct Transaction: Identifiable, Codable, Equatable, Hashable {
+public struct Transaction: Identifiable, Codable, Equatable, Hashable, Sendable {
     public let id: String
     public var notebookId: String
     public var contactId: String?
@@ -105,7 +105,7 @@ public struct Transaction: Identifiable, Codable, Equatable, Hashable {
 }
 
 // MARK: - Settings Enums
-public enum AppLanguage: String, Codable, CaseIterable {
+public enum AppLanguage: String, Codable, CaseIterable, Sendable {
     case english = "en"
     case french = "fr"
 
@@ -117,7 +117,7 @@ public enum AppLanguage: String, Codable, CaseIterable {
     }
 }
 
-public enum AppThemeMode: String, Codable, CaseIterable {
+public enum AppThemeMode: String, Codable, CaseIterable, Sendable {
     case system = "system"
     case light = "light"
     case dark = "dark"

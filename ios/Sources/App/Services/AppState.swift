@@ -499,12 +499,12 @@ public final class AppState: ObservableObject {
         experiences = [dinner, gifts]
 
         let now = Date()
-        transactions = [\
-            Transaction(notebookId: personal.id, contactId: adam.id, amount: 250.0, description: "Lent for Groceries", date: now.addingTimeInterval(-86400 * 2)),\
-            Transaction(notebookId: personal.id, contactId: sara.id, amount: -120.0, description: "Coffee & snacks", date: now.addingTimeInterval(-86400)),\
-            Transaction(notebookId: personal.id, contactId: karim.id, amount: 480.0, description: "Concert tickets", date: now.addingTimeInterval(-86400 * 3)),\
-            Transaction(notebookId: personal.id, experienceId: dinner.id, amount: 320.0, description: "Main course & dessert", date: now.addingTimeInterval(-3600 * 5)),\
-            Transaction(notebookId: personal.id, contactId: sara.id, experienceId: gifts.id, amount: 150.0, description: "Shared present", date: now.addingTimeInterval(-86400 * 5))\
+        transactions = [
+            Transaction(notebookId: personal.id, contactId: adam.id, amount: 250.0, description: "Lent for Groceries", date: now.addingTimeInterval(-86400 * 2)),
+            Transaction(notebookId: personal.id, contactId: sara.id, amount: -120.0, description: "Coffee & snacks", date: now.addingTimeInterval(-86400)),
+            Transaction(notebookId: personal.id, contactId: karim.id, amount: 480.0, description: "Concert tickets", date: now.addingTimeInterval(-86400 * 3)),
+            Transaction(notebookId: personal.id, experienceId: dinner.id, amount: 320.0, description: "Main course & dessert", date: now.addingTimeInterval(-3600 * 5)),
+            Transaction(notebookId: personal.id, contactId: sara.id, experienceId: gifts.id, amount: 150.0, description: "Shared present", date: now.addingTimeInterval(-86400 * 5))
         ]
         saveData()
     }

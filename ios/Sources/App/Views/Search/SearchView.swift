@@ -54,13 +54,13 @@ public struct SearchView: View {
             }
             .navigationTitle("Search")
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(item: $selectedContact) { contact in\
-                ContactDetailSheet(contact: contact)\
-                    .environmentObject(state)\
+            .sheet(item: $selectedContact) { contact in
+                ContactDetailSheet(contact: contact)
+                    .environmentObject(state)
             }
-            .sheet(item: $selectedExperience) { exp in\
-                ExperienceDetailSheet(experience: exp)\
-                    .environmentObject(state)\
+            .sheet(item: $selectedExperience) { exp in
+                ExperienceDetailSheet(experience: exp)
+                    .environmentObject(state)
             }
             .transactionModals(
                 editingTransaction: $editingTransaction,

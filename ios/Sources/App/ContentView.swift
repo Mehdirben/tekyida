@@ -1,11 +1,13 @@
 import SwiftUI
 
-// MARK: - Navigation Tab Enum
-public enum AppTab: Int, CaseIterable {
+// MARK: - App Navigation Tabs (Modern Liquid Glass HIG)
+public enum AppTab: Int, CaseIterable, Identifiable {
     case dashboard = 0
     case experiences = 1
     case search = 2
     case settings = 3
+
+    public var id: Int { rawValue }
 
     public var title: String {
         switch self {
@@ -18,59 +20,56 @@ public enum AppTab: Int, CaseIterable {
 
     public var icon: String {
         switch self {
-        case .dashboard: return "book.closed.fill"
-        case .experiences: return "safari.fill"
+        case .dashboard: return "person.2.crop.square.stack"
+        case .experiences: return "safari"
         case .search: return "magnifyingglass"
-        case .settings: return "gearshape.fill"
+        case .settings: return "gearshape"
         }
     }
 }
 
 // MARK: - Root Content View
 struct ContentView: View {
-    @ObservedObject var state: AppState
+    @EnvironmentObject private var state: AppState
     @Environment(\.scenePhase) private var scenePhase
-    @State private var selectedTab: AppTab = .dashboard
-
-    init(state: AppState? = nil) {
-        self.state = state ?? AppState()
-    }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            DashboardView()
-                .tabItem {
-                    Label(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon)
-                }
-                .tag(AppTab.dashboard)
+        ZStack {
+            // Liquid Glass Multi-Tab Structure
+            TabView(selection: $state.selectedTab) {
+                DashboardView()
+                    .tabItem {
+                        Label(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon)
+                    }
+                    .tag(AppTab.dashboard)
 
-            ExperiencesView()
-                .tabItem {
-                    Label(AppTab.experiences.title, systemImage: AppTab.experiences.icon)
-                }
-                .tag(AppTab.experiences)
+                ExperiencesView()
+                    .tabItem {
+                        Label(AppTab.experiences.title, systemImage: AppTab.experiences.icon)
+                    }
+                    .tag(AppTab.experiences)
 
-            SearchView()
-                .tabItem {
-                    Label(AppTab.search.title, systemImage: AppTab.search.icon)
-                }
-                .tag(AppTab.search)
+                SearchView()
+                    .tabItem {
+                        Label(AppTab.search.title, systemImage: AppTab.search.icon)
+                    }
+                    .tag(AppTab.search)
 
-            SettingsView()
-                .tabItem {
-                    Label(AppTab.settings.title, systemImage: AppTab.settings.icon)
-                }
-                .tag(AppTab.settings)
-        }
-        .tabBarMinimizeBehaviorOnScroll()
-        .tint(AppTheme.primary)
-        .environmentObject(state)
-        .preferredColorScheme(resolvedColorScheme)
-        .overlay {
-            if state.isAppLocked {
+                SettingsView()
+                    .tabItem {
+                        Label(AppTab.settings.title, systemImage: AppTab.settings.icon)
+                    }
+                    .tag(AppTab.settings)
+            }
+            .tint(AppTheme.primary)
+            .tabBarMinimizeBehaviorOnScroll()
+            .preferredColorScheme(resolvedColorScheme)
+
+            // Fullscreen App Lock Screen if configured & active
+            if state.isAppLocked && state.isLockConfigured {
                 AppLockView()
-                    .environmentObject(state)
-                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                    .transition(.opacity)
+                    .zIndex(100)
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: state.isAppLocked)
@@ -86,13 +85,13 @@ struct ContentView: View {
         case .system:
             return nil
         case .light:
-            return .light\
+            return .light
         case .dark:
-            return .dark\
-        }\
-    }\
-}\
-\
-#Preview {\
-    ContentView()\
-}\
+            return .dark
+        }
+    }
+}
+
+#Preview {
+    ContentView()
+}

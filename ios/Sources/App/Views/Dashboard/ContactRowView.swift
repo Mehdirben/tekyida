@@ -26,7 +26,7 @@ public struct ContactRowView: View {
     }
 
     public var body: some View {
-        HStack(spacing: 12) {\
+        HStack(spacing: 12) {
             // Main tappable area
             Button(action: {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -44,39 +44,35 @@ public struct ContactRowView: View {
                             .foregroundColor(AppTheme.primary)
                     }
 
-                    // Name, Phone & Inline Balance
-                    VStack(alignment: .leading, spacing: 3) {
+                    // Contact Info
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(contact.name)
-                            .font(.subheadline.bold())
+                            .font(.headline)
                             .foregroundColor(.primary)
                             .lineLimit(1)
 
-                        HStack(spacing: 8) {
-                            if let phone = contact.phone, !phone.isEmpty {
-                                HStack(spacing: 3) {
-                                    Image(systemName: "phone.fill")
-                                        .font(.system(size: 9))
-                                    Text(phone)
-                                        .font(.caption2)
-                                }
+                        if let phone = contact.phone, !phone.isEmpty {
+                            Text(phone)
+                                .font(.caption2)
                                 .foregroundColor(.secondary)
-                            }
-
-                            AmountView(
-                                amount: balance,
-                                isHidden: isMasked,
-                                font: .caption2,
-                                fontWeight: .bold
-                            )
+                                .lineLimit(1)
                         }
                     }
 
                     Spacer()
+
+                    // Amount
+                    AmountView(
+                        amount: balance,
+                        isHidden: isMasked,
+                        font: .subheadline,
+                        fontWeight: .bold
+                    )
                 }
             }
             .buttonStyle(ScaleTouchStyle())
 
-            // Right Actions: Edit, Delete, Chevron
+            // Circular Glass Action Buttons
             HStack(spacing: 6) {
                 Button(action: {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()

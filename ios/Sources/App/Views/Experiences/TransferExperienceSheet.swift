@@ -63,58 +63,58 @@ public struct TransferExperienceSheet: View {
 
                             Picker("Notebook", selection: $selectedNotebookId) {
                                 Text("Select Destination").tag("")
-                                ForEach(otherNotebooks) { nb in\
-                                    Text(nb.name).tag(nb.id)\
-                                }\
-                            }\
-                            .pickerStyle(.menu)\
-                            .frame(maxWidth: .infinity, alignment: .leading)\
-                            .padding(.horizontal, 14)\
-                            .padding(.vertical, 12)\
-                            .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)\
-                        }\
-                        .padding(.top, 4)\
-                    }\
-                }\
-                .padding(16)\
-                .liquidGlassCard(cornerRadius: AppTheme.radiusCard)\
-\
-                if !state.notebooks.filter({ $0.id != experience.notebookId }).isEmpty {\
-                    GlassButton(\
-                        "Confirm Transfer",\
-                        systemImage: "arrow.right.arrow.left",\
-                        style: .primary,\
-                        size: .large\
-                    ) {\
-                        guard !selectedNotebookId.isEmpty else { return }\
-                        onTransfer(selectedNotebookId)\
-                        dismiss()\
-                    }\
-                    .disabled(selectedNotebookId.isEmpty)\
-                    .opacity(selectedNotebookId.isEmpty ? 0.45 : 1.0)\
-                }\
-\
-                Spacer()\
-            }\
-            .padding(20)\
-            .navigationTitle("Transfer Experience")\
-            .navigationBarTitleDisplayMode(.inline)\
-            .liquidGlassSheet(detents: [.medium])\
-            .toolbar {\
-                ToolbarItem(placement: .topBarLeading) {\
-                    Button("Cancel") { dismiss() }\
-                }\
-\
-                ToolbarItem(placement: .topBarTrailing) {\
-                    Button("Transfer") {\
-                        guard !selectedNotebookId.isEmpty else { return }\
-                        onTransfer(selectedNotebookId)\
-                        dismiss()\
-                    }\
-                    .font(.body.bold())\
-                    .disabled(selectedNotebookId.isEmpty)\
-                }\
-            }\
-        }\
-    }\
-}\
+                                ForEach(otherNotebooks) { nb in
+                                    Text(nb.name).tag(nb.id)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
+                        }
+                        .padding(.top, 4)
+                    }
+                }
+                .padding(16)
+                .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
+
+                if !state.notebooks.filter({ $0.id != experience.notebookId }).isEmpty {
+                    GlassButton(
+                        "Confirm Transfer",
+                        systemImage: "arrow.right.arrow.left",
+                        style: .primary,
+                        size: .large
+                    ) {
+                        guard !selectedNotebookId.isEmpty else { return }
+                        onTransfer(selectedNotebookId)
+                        dismiss()
+                    }
+                    .disabled(selectedNotebookId.isEmpty)
+                    .opacity(selectedNotebookId.isEmpty ? 0.45 : 1.0)
+                }
+
+                Spacer()
+            }
+            .padding(20)
+            .navigationTitle("Transfer Experience")
+            .navigationBarTitleDisplayMode(.inline)
+            .liquidGlassSheet(detents: [.medium])
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Transfer") {
+                        guard !selectedNotebookId.isEmpty else { return }
+                        onTransfer(selectedNotebookId)
+                        dismiss()
+                    }
+                    .font(.body.bold())
+                    .disabled(selectedNotebookId.isEmpty)
+                }
+            }
+        }
+    }
+}
