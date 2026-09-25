@@ -64,49 +64,59 @@ struct ContentView: View {
     // Pre-iOS 26: the classic native tab bar.
     @ViewBuilder
     private var nativeTabView: some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            liquidGlassTabView
+        } else {
+            classicTabView
+        }
+        #else
+        classicTabView
+        #endif
+    }
+
+    // MARK: - Liquid Glass Tabs (iOS 26+)
+    #if compiler(>=6.2)
+    @available(iOS 26.0, *)
+    private var liquidGlassTabView: some View {
         TabView(selection: $selectedTab) {
-            #if compiler(>=6.2)
-            if #available(iOS 26.0, *) {
-                Tab(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon, value: AppTab.dashboard) {
-                    DashboardView()
-                }
-                Tab(AppTab.experiences.title, systemImage: AppTab.experiences.icon, value: AppTab.experiences) {
-                    ExperiencesView()
-                }
-                Tab(AppTab.settings.title, systemImage: AppTab.settings.icon, value: AppTab.settings) {
-                    SettingsView()
-                }
-                Tab(AppTab.search.title, systemImage: AppTab.search.icon, value: AppTab.search, role: .search) {
-                    SearchView()
-                }
-            } else {
-                classicTabs
+            Tab(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon, value: AppTab.dashboard) {
+                DashboardView()
             }
-            #else
-            classicTabs
-            #endif
+            Tab(AppTab.experiences.title, systemImage: AppTab.experiences.icon, value: AppTab.experiences) {
+                ExperiencesView()
+            }
+            Tab(AppTab.settings.title, systemImage: AppTab.settings.icon, value: AppTab.settings) {
+                SettingsView()
+            }
+            Tab(AppTab.search.title, systemImage: AppTab.search.icon, value: AppTab.search, role: .search) {
+                SearchView()
+            }
         }
         .tint(AppTheme.primary)
     }
+    #endif
 
     // MARK: - Classic Native Tabs (pre-iOS 26)
-    @ViewBuilder
-    private var classicTabs: some View {
-        DashboardView()
-            .tabItem { Label(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon) }
-            .tag(AppTab.dashboard)
+    private var classicTabView: some View {
+        TabView(selection: $selectedTab) {
+            DashboardView()
+                .tabItem { Label(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon) }
+                .tag(AppTab.dashboard)
 
-        ExperiencesView()
-            .tabItem { Label(AppTab.experiences.title, systemImage: AppTab.experiences.icon) }
-            .tag(AppTab.experiences)
+            ExperiencesView()
+                .tabItem { Label(AppTab.experiences.title, systemImage: AppTab.experiences.icon) }
+                .tag(AppTab.experiences)
 
-        SettingsView()
-            .tabItem { Label(AppTab.settings.title, systemImage: AppTab.settings.icon) }
-            .tag(AppTab.settings)
+            SettingsView()
+                .tabItem { Label(AppTab.settings.title, systemImage: AppTab.settings.icon) }
+                .tag(AppTab.settings)
 
-        SearchView()
-            .tabItem { Label(AppTab.search.title, systemImage: AppTab.search.icon) }
-            .tag(AppTab.search)
+            SearchView()
+                .tabItem { Label(AppTab.search.title, systemImage: AppTab.search.icon) }
+                .tag(AppTab.search)
+        }
+        .tint(AppTheme.primary)
     }
 
     private var resolvedColorScheme: ColorScheme? {

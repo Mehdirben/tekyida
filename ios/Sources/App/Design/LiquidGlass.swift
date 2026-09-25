@@ -88,7 +88,7 @@ public struct LiquidGlassModifier: ViewModifier {
                     content.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
                 }
             case .prominent:
-                content.glassEffect(.prominent, in: .rect(cornerRadius: cornerRadius))
+                content.glassEffect(.regular.tint(AppTheme.primary), in: .rect(cornerRadius: cornerRadius))
             case .surface, .button, .bar, .floating:
                 content.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
             case .input:
@@ -195,67 +195,61 @@ public struct LiquidGlassButtonStyle: ButtonStyle {
         #endif
     }
 
-    /// Native iOS 26+ Liquid Glass buttons (`.glass` / `.glassProminent`) with
-    /// the system press interaction, tinted with the app palette.
+    /// iOS 26+: native Liquid Glass via `glassEffect` (tinted `.regular` for prominent,
+    /// `.clear` for plain glass), with the system interactive press behavior.
     #if compiler(>=6.2)
     @available(iOS 26.0, *)
     @ViewBuilder
     private func nativeBody(configuration: Configuration) -> some View {
-        let styledLabel = configuration.label
+        configuration.label
             .font(size.font)
             .padding(.vertical, size.verticalPadding)
             .padding(.horizontal, size.horizontalPadding)
+            .foregroundStyle(foregroundStyle)
+            .glassEffect(glassVariant, in: ConcentricRectangle(cornerRadius: cornerRadius))
+    }
 
+    @available(iOS 26.0, *)
+    private var glassVariant: Glass {
         switch variant {
-        case .prominent:
-            Button(action: configuration.trigger) {
-                styledLabel.foregroundColor(.white)
-            }
-            .tint(AppTheme.primary)
-            .buttonStyle(.glassProminent)
-        case .danger:
-            Button(action: configuration.trigger) {
-                styledLabel.foregroundColor(.white)
-            }
-            .tint(AppTheme.danger)
-            .buttonStyle(.glassProminent)
-        case .glass, .clear:
-            Button(action: configuration.trigger) {
-                styledLabel.foregroundColor(.primary)
-            }
-            .buttonStyle(.glass)
+        case .prominent: return .regular.tint(AppTheme.primary).interactive()
+        case .danger: return .regular.tint(AppTheme.danger).interactive()
+        case .glass: return .regular.interactive()
+        case .clear: return .clear.interactive()
         }
     }
     #endif
 
-    /// Pre-iOS 26: classic native button styles (bordered / borderedProminent).
+    /// Pre-iOS 26: native system materials and tint fills.
     @ViewBuilder
     private func fallbackBody(configuration: Configuration) -> some View {
-        let label = configuration.label.font(size.font)
-        let controlSize: ControlSize = size == .regular ? .regular : .large
+        configuration.label
+            .font(size.font)
+            .padding(.vertical, size.verticalPadding)
+            .padding(.horizontal, size.horizontalPadding)
+            .foregroundStyle(foregroundStyle)
+            .background(fallbackBackground, in: ConcentricRectangle(cornerRadius: cornerRadius))
+    }
 
+    private var foregroundStyle: Color {
+        switch variant {
+        case .prominent, .danger:
+            return .white
+        case .glass, .clear:
+            return .primary
+        }
+    }
+
+    private var fallbackBackground: AnyShapeStyle {
         switch variant {
         case .prominent:
-            Button(action: configuration.trigger) { label }
-                .controlSize(controlSize)
-                .buttonBorderShape(.roundedRectangle(radius: cornerRadius))
-                .tint(AppTheme.primary)
-                .buttonStyle(.borderedProminent)
+            return AnyShapeStyle(AppTheme.primary)
         case .danger:
-            Button(action: configuration.trigger) { label }
-                .controlSize(controlSize)
-                .buttonBorderShape(.roundedRectangle(radius: cornerRadius))
-                .tint(AppTheme.danger)
-                .buttonStyle(.borderedProminent)
+            return AnyShapeStyle(AppTheme.danger)
         case .glass:
-            Button(action: configuration.trigger) { label }
-                .controlSize(controlSize)
-                .buttonBorderShape(.roundedRectangle(radius: cornerRadius))
-                .tint(AppTheme.primary)
-                .buttonStyle(.bordered)
+            return AnyShapeStyle(.regularMaterial)
         case .clear:
-            Button(action: configuration.trigger) { label }
-                .buttonStyle(.plain)
+            return AnyShapeStyle(.ultraThinMaterial)
         }
     }
 }
