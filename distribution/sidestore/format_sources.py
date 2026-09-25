@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Tekyida SideStore / LiveContainer Source Feed Normalizer
-Ensures that stable and beta feeds strictly adhere to their respective metadata,
-names, identifiers, and release download URLs.
+Ensures that stable and beta feeds strictly adhere to their respective repository names,
+identifiers, and release download URLs, while the app name remains simply "Tekyida".
 """
 
 import json
@@ -64,25 +64,25 @@ if __name__ == '__main__':
     stable_tag = sys.argv[3]
     beta_tag = sys.argv[4]
 
-    # Format Stable
+    # Format Stable: Repo is "Tekyida (Stable)", App is "Tekyida"
     format_feed(
         feed_file='site-pages/ios/apps.json',
         feed_name='Tekyida (Stable)',
         feed_id='com.tekyida.ios.source',
-        app_name='Tekyida (Stable)',
+        app_name='Tekyida',
         release_tag=stable_tag,
         default_ver='1.0',
-        desc='Modern IOU Tracker for iOS & Android (Stable)',
+        desc='Modern IOU Tracker for iOS & Android',
         repo=repo,
         run_number=run_number
     )
 
-    # Format Beta
+    # Format Beta: Repo is "Tekyida (Beta)", App is "Tekyida"
     format_feed(
         feed_file='site-pages/ios/beta/apps.json',
         feed_name='Tekyida (Beta)',
         feed_id='com.tekyida.ios.source.beta',
-        app_name='Tekyida (Beta)',
+        app_name='Tekyida',
         release_tag=beta_tag,
         default_ver='1.0-beta',
         desc='Tekyida Beta Preview Channel',

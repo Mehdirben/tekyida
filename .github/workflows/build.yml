@@ -301,13 +301,11 @@ jobs:
 
           if [ "$IS_BETA" = "true" ]; then
             FEED_NAME="Tekyida (Beta)"
-            APP_NAME="Tekyida (Beta)"
             FEED_ID="com.tekyida.ios.source.beta"
             VERSION_STR="1.0-beta"
             VERSION_DESC="Beta build from branch ${{ github.ref_name }} (commit ${{ github.sha }})"
           else
             FEED_NAME="Tekyida (Stable)"
-            APP_NAME="Tekyida (Stable)"
             FEED_ID="com.tekyida.ios.source"
             VERSION_STR="1.0"
             VERSION_DESC="Automated build from commit ${{ github.sha }}"
@@ -320,7 +318,7 @@ jobs:
             "apps": [
               {
                 "bundleIdentifier": "com.tekyida.app",
-                "name": "$APP_NAME",
+                "name": "Tekyida",
                 "developerName": "Tekyida",
                 "localizedDescription": "Modern IOU Tracker for iOS & Android",
                 "iconURL": "https://raw.githubusercontent.com/${{ github.repository }}/main/distribution/fdroid/icon.png",
