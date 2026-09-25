@@ -44,23 +44,22 @@ public struct ContactRowView: View {
                             .foregroundColor(AppTheme.primary)
                     }
 
-                    // Contact Info
-                    VStack(alignment: .leading, spacing: 2) {
+                    // Contact Info: name with amount below
+                    VStack(alignment: .leading, spacing: 3) {
                         Text(contact.name)
                             .font(.headline)
                             .foregroundColor(.primary)
                             .lineLimit(1)
+
+                        AmountView(
+                            amount: balance,
+                            isHidden: isMasked,
+                            font: .subheadline,
+                            fontWeight: .semibold
+                        )
                     }
 
                     Spacer()
-
-                    // Amount
-                    AmountView(
-                        amount: balance,
-                        isHidden: isMasked,
-                        font: .subheadline,
-                        fontWeight: .bold
-                    )
                 }
             }
             .buttonStyle(ScaleTouchStyle())

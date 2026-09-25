@@ -74,14 +74,14 @@ public struct SearchView: View {
                     ContactDetailSheet(contact: contact)
                         .environmentObject(state)
                 }
-                .liquidGlassSheet(detents: [.medium, .large])
+                .liquidGlassSheet(detents: [.large])
             }
             .sheet(item: $selectedExperience) { exp in
                 NavigationStack {
                     ExperienceDetailSheet(experience: exp)
                         .environmentObject(state)
                 }
-                .liquidGlassSheet(detents: [.medium, .large])
+                .liquidGlassSheet(detents: [.large])
             }
             .transactionModals(
                 editingTransaction: $editingTransaction,

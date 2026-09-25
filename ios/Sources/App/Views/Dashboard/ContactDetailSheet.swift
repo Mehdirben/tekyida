@@ -89,9 +89,8 @@ public struct ContactDetailView: View {
                         Label("Delete Contact", systemImage: "trash")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "ellipsis")
                         .font(.headline)
-                        .symbolRenderingMode(.hierarchical)
                 }
             }
         }

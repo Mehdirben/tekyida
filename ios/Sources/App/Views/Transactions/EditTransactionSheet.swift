@@ -87,7 +87,7 @@ public struct EditTransactionSheet: View {
             }
             .navigationTitle("Edit Transaction")
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium, .large])
+            .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }

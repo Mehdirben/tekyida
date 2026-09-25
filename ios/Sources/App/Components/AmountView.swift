@@ -35,10 +35,10 @@ public struct AmountView: View {
 
     private var displayText: String {
         if isHidden {
-            return "•••• MAD"
+            return "••••"
         }
         let sign = (amount > 0 && showPlusSign) ? "+" : ""
-        return String(format: "%@%.2f MAD", sign, amount)
+        return String(format: "%@%.2f", sign, amount)
     }
 
     private var resolvedColor: Color {

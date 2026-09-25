@@ -220,16 +220,28 @@ public struct SettingsView: View {
 
                 Spacer()
 
-                Picker("Language", selection: Binding(
-                    get: { state.language },
-                    set: { state.updateLanguage($0) }
-                )) {
-                    ForEach(AppLanguage.allCases, id: \.self) { lang in
-                        Text(lang.title).tag(lang)
+                Menu {
+                    Picker("Language", selection: Binding(
+                        get: { state.language },
+                        set: { state.updateLanguage($0) }
+                    )) {
+                        ForEach(AppLanguage.allCases, id: \.self) { lang in
+                            Text(lang.title).tag(lang)
+                        }
                     }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(state.language.title)
+                            .font(.subheadline.bold())
+                            .foregroundColor(AppTheme.primary)
+                        Image(systemName: "chevron.down")
+                            .font(.caption2.bold())
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .liquidGlassPill()
                 }
-                .pickerStyle(.menu)
-                .foregroundColor(AppTheme.primary)
             }
 
             Divider()

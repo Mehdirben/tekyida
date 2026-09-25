@@ -19,80 +19,77 @@ public struct ExperienceDetailView: View {
     }
 
     public var body: some View {
-        ZStack {
-            MeshGradientBackground()
+        // Transparent content so the glass sheet presentation shows through
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 16) {
+                    headerCard
 
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(spacing: 16) {
-                        headerCard
-
-                        if experience.closed {
-                            HStack(spacing: 8) {
-                                Image(systemName: "lock.fill")
-                                    .foregroundColor(AppTheme.warning)
-                                Text("This experience is closed. Reopen it to make changes.")
-                                    .font(.caption.bold())
-                                    .foregroundColor(AppTheme.warning)
-                            }
-                            .padding(12)
-                            .frame(maxWidth: .infinity)
-                            .background(AppTheme.warningBg, in: ConcentricRectangle(cornerRadius: AppTheme.radiusInput))
-                            .overlay {
-                                ConcentricRectangle(cornerRadius: AppTheme.radiusInput)
-                                    .stroke(AppTheme.warning.opacity(0.3), lineWidth: 1)
-                            }
+                    if experience.closed {
+                        HStack(spacing: 8) {
+                            Image(systemName: "lock.fill")
+                                .foregroundColor(AppTheme.warning)
+                            Text("This experience is closed. Reopen it to make changes.")
+                                .font(.caption.bold())
+                                .foregroundColor(AppTheme.warning)
                         }
-
-                        // Title-Style Section Header
-                        HStack {
-                            Text("Transactions")
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                            Spacer()
+                        .padding(12)
+                        .frame(maxWidth: .infinity)
+                        .background(AppTheme.warningBg, in: ConcentricRectangle(cornerRadius: AppTheme.radiusInput))
+                        .overlay {
+                            ConcentricRectangle(cornerRadius: AppTheme.radiusInput)
+                                .stroke(AppTheme.warning.opacity(0.3), lineWidth: 1)
                         }
-                        .padding(.horizontal, 4)
-                        .padding(.top, 4)
+                    }
 
-                        let txs = state.experienceTransactions(experience.id)
-                        if txs.isEmpty && !isAddingTransaction {
-                            GlassEmptyStateView(
-                                systemImage: "doc.text.magnifyingglass",
-                                title: "No Transactions in this Experience",
-                                subtitle: "Tap the button below to add expenses or payments to this experience."
-                            )
-                        } else {
-                            GlassEffectContainer {
-                                VStack(spacing: 10) {
-                                    ForEach(txs) { tx in
-                                        TransactionRowView(
-                                            transaction: tx,
-                                            isMasked: isLocalMasked || state.isAmountsHidden,
-                                            onEdit: { editingTransaction = tx },
-                                            onDelete: { deletingTransaction = tx }
-                                        )
-                                    }
+                    // Title-Style Section Header
+                    HStack {
+                        Text("Transactions")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                    .padding(.top, 4)
+
+                    let txs = state.experienceTransactions(experience.id)
+                    if txs.isEmpty && !isAddingTransaction {
+                        GlassEmptyStateView(
+                            systemImage: "doc.text.magnifyingglass",
+                            title: "No Transactions in this Experience",
+                            subtitle: "Tap the button below to add expenses or payments to this experience."
+                        )
+                    } else {
+                        GlassEffectContainer {
+                            VStack(spacing: 10) {
+                                ForEach(txs) { tx in
+                                    TransactionRowView(
+                                        transaction: tx,
+                                        isMasked: isLocalMasked || state.isAmountsHidden,
+                                        onEdit: { editingTransaction = tx },
+                                        onDelete: { deletingTransaction = tx }
+                                    )
                                 }
                             }
                         }
                     }
-                    .padding(16)
                 }
+                .padding(16)
+            }
 
-                if !experience.closed {
-                    // Floating Liquid Glass Action Bar
-                    AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
-                        state.createTransaction(
-                            notebookId: experience.notebookId,
-                            contactId: experience.contactId,
-                            experienceId: experience.id,
-                            amount: amount,
-                            description: desc,
-                            date: date
-                        )
-                    }
-                    .padding(16)
+            if !experience.closed {
+                // Floating Liquid Glass Action Bar
+                AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
+                    state.createTransaction(
+                        notebookId: experience.notebookId,
+                        contactId: experience.contactId,
+                        experienceId: experience.id,
+                        amount: amount,
+                        description: desc,
+                        date: date
+                    )
                 }
+                .padding(16)
             }
         }
         .navigationTitle(experience.name)
@@ -116,9 +113,8 @@ public struct ExperienceDetailView: View {
                         Label("Delete Experience", systemImage: "trash")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "ellipsis")
                         .font(.headline)
-                        .symbolRenderingMode(.hierarchical)
                 }
             }
         }

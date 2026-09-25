@@ -1,28 +1,48 @@
 import SwiftUI
 
-// MARK: - Reusable Notebook Header Button
-// On iOS 26+ the toolbar itself provides the Liquid Glass chrome, so the button
-// renders plain (single glass). Below iOS 26 it draws its own material pill.
+// MARK: - Reusable Notebook Header Menu
+// Native dropdown menu anchored at the navigation bar: instant notebook
+// switching with system checkmarks plus a manage action. On iOS 26+ the
+// menu label sits on the toolbar's own Liquid Glass; below iOS 26 it
+// draws its own material pill.
 public struct NotebookHeaderButton: View {
-    let notebookName: String
-    let onTap: () -> Void
+    let notebooks: [Notebook]
+    @Binding var activeNotebookId: String?
+    let onManage: () -> Void
 
-    public init(notebookName: String, onTap: @escaping () -> Void) {
-        self.notebookName = notebookName
-        self.onTap = onTap
+    public init(
+        notebooks: [Notebook],
+        activeNotebookId: Binding<String?>,
+        onManage: @escaping () -> Void
+    ) {
+        self.notebooks = notebooks
+        self._activeNotebookId = activeNotebookId
+        self.onManage = onManage
     }
 
     public var body: some View {
-        Button(action: {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            onTap()
-        }) {
+        Menu {
+            Picker("Notebook", selection: $activeNotebookId) {
+                ForEach(notebooks) { notebook in
+                    Text(notebook.name).tag(notebook.id as String?)
+                }
+            }
+
+            Divider()
+
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                onManage()
+            } label: {
+                Label("Manage Notebooks", systemImage: "slider.horizontal.3")
+            }
+        } label: {
             HStack(spacing: 8) {
                 Image(systemName: "book.closed.fill")
                     .font(.subheadline)
                     .foregroundStyle(.tint)
 
-                Text(notebookName)
+                Text(currentName)
                     .font(.subheadline.bold())
                     .foregroundColor(.primary)
                     .lineLimit(1)
@@ -33,14 +53,17 @@ public struct NotebookHeaderButton: View {
             }
             .modifier(ConditionalPillBackground())
         }
-        .modifier(ConditionalPressStyle())
+    }
+
+    private var currentName: String {
+        notebooks.first(where: { $0.id == activeNotebookId })?.name ?? "Select Notebook"
     }
 }
 
 // MARK: - Version-Adaptive Button Chrome
 /// Applies the material pill only on pre-iOS 26 (no double glass on the
 /// system Liquid Glass toolbar); plain on iOS 26+.
-private struct ConditionalPillBackground: ViewModifier {
+struct ConditionalPillBackground: ViewModifier {
     func body(content: Content) -> some View {
         #if compiler(>=6.2)
         if #available(iOS 26.0, *) {
@@ -56,16 +79,3 @@ private struct ConditionalPillBackground: ViewModifier {
 
 /// Scale press feedback only where the custom pill is used; iOS 26+ gets the
 /// native glass press interaction instead.
-private struct ConditionalPressStyle: ViewModifier {
-    func body(content: Content) -> some View {
-        #if compiler(>=6.2)
-        if #available(iOS 26.0, *) {
-            content
-        } else {
-            content.buttonStyle(ScaleTouchStyle())
-        }
-        #else
-        content.buttonStyle(ScaleTouchStyle())
-        #endif
-    }
-}

@@ -52,7 +52,7 @@ public struct AddTransactionView: View {
                         Button(action: {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             resetFields()
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                                 isAdding = false
                             }
                         }) {
@@ -84,10 +84,12 @@ public struct AddTransactionView: View {
                 }
                 .padding(16)
                 .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .scale(scale: 0.96)),
-                    removal: .opacity.combined(with: .scale(scale: 0.96))
-                ))
+                .transition(
+                    .asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .bottom)),
+                        removal: .opacity
+                    )
+                )
             } else {
                 GlassButton(
                     "Add Transaction",
@@ -96,7 +98,7 @@ public struct AddTransactionView: View {
                     size: .large,
                     isFullWidth: true
                 ) {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                         isAdding = true
                     }
                 }
@@ -117,7 +119,7 @@ public struct AddTransactionView: View {
         let finalAmount = isPositive ? rawVal : -rawVal
         onAdd(finalAmount, description.isEmpty ? nil : description, date)
         resetFields()
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
             isAdding = false
         }
     }
