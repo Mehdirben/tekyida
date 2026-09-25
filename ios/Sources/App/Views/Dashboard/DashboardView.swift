@@ -39,6 +39,7 @@ public struct DashboardView: View {
                     .padding(.top, 12)
                     .padding(.bottom, 96)
                 }
+                .tabBarMinimizeBehaviorOnScroll()
             }
             .tekyidaNavigationBar(
                 notebookName: state.activeNotebook?.name ?? "Select Notebook",

@@ -50,6 +50,7 @@ public struct SearchView: View {
                         .padding(.bottom, 96)
                     }
                     .scrollDismissesKeyboard(.immediately)
+                    .tabBarMinimizeBehaviorOnScroll()
                 }
             }
             .navigationTitle("Search")

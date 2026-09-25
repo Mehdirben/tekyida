@@ -34,6 +34,7 @@ public struct SettingsView: View {
                     .padding(.top, 12)
                     .padding(.bottom, 96)
                 }
+                .tabBarMinimizeBehaviorOnScroll()
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)

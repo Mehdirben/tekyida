@@ -32,17 +32,21 @@ public struct ConcentricRectangle: Shape {
 // MARK: - Glass Effect Container
 /// Combines custom Liquid Glass effects to improve rendering performance and fluid morphing.
 public struct GlassEffectContainer<Content: View>: View {
+    let spacing: CGFloat
     let content: Content
 
-    public init(@ViewBuilder content: () -> Content) {
+    public init(spacing: CGFloat = 0, @ViewBuilder content: () -> Content) {
+        self.spacing = spacing
         self.content = content()
     }
 
     public var body: some View {
         #if compiler(>=6.2)
         if #available(iOS 26.0, macOS 26.0, *) {
-            // Native iOS 26+ GlassEffectContainer
-            content
+            // Native iOS 26+ GlassEffectContainer for real glass blending & morphing
+            SwiftUI.GlassEffectContainer(spacing: spacing) {
+                content
+            }
         } else {
             content
                 .compositingGroup()
@@ -86,8 +90,10 @@ public struct LiquidGlassModifier: ViewModifier {
                 }
             case .prominent:
                 content.glassEffect(.prominent, in: .rect(cornerRadius: cornerRadius))
-            case .surface, .button, .input, .bar, .floating:
-                content.glassEffect(.subtle, in: .rect(cornerRadius: cornerRadius))
+            case .surface, .button, .bar, .floating:
+                content.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+            case .input:
+                content.glassEffect(.clear, in: .rect(cornerRadius: cornerRadius))
             }
         } else {
             fallbackBody(content: content)
@@ -262,6 +268,52 @@ public struct LiquidGlassButtonStyle: ButtonStyle {
     }
 
     public func makeBody(configuration: Configuration) -> some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            nativeBody(configuration: configuration)
+        } else {
+            fallbackBody(configuration: configuration)
+        }
+        #else
+        fallbackBody(configuration: configuration)
+        #endif
+    }
+
+    /// Native iOS 26+ Liquid Glass buttons (`.glass` / `.glassProminent`) with
+    /// the system press interaction, tinted with the app palette.
+    #if compiler(>=6.2)
+    @available(iOS 26.0, *)
+    @ViewBuilder
+    private func nativeBody(configuration: Configuration) -> some View {
+        let styledLabel = configuration.label
+            .font(size.font)
+            .padding(.vertical, size.verticalPadding)
+            .padding(.horizontal, size.horizontalPadding)
+
+        switch variant {
+        case .prominent:
+            Button(action: configuration.trigger) {
+                styledLabel.foregroundColor(.white)
+            }
+            .tint(AppTheme.primary)
+            .buttonStyle(.glassProminent)
+        case .danger:
+            Button(action: configuration.trigger) {
+                styledLabel.foregroundColor(.white)
+            }
+            .tint(AppTheme.danger)
+            .buttonStyle(.glassProminent)
+        case .glass, .clear:
+            Button(action: configuration.trigger) {
+                styledLabel.foregroundColor(.primary)
+            }
+            .buttonStyle(.glass)
+        }
+    }
+    #endif
+
+    @ViewBuilder
+    private func fallbackBody(configuration: Configuration) -> some View {
         configuration.label
             .font(size.font)
             .padding(.vertical, size.verticalPadding)
@@ -365,27 +417,7 @@ public extension ButtonStyle where Self == LiquidGlassButtonStyle {
         LiquidGlassButtonStyle(variant: .clear)
     }
 
-    static var glass: LiquidGlassButtonStyle {
-        LiquidGlassButtonStyle(variant: .glass)
-    }
-
-    static var glassProminent: LiquidGlassButtonStyle {
-        LiquidGlassButtonStyle(variant: .prominent)
-    }
-
-    static var glassDanger: LiquidGlassButtonStyle {
-        LiquidGlassButtonStyle(variant: .danger)
-    }
-
     static func liquidGlass(
-        variant: LiquidGlassButtonStyle.Variant = .glass,
-        size: LiquidGlassButtonStyle.Size = .large,
-        cornerRadius: CGFloat = AppTheme.radiusButton
-    ) -> LiquidGlassButtonStyle {
-        LiquidGlassButtonStyle(variant: variant, size: size, cornerRadius: cornerRadius)
-    }
-
-    static func glass(
         variant: LiquidGlassButtonStyle.Variant = .glass,
         size: LiquidGlassButtonStyle.Size = .large,
         cornerRadius: CGFloat = AppTheme.radiusButton

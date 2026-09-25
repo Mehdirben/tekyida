@@ -77,16 +77,11 @@ public struct PinPadView: View {
                     Button(action: {
                         deleteDigit()
                     }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white.opacity(0.08))
-                                .background(.thinMaterial, in: Circle())
-                                .frame(width: 72, height: 72)
-
-                            Image(systemName: "delete.backward")
-                                .font(.title3)
-                                .foregroundColor(pin.isEmpty ? .secondary.opacity(0.3) : .primary)
-                        }
+                        Image(systemName: "delete.backward")
+                            .font(.title3)
+                            .foregroundColor(pin.isEmpty ? .secondary.opacity(0.3) : .primary)
+                            .frame(width: 72, height: 72)
+                            .liquidGlassPill()
                     }
                     .disabled(pin.isEmpty)
                 }
@@ -108,16 +103,7 @@ public struct PinPadView: View {
                 .font(.system(size: 28, weight: .light, design: .rounded))
                 .foregroundColor(.primary)
                 .frame(width: 72, height: 72)
-                .background {
-                    Circle()
-                        .fill(Color.white.opacity(0.12))
-                        .background(.ultraThinMaterial, in: Circle())
-                }
-                .overlay {
-                    Circle()
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                }
-                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
+                .liquidGlassPill()
         }
         .buttonStyle(ScaleTouchStyle())
     }
