@@ -11,6 +11,8 @@
     "**/build/**",
     "**/dist/**",
     "**/.gradle/**",
+    "**/gradlew*",
+    "**/gradle/**",
     "**/frontend/convex/**",
     "**/tests/reports/**",
     "**/package-lock.json",
