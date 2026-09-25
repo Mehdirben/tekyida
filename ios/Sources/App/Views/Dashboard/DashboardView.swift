@@ -19,11 +19,6 @@ public struct DashboardView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Brand header (top-left, plain)
-                        BrandLogoHeader()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 4)
-
                         // QuickStats Widgets
                         if let activeNb = state.activeNotebook {
                             QuickStatsView(

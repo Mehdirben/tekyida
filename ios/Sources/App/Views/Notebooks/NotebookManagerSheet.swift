@@ -160,67 +160,67 @@ public struct NotebookManagerSheet: View {
     private func notebookRow(_ notebook: Notebook, isArchived: Bool) -> some View {
         let isSelected = state.activeNotebookId == notebook.id
         let balance = state.notebookBalance(notebook.id)
+        let isEditing = editingNotebookId == notebook.id
 
-        return HStack(spacing: 12) {
-            Button(action: {
-                if !isArchived {
-                    state.activeNotebookId = notebook.id
-                    dismiss()
-                }
-            }) {
-                HStack(spacing: 12) {
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "book.closed")
-                        .font(.title3)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundColor(isSelected ? AppTheme.primary : .secondary)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        if editingNotebookId == notebook.id {
-                            TextField("Name", text: $editingNotebookName)
-                                .textFieldStyle(.plain)
-                                .font(.headline)
-                                .onSubmit { saveEdit(notebook.id) }
-                        } else {
-                            Text(notebook.name)
-                                .font(.headline)
-                                .foregroundColor(.primary)
-                        }
-
-                        AmountView(
-                            amount: balance,
-                            isHidden: state.isAmountsHidden,
-                            font: .caption,
-                            fontWeight: .semibold
-                        )
-                    }
-
-                    Spacer()
-                }
+        // The whole card surface is tappable; action buttons are nested inside
+        // and take precedence for their own taps. Disabled while renaming so
+        // the text field keeps the taps.
+        return Button(action: {
+            if !isArchived {
+                state.activeNotebookId = notebook.id
+                dismiss()
             }
-            .buttonStyle(ScaleTouchStyle())
+        }) {
+            HStack(spacing: 12) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "book.closed")
+                    .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundColor(isSelected ? AppTheme.primary : .secondary)
 
-            // Actions
-            HStack(spacing: 6) {
-                if editingNotebookId == notebook.id {
-                    Button(action: { saveEdit(notebook.id) }) {
-                        Image(systemName: "checkmark")
-                            .font(.caption.bold())
-                            .foregroundColor(AppTheme.accent)
-                            .frame(width: 30, height: 30)
-                            .liquidGlassPill()
+                VStack(alignment: .leading, spacing: 2) {
+                    if isEditing {
+                        TextField("Name", text: $editingNotebookName)
+                            .textFieldStyle(.plain)
+                            .font(.headline)
+                            .onSubmit { saveEdit(notebook.id) }
+                    } else {
+                        Text(notebook.name)
+                            .font(.headline)
+                            .foregroundColor(.primary)
                     }
-                } else {
-                    Button(action: {
-                        editingNotebookId = notebook.id
-                        editingNotebookName = notebook.name
-                    }) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.secondary)
-                            .frame(width: 30, height: 30)
-                            .liquidGlassPill()
-                    }
+
+                    AmountView(
+                        amount: balance,
+                        isHidden: state.isAmountsHidden,
+                        font: .caption,
+                        fontWeight: .semibold
+                    )
                 }
+
+                Spacer()
+
+                // Actions
+                HStack(spacing: 6) {
+                    if isEditing {
+                        Button(action: { saveEdit(notebook.id) }) {
+                            Image(systemName: "checkmark")
+                                .font(.caption.bold())
+                                .foregroundColor(AppTheme.accent)
+                                .frame(width: 30, height: 30)
+                                .liquidGlassPill()
+                        }
+                    } else {
+                        Button(action: {
+                            editingNotebookId = notebook.id
+                            editingNotebookName = notebook.name
+                        }) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.secondary)
+                                .frame(width: 30, height: 30)
+                                .liquidGlassPill()
+                        }
+                    }
 
                 Button(action: {
                     state.archiveNotebook(id: notebook.id, archived: !isArchived)
@@ -241,9 +241,13 @@ public struct NotebookManagerSheet: View {
                         .frame(width: 30, height: 30)
                         .liquidGlassPill()
                 }
+                }
             }
+            .padding(14)
+            .contentShape(.rect)
         }
-        .padding(14)
+        .buttonStyle(ScaleTouchStyle())
+        .disabled(isEditing)
         .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
     }
 

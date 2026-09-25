@@ -41,6 +41,10 @@ public struct TekyidaNavigationBarModifier: ViewModifier {
         content
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    BrandLogoHeader()
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     NotebookHeaderButton(
                         notebooks: notebooks,

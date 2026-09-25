@@ -27,11 +27,6 @@ public struct ExperiencesView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Brand header (top-left, plain)
-                        BrandLogoHeader()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 4)
-
                         // Open Experiences Total Balance Card
                         if let activeNb = state.activeNotebook {
                             totalBalanceCard(notebookId: activeNb.id)

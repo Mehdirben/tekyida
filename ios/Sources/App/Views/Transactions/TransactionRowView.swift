@@ -53,6 +53,7 @@ public struct TransactionRowView: View {
             AmountView(
                 amount: transaction.amount,
                 isHidden: isMasked,
+                showsCurrency: false,
                 font: .subheadline,
                 fontWeight: .bold
             )

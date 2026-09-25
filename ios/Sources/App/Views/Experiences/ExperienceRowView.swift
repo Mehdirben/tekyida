@@ -38,12 +38,13 @@ public struct ExperienceRowView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 10) {
-            // Main Tappable Info Area
-            Button(action: {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                onTap()
-            }) {
+        // The whole card surface is tappable; action buttons are nested inside
+        // and take precedence for their own taps
+        Button(action: {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            onTap()
+        }) {
+            VStack(spacing: 10) {
                 VStack(spacing: 6) {
                     // Row 1: Icon, Title & Balance
                     HStack(spacing: 12) {
@@ -96,81 +97,76 @@ public struct ExperienceRowView: View {
                     }
                     .padding(.leading, 54)
                 }
-            }
-            .buttonStyle(ScaleTouchStyle())
 
-            Divider()
+                Divider()
 
-            // Action Buttons Bar
-            HStack(spacing: 8) {
-                // Lock / Unlock status toggle button
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    onToggleClosed()
-                }) {
-                    HStack(spacing: 5) {
-                        Image(systemName: experience.closed ? "lock.fill" : "lock.open.fill")
-                            .font(.system(size: 11, weight: .bold))
-                        Text(experience.closed ? "Closed" : "Open")
-                            .font(.caption2.bold())
-                    }
-                    .foregroundColor(experience.closed ? AppTheme.warning : AppTheme.accent)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .liquidGlassPill()
-                }
-                .buttonStyle(ScaleTouchStyle())
-
-                Spacer()
-
-                HStack(spacing: 6) {
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        onEdit()
-                    }) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.secondary)
-                            .frame(width: 30, height: 30)
-                            .liquidGlassPill()
-                    }
-
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        onTransfer()
-                    }) {
-                        Image(systemName: "arrow.right.arrow.left")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.secondary)
-                            .frame(width: 30, height: 30)
-                            .liquidGlassPill()
-                    }
-
+                // Action Buttons Bar
+                HStack(spacing: 8) {
+                    // Lock / Unlock status toggle button
                     Button(action: {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        onDelete()
+                        onToggleClosed()
                     }) {
-                        Image(systemName: "trash")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(AppTheme.danger.opacity(0.85))
-                            .frame(width: 30, height: 30)
-                            .liquidGlassPill()
+                        HStack(spacing: 5) {
+                            Image(systemName: experience.closed ? "lock.fill" : "lock.open.fill")
+                                .font(.system(size: 11, weight: .bold))
+                            Text(experience.closed ? "Closed" : "Open")
+                                .font(.caption2.bold())
+                        }
+                        .foregroundColor(experience.closed ? AppTheme.warning : AppTheme.accent)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .liquidGlassPill()
                     }
+                    .buttonStyle(ScaleTouchStyle())
 
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        onTap()
-                    }) {
+                    Spacer()
+
+                    HStack(spacing: 6) {
+                        Button(action: {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            onEdit()
+                        }) {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.secondary)
+                                .frame(width: 30, height: 30)
+                                .liquidGlassPill()
+                        }
+
+                        Button(action: {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            onTransfer()
+                        }) {
+                            Image(systemName: "arrow.right.arrow.left")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.secondary)
+                                .frame(width: 30, height: 30)
+                                .liquidGlassPill()
+                        }
+
+                        Button(action: {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            onDelete()
+                        }) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(AppTheme.danger.opacity(0.85))
+                                .frame(width: 30, height: 30)
+                                .liquidGlassPill()
+                        }
+
                         Image(systemName: "chevron.right")
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(.secondary.opacity(0.55))
-                            .frame(width: 24, height: 30)
                     }
                 }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .contentShape(.rect)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .buttonStyle(ScaleTouchStyle())
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
 }

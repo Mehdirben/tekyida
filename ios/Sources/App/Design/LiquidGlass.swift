@@ -317,7 +317,9 @@ public extension View {
             .liquidGlass(style: .input, cornerRadius: cornerRadius)
     }
 
-    /// Configures modal presentation with the modern Liquid Glass inset sheet appearance
+    /// Native modal presentation: system sheet with detents and drag indicator.
+    /// On iOS 26+ the system sheet already renders with the native Liquid Glass
+    /// treatment and animations — no custom background overrides.
     func liquidGlassSheet(
         detents: Set<PresentationDetent> = [.large],
         cornerRadius: CGFloat = AppTheme.radiusSheet
@@ -325,8 +327,6 @@ public extension View {
         self
             .presentationDetents(detents)
             .presentationDragIndicator(.visible)
-            .presentationCornerRadius(cornerRadius)
-            .presentationBackground(.ultraThinMaterial)
     }
 
     /// Adopts tab bar minimize behavior on scroll down where available
