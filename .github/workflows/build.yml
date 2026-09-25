@@ -149,6 +149,17 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
 
+      # Runs iOS Unit Tests and UI E2E Tests in Simulator
+      - name: Run iOS Unit & UI E2E Tests (Simulator)
+        run: |
+          xcodebuild test \
+            -project Tekyida.xcodeproj \
+            -scheme Tekyida \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
       # Compiles an optimized Release build for physical iPhones into an .xcarchive.
       - name: Build Archive
         run: |
@@ -249,6 +260,16 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
+
+      # Runs Android Unit and Security Tests
+      - name: Run Android Unit & Security Tests
+        run: |
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew testReleaseUnitTest --no-daemon
+          else
+            gradle testReleaseUnitTest --no-daemon
+          fi
 
       # Compiles the Android application release APK
       - name: Build Android Release APK

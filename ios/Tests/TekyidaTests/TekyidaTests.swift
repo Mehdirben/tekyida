@@ -19,4 +19,11 @@ final class TekyidaTests: XCTestCase {
         count += 1
         XCTAssertEqual(count, 2)
     }
+
+    func testAppTransportSecurityConfiguration() {
+        // iOS DAST: Verify ATS does not allow arbitrary plaintext HTTP loads
+        let atsDict = Bundle.main.object(forInfoDictionaryKey: "NSAppTransportSecurity") as? [String: Any]
+        let allowsArbitrary = atsDict?["NSAllowsArbitraryLoads"] as? Bool ?? false
+        XCTAssertFalse(allowsArbitrary, "Arbitrary HTTP loads must be blocked by default ATS configuration")
+    }
 }

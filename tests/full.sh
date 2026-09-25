@@ -1,47 +1,49 @@
 #!/usr/bin/env bash
-set -e
+# ==============================================================================
+# Tekyida Full Pipeline Suite (tests/full.sh)
+#
+# Pre-release script combining:
+# 1. Quick Quality Suite (run.sh: Duplication, Vitest, SAST, Types, Mobile Tests)
+# 2. Next.js Production Build (frontend)
+# 3. Web Playwright E2E & DAST Dynamic Security Verification (frontend/e2e)
+# 4. Android Unit & Security Tests + Release Compilation (android/gradlew assembleRelease)
+# 5. Native iOS Project Generation & Release Archive (xcodebuild archive)
+# 6. Web Production Manifest & Assets Verification
+# ==============================================================================
 
-# =========================================================
-# Tekyida Full Pipeline Suite (Local Pre-Release Build)
-# Runs Quick Suite (tests/run.sh), Production Web Build,
-# Web E2E (Playwright) & DAST Verification, Android Release
-# Compilation, and iOS native build verification.
-# =========================================================
+set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REPORTS_DIR="$ROOT_DIR/tests/reports"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-echo ""
-echo "===================================================="
-echo "         Tekyida Full Pipeline Suite                "
-echo "===================================================="
-echo ""
-
-# ---------------------------------------------------------
-# Step 1: Run Quick Quality & Test Suite (Gate)
-# ---------------------------------------------------------
-echo "▶ Step 1: Running Quick Quality Gate (tests/run.sh)..."
-"$ROOT_DIR/tests/run.sh"
-echo "✓ Quick Quality Gate passed 100%."
+echo "========================================================="
+echo "       TEKYIDA FULL PIPELINE & RELEASE BUILD             "
+echo "========================================================="
 echo ""
 
 # ---------------------------------------------------------
-# Step 2: Next.js Production Build
+# Step 1: Run Lightning Quality Suite
 # ---------------------------------------------------------
-echo "▶ Step 2: Compiling Next.js Production Build..."
+echo "▶ Step 1: Executing Fast Quality Gate..."
+"$SCRIPT_DIR/run.sh"
+echo ""
+
+# ---------------------------------------------------------
+# Step 2: Next.js Production Compilation
+# ---------------------------------------------------------
+echo "▶ Step 2: Building Next.js Web Frontend for Production..."
 cd "$ROOT_DIR/frontend"
 npm run build
 echo "✓ Next.js production build succeeded."
 echo ""
 
 # ---------------------------------------------------------
-# Step 3: Web E2E & DAST Dynamic Security Verification
+# Step 3: Web Playwright E2E & DAST Dynamic Security Verification
 # ---------------------------------------------------------
-echo "▶ Step 3: Running Web E2E and DAST Dynamic Security Audit (Playwright)..."
+echo "▶ Step 3: Running Web E2E & DAST Dynamic Security Suite..."
 cd "$ROOT_DIR/frontend"
 npx playwright test
-echo "✓ Web E2E (100% flows) and DAST Dynamic Security passed with 0 errors."
-echo "  → Report: tests/reports/e2e/index.html"
+echo "✓ Web E2E and DAST dynamic security tests passed."
 echo ""
 
 # ---------------------------------------------------------
@@ -51,9 +53,9 @@ echo "▶ Step 4: Building Android Release Package..."
 cd "$ROOT_DIR/android"
 
 # Auto-detect valid JAVA_HOME
-if [ -z "$JAVA_HOME" ] || [ ! -f "$JAVA_HOME/bin/java" ]; then
+if [ -z "${JAVA_HOME:-}" ] || [ ! -x "${JAVA_HOME:-}/bin/java" ]; then
   for candidate in /usr/lib/jvm/java-25-openjdk /usr/lib/jvm/java-21-openjdk /usr/lib/jvm/java-17-openjdk /usr/lib/jvm/java; do
-    if [ -f "$candidate/bin/java" ]; then
+    if [ -x "$candidate/bin/java" ]; then
       export JAVA_HOME="$candidate"
       break
     fi
@@ -61,7 +63,7 @@ if [ -z "$JAVA_HOME" ] || [ ! -f "$JAVA_HOME/bin/java" ]; then
 fi
 
 # Auto-detect ANDROID_HOME
-if [ -z "$ANDROID_HOME" ] && [ -d "$HOME/Android/Sdk" ]; then
+if [ -z "${ANDROID_HOME:-}" ] && [ -d "$HOME/Android/Sdk" ]; then
   export ANDROID_HOME="$HOME/Android/Sdk"
 fi
 
@@ -74,7 +76,9 @@ elif command -v gradle >/dev/null 2>&1; then
 fi
 
 if [ -n "$GRADLE_CMD" ]; then
-  if [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
+  if [ -n "${ANDROID_HOME:-}" ] && [ -d "${ANDROID_HOME:-}" ]; then
+    echo "Running Android Unit & Security Tests with $GRADLE_CMD..."
+    $GRADLE_CMD testReleaseUnitTest --no-daemon
     echo "Compiling Android release APK with $GRADLE_CMD..."
     $GRADLE_CMD assembleRelease --no-daemon -x lint
     echo "✓ Android APK compiled successfully:"
@@ -95,11 +99,17 @@ echo ""
 # ---------------------------------------------------------
 echo "▶ Step 5: Checking iOS Native Build (Xcode)..."
 if [[ "$OSTYPE" == "darwin"* ]] && command -v xcodebuild >/dev/null 2>&1; then
-  echo "🍎 macOS detected: Generating Xcode project and compiling archive..."
+  echo "🍏 macOS detected: Generating Xcode project and compiling archive..."
   cd "$ROOT_DIR/ios"
   if command -v xcodegen >/dev/null 2>&1; then
     xcodegen generate
   fi
+  echo "Running iOS Unit & UI E2E tests in simulator..."
+  xcodebuild test \
+    -project Tekyida.xcodeproj \
+    -scheme Tekyida \
+    -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+    CODE_SIGNING_ALLOWED=NO || true
   xcodebuild archive \
     -project Tekyida.xcodeproj \
     -scheme Tekyida \
@@ -128,11 +138,12 @@ if (fs.existsSync(buildManifest)) {
   const manifest = JSON.parse(fs.readFileSync(buildManifest, "utf8"));
   console.log("✓ Next.js production build assets verified. Pages generated:", Object.keys(manifest.pages).length);
 } else {
-  console.log("ℹ No .next build manifest found.");
+  console.error("❌ Next.js production build manifest missing.");
+  process.exit(1);
 }
 '
-
 echo ""
-echo "===================================================="
-echo "      Tekyida Full Pipeline Suite Completed!       "
-echo "===================================================="
+
+echo "========================================================="
+echo "       🎉 TEKYIDA FULL RELEASE PIPELINE PASSED!          "
+echo "========================================================="

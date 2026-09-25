@@ -10,6 +10,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
+object TekyidaAppLogic {
+    fun formatGreeting(name: String): String = "Welcome to $name!"
+
+    fun calculateNetBalance(amounts: List<Double>): Double = amounts.sum()
+
+    fun isDebtSettled(netBalance: Double): Boolean = kotlin.math.abs(netBalance) < 0.001
+}
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,5 +36,5 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Greeting(name: String) {
-    Text(text = "Welcome to $name!")
+    Text(text = TekyidaAppLogic.formatGreeting(name))
 }

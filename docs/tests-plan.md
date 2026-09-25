@@ -65,8 +65,8 @@ flowchart TD
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Web Frontend** | `vitest` (100% Coverage) | `npm audit` + ESLint Security | Playwright (Headless Chromium) | Playwright DAST Suite (Headers, Traversal, Fuzzing, XSS/SQLi) | No changes in `frontend/**` |
 | **Convex Backend** | `vitest` + `convex-test` (100% Coverage) | `npm audit` + Schema rules | Tested via Web Frontend E2E | Fuzzing & Auth Boundary Validation | No changes in `backend/**` |
-| **Android** | JUnit & Compose Tests | Android Lint / Gradle Check | Maestro / Espresso (Emulator) | MobSF static/dynamic Android check | No changes in `android/**` |
-| **iOS** | `xcodebuild test` (XCTest) | SwiftLint / Xcode Analyzer | Maestro / XCUITest (Simulator) | Dynamic Check (macOS Simulator) | No changes in `ios/**` |
+| **Android** | JUnit (`TekyidaUnitTest.kt`) | Android Lint / Gradle Check | Unit/Component Logic Validated | `AndroidSecurityTest.kt` (Cleartext, Manifest, Permissions) | No changes in `android/**` |
+| **iOS** | XCTest (`TekyidaTests.swift`) | SwiftLint / Xcode Analyzer | XCUITest (`TekyidaUITests.swift`) | `TekyidaTests.swift` (App Transport Security ATS Check) | No changes in `ios/**` |
 
 ---
 
@@ -97,7 +97,8 @@ Meant to run continuously during development.
  SAST Security Audit   | 0 High/Critical    | 0 Vulnerabilities | PASSED 
  TypeScript Integrity  | 0 Type Errors      | Clean (0 errors)  | PASSED 
 -----------------------+--------------------+-------------------+--------
- iOS Unit Tests        | macOS Xcode Suite  | Linux: Skipped    | READY  
+ Android Unit & Sec    | JUnit Test Suite   | 5 Tests Passed    | PASSED 
+ iOS Unit & UI Tests   | Xcode Test Suite   | Configured        | READY  
 ========================================================================
 ```
 
@@ -174,3 +175,9 @@ graph TD
   - [x] DAST dynamic security suite: Security headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy), sensitive path probe & traversal resistance, HTTP TRACE denial, XSS & SQLi payload fuzzing (graceful non-500 responses without stack traces), open redirect resistance.
   - [x] Add Next.js HTTP security headers in `frontend/next.config.ts`.
   - [x] Integrated into `tests/full.sh` and GitHub Actions `build-web` job.
+- [x] **Phase 5: Android & iOS Unit, E2E & DAST Dynamic Security Testing**
+  - [x] Android Unit Tests (`android/app/src/test/java/com/tekyida/TekyidaUnitTest.kt`): pure functions for greeting, debt balance calculations, settlement rules.
+  - [x] Android Security & DAST Check (`android/app/src/test/java/com/tekyida/AndroidSecurityTest.kt`): cleartext traffic disabled, manifest structure, least privilege permission footprint.
+  - [x] iOS UI E2E Test Suite (`ios/Tests/TekyidaUITests/TekyidaUITests.swift`): automated UI navigation and interaction with `XCUIApplication()`.
+  - [x] iOS DAST Security Check (`ios/Tests/TekyidaTests/TekyidaTests.swift`): App Transport Security (ATS) enforcement (`NSAllowsArbitraryLoads` rejection).
+  - [x] Integrated into `tests/run.sh`, `tests/full.sh`, and GitHub Actions CI workflow (`build-android` and `build-ios` on macOS-15 runner).

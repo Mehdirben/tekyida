@@ -41,3 +41,34 @@ targets:
         CODE_SIGN_STYLE: Manual
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
+
+  TekyidaUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Tests/TekyidaUITests
+    dependencies:
+      - target: Tekyida
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tekyida.uitests
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+
+schemes:
+  Tekyida:
+    build:
+      targets:
+        Tekyida: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - TekyidaTests
+        - TekyidaUITests
+    profile:
+      config: Release
+    archive:
+      config: Release
