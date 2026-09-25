@@ -2,7 +2,10 @@ name: Build Mobile Apps (iOS & Android)
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
   workflow_dispatch:
 
 # Cancel in-progress runs on the same branch to conserve macOS minutes
@@ -12,7 +15,9 @@ concurrency:
 
 jobs:
   # -------------------------------------------------------------
-  # Job 1: Quality Gate & Change Detection (Strict Quality Check)
+  # Job 1: Quality Gate & Change Detection
+  # - On 'main': Runs strict 100% test coverage, jscpd duplication check, SAST, and typecheck
+  # - On other branches: Fast-track mode (skips heavy test suites, builds IPA & APK directly)
   # -------------------------------------------------------------
   quality-gate:
     name: Quality Gate & Change Detection
@@ -20,10 +25,11 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
-      android: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' }}
-      ios: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.ios == 'true' }}
-      mobile: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' || steps.filter.outputs.ios == 'true' || steps.filter.outputs.distribution == 'true' }}
-      web: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true' }}
+      android: ${{ github.ref != 'refs/heads/main' || github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' }}
+      ios: ${{ github.ref != 'refs/heads/main' || github.event_name == 'workflow_dispatch' || steps.filter.outputs.ios == 'true' }}
+      mobile: ${{ github.ref != 'refs/heads/main' || github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' || steps.filter.outputs.ios == 'true' || steps.filter.outputs.distribution == 'true' }}
+      web: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true') }}
+      is_main: ${{ github.ref == 'refs/heads/main' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -52,23 +58,34 @@ jobs:
             distribution:
               - 'distribution/**'
 
+      - name: Fast-Track Notice for Feature/Beta Branch
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "⚡ Fast-track build active for branch '${{ github.ref_name }}'."
+          echo "Skipping full quality gates (duplication, unit tests, coverage, SAST, web E2E, and DAST)."
+          echo "Proceeding directly to IPA and APK compilation for Beta distribution."
+
       - name: Set up Node.js runtime
+        if: github.ref == 'refs/heads/main'
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Setup npm cache for quality checks
+        if: github.ref == 'refs/heads/main'
         uses: actions/cache@v4
         with:
           path: ~/.npm
           key: qg-npm-${{ runner.os }}-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json') }}
 
       - name: Install Quality Gate Dependencies
+        if: github.ref == 'refs/heads/main'
         run: |
           [ "${{ steps.filter.outputs.backend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] && npm ci --prefix backend --prefer-offline || true
           [ "${{ steps.filter.outputs.frontend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] && npm ci --prefix frontend --prefer-offline || true
 
       - name: Run Tekyida Quality Gate (tests/run.sh)
+        if: github.ref == 'refs/heads/main'
         env:
           CHANGE_BACKEND: ${{ steps.filter.outputs.backend }}
           CHANGE_FRONTEND: ${{ steps.filter.outputs.frontend }}
@@ -80,7 +97,7 @@ jobs:
           ./tests/run.sh
 
   # -------------------------------------------------------------
-  # Job 2: Initialize GitHub Release (Asset Carry-Forward)
+  # Job 2: Initialize GitHub Release (Stable or Beta Pre-release)
   # -------------------------------------------------------------
   init-release:
     name: Initialize Release & Carry Forward Assets
@@ -89,32 +106,52 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      release_tag: ${{ steps.release-setup.outputs.release_tag }}
+      is_beta: ${{ steps.release-setup.outputs.is_beta }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
       - name: Create or Update GitHub Release
+        id: release-setup
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "build-${{ github.run_number }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
-            echo "Release build-${{ github.run_number }} already exists."
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            RELEASE_TAG="build-${{ github.run_number }}"
+            IS_BETA="false"
+            PRERELEASE_FLAG=""
+            RELEASE_TITLE="Build ${{ github.run_number }}"
           else
-            gh release create "build-${{ github.run_number }}" \
+            RELEASE_TAG="beta-${{ github.run_number }}"
+            IS_BETA="true"
+            PRERELEASE_FLAG="--prerelease"
+            RELEASE_TITLE="Beta Build ${{ github.run_number }} (${{ github.ref_name }})"
+          fi
+
+          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "is_beta=$IS_BETA" >> "$GITHUB_OUTPUT"
+
+          if gh release view "$RELEASE_TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists."
+          else
+            gh release create "$RELEASE_TAG" \
               --repo "${{ github.repository }}" \
-              --title "Build ${{ github.run_number }}" \
+              --title "$RELEASE_TITLE" \
+              $PRERELEASE_FLAG \
               --generate-notes
           fi
 
-          # Carry forward previous release assets so both APK and IPA are guaranteed in every release
-          LATEST_TAG=$(gh release list --repo "${{ github.repository }}" --limit 2 --json tagName -q '.[].tagName' 2>/dev/null | grep -v "build-${{ github.run_number }}" | head -n 1 || true)
+          # Carry forward previous release assets so both APK and IPA are guaranteed
+          LATEST_TAG=$(gh release list --repo "${{ github.repository }}" --limit 4 --json tagName -q '.[].tagName' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
           if [ -n "$LATEST_TAG" ]; then
             echo "Carrying forward assets from previous release: $LATEST_TAG"
             mkdir -p previous-assets
-            gh release download "$LATEST_TAG" --repo "${{ github.repository }}" --pattern "Tekyida.*" --pattern "apps.json" --dir previous-assets || true
+            gh release download "$LATEST_TAG" --repo "${{ github.repository }}" --pattern "Tekyida.*" --pattern "apps*.json" --dir previous-assets || true
             if ls previous-assets/* >/dev/null 2>&1; then
-              gh release upload "build-${{ github.run_number }}" \
+              gh release upload "$RELEASE_TAG" \
                 --repo "${{ github.repository }}" \
                 previous-assets/* \
                 --clobber || true
@@ -147,7 +184,7 @@ jobs:
         uses: actions/checkout@v5
 
       # Stamps the CI run number into CFBundleVersion so each build shows a
-      # distinct version inside LiveContainer (easy to confirm an update landed)
+      # distinct version inside LiveContainer
       - name: Stamp Build Number
         run: plutil -replace CFBundleVersion -string "${{ github.run_number }}" Sources/App/Info.plist
 
@@ -181,8 +218,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-derived-data-
 
-      # Runs iOS Unit Tests and UI E2E Tests in Simulator
+      # Runs iOS Unit Tests and UI E2E Tests in Simulator ONLY on main
       - name: Run iOS Unit & UI E2E Tests (Simulator)
+        if: github.ref == 'refs/heads/main'
         run: |
           xcodebuild test \
             -project Tekyida.xcodeproj \
@@ -193,7 +231,6 @@ jobs:
             CODE_SIGN_IDENTITY=""
 
       # Compiles the app into an .xcarchive without code signing.
-      # The resulting binary is unsigned and requires LiveContainer or a sideloading tool
       - name: Build Archive
         run: |
           xcodebuild archive \
@@ -213,28 +250,44 @@ jobs:
           cp -r build/Tekyida.xcarchive/Products/Applications/Tekyida.app build/Payload/
           cd build && zip -r Tekyida.ipa Payload
 
-      # Generates apps.json -- the source feed that LiveContainer reads to detect updates.
-      - name: Generate LiveContainer Source JSON
+      # Generates apps.json for SideStore / LiveContainer
+      - name: Generate SideStore Source JSON
         run: |
+          mkdir -p build
+          RELEASE_TAG="${{ needs.init-release.outputs.release_tag }}"
+          IS_BETA="${{ needs.init-release.outputs.is_beta }}"
+
+          if [ "$IS_BETA" = "true" ]; then
+            FEED_NAME="Tekyida (Beta)"
+            FEED_ID="com.tekyida.ios.source.beta"
+            VERSION_STR="1.0-beta"
+            VERSION_DESC="Beta build from branch ${{ github.ref_name }} (commit ${{ github.sha }})"
+          else
+            FEED_NAME="Tekyida (Stable)"
+            FEED_ID="com.tekyida.ios.source"
+            VERSION_STR="1.0"
+            VERSION_DESC="Automated build from commit ${{ github.sha }}"
+          fi
+
           cat <<EOF > build/apps.json
           {
-            "name": "Tekyida LiveContainer Source",
-            "identifier": "com.tekyida.ios.source",
+            "name": "$FEED_NAME",
+            "identifier": "$FEED_ID",
             "apps": [
               {
                 "bundleIdentifier": "com.tekyida.app",
                 "name": "Tekyida",
                 "developerName": "Tekyida",
                 "localizedDescription": "Modern IOU Tracker for iOS & Android",
-                "iconURL": "https://raw.githubusercontent.com/${{ github.repository }}/main/ios/Sources/App/Assets.xcassets/AppIcon.appiconset/icon-1024.png",
+                "iconURL": "https://raw.githubusercontent.com/${{ github.repository }}/main/distribution/fdroid/icon.png",
                 "versions": [
                   {
-                    "version": "1.0",
+                    "version": "$VERSION_STR",
                     "buildVersion": "${{ github.run_number }}",
                     "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
                     "minOSVersion": "17.0",
-                    "localizedDescription": "Automated build from commit ${{ github.sha }}",
-                    "downloadURL": "https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_number }}/Tekyida.ipa",
+                    "localizedDescription": "$VERSION_DESC",
+                    "downloadURL": "https://github.com/${{ github.repository }}/releases/download/$RELEASE_TAG/Tekyida.ipa",
                     "size": $(stat -f%z build/Tekyida.ipa)
                   }
                 ]
@@ -243,13 +296,13 @@ jobs:
           }
           EOF
 
-      # Directly uploads IPA and apps.json to GitHub Release (No actions storage used)
+      # Directly uploads IPA and apps.json to GitHub Release
       - name: Upload iOS Assets Directly to GitHub Release
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "build-${{ github.run_number }}" \
+          gh release upload "${{ needs.init-release.outputs.release_tag }}" \
             --repo "${{ github.repository }}" \
             build/Tekyida.ipa \
             build/apps.json \
@@ -294,8 +347,9 @@ jobs:
       - name: Ensure Gradle wrapper is executable
         run: chmod +x gradlew
 
-      # Runs Android Unit & Security Tests
+      # Runs Android Unit & Security Tests ONLY on main
       - name: Run Android Unit & Security Tests
+        if: github.ref == 'refs/heads/main'
         run: ./gradlew testReleaseUnitTest --no-daemon
 
       # Builds the release APK with dynamic versionCode matching CI
@@ -309,19 +363,20 @@ jobs:
           cp app/build/outputs/apk/release/app-release-unsigned.apk build-assets/Tekyida.apk 2>/dev/null || \
           cp app/build/outputs/apk/release/app-release.apk build-assets/Tekyida.apk
 
-      # Directly uploads APK to GitHub Release (No actions storage used)
+      # Directly uploads APK to GitHub Release
       - name: Upload Android Assets Directly to GitHub Release
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "build-${{ github.run_number }}" \
+          gh release upload "${{ needs.init-release.outputs.release_tag }}" \
             --repo "${{ github.repository }}" \
             build-assets/Tekyida.apk \
             --clobber
 
   # -------------------------------------------------------------
   # Job 5: Web Build, E2E & DAST Dynamic Security Verification
+  # (Only runs on 'main' branch)
   # -------------------------------------------------------------
   build-web:
     name: Build & Verify Web (E2E & DAST)
@@ -329,6 +384,7 @@ jobs:
     if: |
       always() &&
       !cancelled() &&
+      github.ref == 'refs/heads/main' &&
       needs.quality-gate.result == 'success' &&
       needs.quality-gate.outputs.web == 'true'
     runs-on: ubuntu-latest
@@ -396,6 +452,7 @@ jobs:
 
   # -------------------------------------------------------------
   # Job 6: Deploy Mobile Distribution Portal & Repositories (GitHub Pages)
+  # Provides dual channels: Stable and Beta for both SideStore & F-Droid
   # -------------------------------------------------------------
   deploy-distribution:
     name: Deploy Mobile Distribution (SideStore & F-Droid)
@@ -436,75 +493,143 @@ jobs:
           pipx install fdroidserver
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      # Fetches latest release assets (APK, IPA, apps.json)
-      - name: Download Mobile Release Assets
+      # Builds the dual-channel static GitHub Pages distribution site
+      - name: Assemble Mobile Distribution Site
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p release-assets
-          gh release download "build-${{ github.run_number }}" \
-            --repo "${{ github.repository }}" \
-            --pattern "Tekyida.*" \
-            --pattern "apps.json" \
-            --dir release-assets || true
+          mkdir -p site-pages/ios site-pages/ios/beta
+          mkdir -p site-pages/fdroid/repo site-pages/fdroid/metadata
+          mkdir -p site-pages/fdroid/beta/repo site-pages/fdroid/beta/metadata
 
-      # Builds the static GitHub Pages distribution site
-      - name: Assemble Mobile Distribution Site
-        run: |
-          mkdir -p site-pages/ios site-pages/fdroid/repo site-pages/fdroid/metadata
           cp distribution/portal/index.html site-pages/index.html
-          cp distribution/fdroid/icon.png site-pages/fdroid/icon.png
 
-          # 1. Setup iOS SideStore source feed
-          if [ -f release-assets/apps.json ]; then
-            cp release-assets/apps.json site-pages/ios/apps.json
+          # 1. Identify current and latest releases
+          CURRENT_TAG="${{ needs.init-release.outputs.release_tag }}"
+          IS_CURRENT_BETA="${{ needs.init-release.outputs.is_beta }}"
+
+          LATEST_STABLE_TAG=$(gh release list --repo "${{ github.repository }}" --exclude-pre-releases --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || true)
+          LATEST_BETA_TAG=$(gh release list --repo "${{ github.repository }}" --limit 10 --json tagName,isPrerelease -q '.[] | select(.isPrerelease == true) | .tagName' 2>/dev/null | head -n 1 || true)
+
+          if [ "$IS_CURRENT_BETA" = "true" ]; then
+            LATEST_BETA_TAG="$CURRENT_TAG"
+          else
+            LATEST_STABLE_TAG="$CURRENT_TAG"
+          fi
+
+          echo "Target Stable Tag: $LATEST_STABLE_TAG"
+          echo "Target Beta Tag:   $LATEST_BETA_TAG"
+
+          mkdir -p assets-stable assets-beta
+          if [ -n "$LATEST_STABLE_TAG" ]; then
+            gh release download "$LATEST_STABLE_TAG" --repo "${{ github.repository }}" --pattern "Tekyida.*" --pattern "apps*.json" --dir assets-stable || true
+          fi
+          if [ -n "$LATEST_BETA_TAG" ]; then
+            gh release download "$LATEST_BETA_TAG" --repo "${{ github.repository }}" --pattern "Tekyida.*" --pattern "apps*.json" --dir assets-beta || true
+          fi
+
+          # Fallback between channels if one channel has not produced assets yet
+          if [ ! -f assets-beta/Tekyida.apk ] && [ -f assets-stable/Tekyida.apk ]; then
+            cp assets-stable/Tekyida.apk assets-beta/Tekyida.apk
+          elif [ ! -f assets-stable/Tekyida.apk ] && [ -f assets-beta/Tekyida.apk ]; then
+            cp assets-beta/Tekyida.apk assets-stable/Tekyida.apk
+          fi
+
+          # 2. Setup iOS SideStore source feeds (Stable & Beta)
+          if [ -f assets-stable/apps.json ]; then
+            cp assets-stable/apps.json site-pages/ios/apps.json
           else
             cat <<EOF > site-pages/ios/apps.json
-            {
-              "name": "Tekyida LiveContainer Source",
-              "identifier": "com.tekyida.ios.source",
-              "apps": [
-                {
-                  "bundleIdentifier": "com.tekyida.app",
-                  "name": "Tekyida",
-                  "developerName": "Tekyida",
-                  "localizedDescription": "Modern IOU Tracker for iOS & Android",
-                  "iconURL": "https://raw.githubusercontent.com/${{ github.repository }}/main/ios/Sources/App/Assets.xcassets/AppIcon.appiconset/icon-1024.png",
-                  "versions": [
-                    {
-                      "version": "1.0",
-                      "buildVersion": "${{ github.run_number }}",
-                      "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-                      "minOSVersion": "17.0",
-                      "localizedDescription": "Automated build from commit ${{ github.sha }}",
-                      "downloadURL": "https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_number }}/Tekyida.ipa",
-                      "size": 0
-                    }
-                  ]
-                }
-              ]
-            }
+          {
+            "name": "Tekyida (Stable)",
+            "identifier": "com.tekyida.ios.source",
+            "apps": [
+              {
+                "bundleIdentifier": "com.tekyida.app",
+                "name": "Tekyida",
+                "developerName": "Tekyida",
+                "localizedDescription": "Modern IOU Tracker for iOS & Android",
+                "iconURL": "https://raw.githubusercontent.com/${{ github.repository }}/main/distribution/fdroid/icon.png",
+                "versions": [
+                  {
+                    "version": "1.0",
+                    "buildVersion": "${{ github.run_number }}",
+                    "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+                    "minOSVersion": "17.0",
+                    "localizedDescription": "Stable release",
+                    "downloadURL": "https://github.com/${{ github.repository }}/releases/download/$LATEST_STABLE_TAG/Tekyida.ipa",
+                    "size": 0
+                  }
+                ]
+              }
+            ]
+          }
           EOF
           fi
 
-          # 2. Setup Android F-Droid repo
-          if [ -f release-assets/Tekyida.apk ]; then
-            cp release-assets/Tekyida.apk site-pages/fdroid/repo/Tekyida.apk
+          if [ -f assets-beta/apps.json ]; then
+            cp assets-beta/apps.json site-pages/ios/beta/apps.json
+          else
+            cat <<EOF > site-pages/ios/beta/apps.json
+          {
+            "name": "Tekyida (Beta)",
+            "identifier": "com.tekyida.ios.source.beta",
+            "apps": [
+              {
+                "bundleIdentifier": "com.tekyida.app",
+                "name": "Tekyida",
+                "developerName": "Tekyida",
+                "localizedDescription": "Modern IOU Tracker for iOS & Android (Beta)",
+                "iconURL": "https://raw.githubusercontent.com/${{ github.repository }}/main/distribution/fdroid/icon.png",
+                "versions": [
+                  {
+                    "version": "1.0-beta",
+                    "buildVersion": "${{ github.run_number }}",
+                    "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+                    "minOSVersion": "17.0",
+                    "localizedDescription": "Beta preview release",
+                    "downloadURL": "https://github.com/${{ github.repository }}/releases/download/$LATEST_BETA_TAG/Tekyida.ipa",
+                    "size": 0
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+          fi
+
+          # 3. Setup Android F-Droid: STABLE Channel
+          # Place APK into repo/ and app icon into metadata/ (NEVER put icon.png into repo/)
+          if [ -f assets-stable/Tekyida.apk ]; then
+            cp assets-stable/Tekyida.apk site-pages/fdroid/repo/Tekyida.apk
           fi
           cp distribution/fdroid/config.yml site-pages/fdroid/config.yml
           cp distribution/fdroid/keystore.p12 site-pages/fdroid/keystore.p12
-          cp distribution/fdroid/icon.png site-pages/fdroid/repo/icon.png
-          cp distribution/fdroid/metadata/com.tekyida.yml site-pages/fdroid/metadata/
+          cp distribution/fdroid/icon.png site-pages/fdroid/icon.png
+          cp -r distribution/fdroid/metadata/* site-pages/fdroid/metadata/
 
-          # 3. Generate signed F-Droid repository indexes
           cd site-pages/fdroid
           export ANDROID_HOME=/usr/local/lib/android/sdk
           export PATH="$HOME/.local/bin:$PATH"
           fdroid update --create-metadata --pretty
           cd ../..
 
-          # 4. Clean sensitive signing files before deploying to public GitHub Pages
+          # 4. Setup Android F-Droid: BETA Channel
+          if [ -f assets-beta/Tekyida.apk ]; then
+            cp assets-beta/Tekyida.apk site-pages/fdroid/beta/repo/Tekyida.apk
+          fi
+          cp distribution/fdroid/config-beta.yml site-pages/fdroid/beta/config.yml
+          cp distribution/fdroid/keystore.p12 site-pages/fdroid/beta/keystore.p12
+          cp distribution/fdroid/icon.png site-pages/fdroid/beta/icon.png
+          cp -r distribution/fdroid/metadata/* site-pages/fdroid/beta/metadata/
+
+          cd site-pages/fdroid/beta
+          fdroid update --create-metadata --pretty
+          cd ../../..
+
+          # 5. Security Clean-up: remove sensitive keystore and config before deployment
           rm -f site-pages/fdroid/keystore.p12 site-pages/fdroid/config.yml
+          rm -f site-pages/fdroid/beta/keystore.p12 site-pages/fdroid/beta/config.yml
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3

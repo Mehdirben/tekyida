@@ -10,10 +10,12 @@ Tekyida provides automated, direct-to-device app updates through community sidel
 
 👉 **[Tekyida Mobile Installation Portal](https://mehdirben.github.io/tekyida/)**
 
-| Platform | Store / Method | Source URL | Quick Action |
-| :--- | :--- | :--- | :--- |
-| **iOS** | SideStore / AltStore | `https://mehdirben.github.io/tekyida/ios/apps.json` | [⚡ Add to SideStore](sidestore://source?url=https%3A%2F%2Fmehdirben.github.io%2Ftekyida%2Fios%2Fapps.json) |
-| **Android** | F-Droid / Droid-ify | `https://mehdirben.github.io/tekyida/fdroid/repo` | [⚡ Add to F-Droid](fdroidrepo://mehdirben.github.io/tekyida/fdroid/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3) |
+| Platform | Channel | Store / Method | Source URL | Quick Action |
+| :--- | :--- | :--- | :--- | :--- |
+| **iOS** | 🟢 Stable | SideStore / AltStore | `https://mehdirben.github.io/tekyida/ios/apps.json` | [⚡ Add Stable](sidestore://source?url=https%3A%2F%2Fmehdirben.github.io%2Ftekyida%2Fios%2Fapps.json) |
+| **iOS** | 🟡 Beta | SideStore / AltStore | `https://mehdirben.github.io/tekyida/ios/beta/apps.json` | [⚡ Add Beta](sidestore://source?url=https%3A%2F%2Fmehdirben.github.io%2Ftekyida%2Fios%2Fbeta%2Fapps.json) |
+| **Android** | 🟢 Stable | F-Droid / Droid-ify | `https://mehdirben.github.io/tekyida/fdroid/repo` | [⚡ Add Stable](fdroidrepo://mehdirben.github.io/tekyida/fdroid/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3) |
+| **Android** | 🟡 Beta | F-Droid / Droid-ify | `https://mehdirben.github.io/tekyida/fdroid/beta/repo` | [⚡ Add Beta](fdroidrepo://mehdirben.github.io/tekyida/fdroid/beta/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3) |
 
 > Complete instructions and QR codes are available in the [Mobile Distribution Guide](docs/mobile_distribution.md).
 
@@ -33,93 +35,9 @@ Tekyida is a monorepo consisting of:
 ```text
 tekyida/
 ├── frontend/                 # Next.js web application
-│   ├── app/                  # App Router pages and layouts
-│   ├── components/           # UI components
-│   └── lib/                  # Utilities, offline queue, state management
-│
-├── backend/                  # Convex backend
-│   ├── convex/               # Schemas, queries, mutations, auth
-│   └── vitest.config.ts      # Backend test configuration
-│
-├── ios/                      # Native iOS application
-│   ├── Sources/App/          # SwiftUI views, models, networking
-│   ├── Tests/                # iOS Unit & UI test suites
-│   └── project.yml           # XcodeGen configuration
-│
-├── android/                  # Native Android application
-│   ├── app/src/main/         # Jetpack Compose UI, ViewModels, repository
-│   └── app/src/test/         # Android Unit & Security test suites
-│
-├── distribution/             # Sideloading feeds and portals
-│   ├── portal/               # Web portal for SideStore / F-Droid
-│   └── fdroid/               # F-Droid repo config, keystore, metadata
-│
-├── tests/                    # Quality gate & validation harness
-│   ├── run.sh                # Main test runner (100% test coverage)
-│   └── jscpd.json            # Strict duplication configuration
-│
-├── .github/                  # GitHub Actions CI/CD workflows
-├── LICENSE                   # GNU Affero General Public License v3.0
-├── .gitignore                # Root gitignore
-└── README.md                 # Project README
+├── backend/                  # Convex backend functions & schema
+├── ios/                      # Native iOS SwiftUI client
+├── android/                  # Native Android Compose client
+├── distribution/             # F-Droid & SideStore distribution
+└── tests/                    # Multi-tier quality gate runner
 ```
-
----
-
-## 🚀 Getting Started
-
-### 1. Frontend Web App (`frontend/`)
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Visit [http://localhost:3000](http://localhost:3000).
-
-To build with Docker:
-```bash
-cd frontend
-docker compose up -d --build
-```
-
-### 2. Convex Backend (`backend/`)
-
-```bash
-cd backend
-npm install
-npx convex dev
-```
-
-### 3. iOS App (`ios/`)
-
-```bash
-cd ios
-xcodegen generate
-open Tekyida.xcodeproj
-```
-
-CI builds are automatically triggered on push to main via `.github/workflows/build.yml`.
-
-### 4. Android App (`android/`)
-
-1. Open `android/` directory in Android Studio.
-2. Let Gradle sync dependencies.\n3. Run on an emulator or Android device.
-
----
-
-## 📚 Documentation
-
-Detailed documentation is in [docs/](docs/):
-- [Mobile App Distribution Guide](docs/mobile_distribution.md)
-- [Architecture Overview](docs/architecture.md)
-- [Dokploy Deployment Guide](docs/dokploy_guide.md)
-- [Migration Guide](docs/migration_guide.md)
-- [Test & Quality Plan](docs/tests-plan.md)
-
----
-
-## 📄 License
-
-Tekyida is free and open-source software licensed under the **GNU Affero General Public License v3.0** (`AGPL-3.0-only`). See the [LICENSE](LICENSE) file for the complete license terms.

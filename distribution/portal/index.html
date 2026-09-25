@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tekyida — Mobile Installation & Sources</title>
-  <meta name="description" content="Official distribution sources for Tekyida on iOS (SideStore/LiveContainer) and Android (F-Droid).">
+  <title>Tekyida — Mobile Distribution (Stable & Beta)</title>
+  <meta name="description" content="Official distribution channels for Tekyida on iOS (SideStore/LiveContainer) and Android (F-Droid) with Stable and Beta releases.">
   <link rel="icon" href="./fdroid/icon.png" type="image/png">
   <style>
     :root {
@@ -17,6 +17,8 @@
       --accent-emerald-hover: #059669;
       --accent-blue: #3b82f6;
       --accent-blue-hover: #2563eb;
+      --accent-amber: #f59e0b;
+      --accent-amber-hover: #d97706;
       --code-bg: rgba(15, 23, 42, 0.85);
     }
 
@@ -47,7 +49,7 @@
 
     header {
       text-align: center;
-      margin-bottom: 3rem;
+      margin-bottom: 2rem;
     }
 
     .logo-badge {
@@ -82,8 +84,66 @@
     .tagline {
       font-size: 1.125rem;
       color: var(--text-muted);
-      max-width: 600px;
+      max-width: 620px;
       margin: 0 auto;
+    }
+
+    /* Channel Selector Controls */
+    .channel-switch-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .channel-toggle {
+      display: inline-flex;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 4px;
+      gap: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.65rem 1.4rem;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .toggle-btn:hover {
+      color: var(--text);
+    }
+
+    .toggle-btn.active {
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .dot-stable {
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+    }
+
+    .dot-beta {
+      background: var(--accent-amber);
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
     }
 
     .grid {
@@ -137,14 +197,43 @@
       border: 1px solid rgba(16, 185, 129, 0.3);
     }
 
+    .card-title-wrap {
+      flex: 1;
+    }
+
     .card-title {
       font-size: 1.35rem;
       font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .channel-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .badge-stable {
+      background: rgba(16, 185, 129, 0.18);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .badge-beta {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.35);
     }
 
     .card-subtitle {
       font-size: 0.875rem;
       color: var(--text-muted);
+      margin-top: 2px;
     }
 
     .btn {
@@ -270,6 +359,46 @@
       background: rgba(255, 255, 255, 0.16);
     }
 
+    .channel-links-summary {
+      margin-top: 1.25rem;
+      padding: 0.85rem;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 0.78rem;
+    }
+
+    .channel-links-title {
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .channel-link-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .channel-link-row:last-child {
+      border-bottom: none;
+    }
+
+    .channel-link-row a {
+      color: #93c5fd;
+      text-decoration: none;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 0.74rem;
+    }
+
+    .channel-link-row.android-row a {
+      color: #6ee7b7;
+    }
+
     .steps {
       margin-top: 1.5rem;
       padding-top: 1.25rem;
@@ -314,13 +443,28 @@
       <p class="tagline">Install and receive seamless, auto-updating builds for iOS (SideStore / LiveContainer) and Android (F-Droid / Droid-ify / Neo Store).</p>
     </header>
 
+    <!-- Channel Selector (Stable vs Beta) -->
+    <div class="channel-switch-container">
+      <div class="channel-toggle" role="tablist">
+        <button id="tab-stable" class="toggle-btn active" role="tab" aria-selected="true" onclick="setChannel('stable')">
+          <span class="status-dot dot-stable"></span> Stable Release
+        </button>
+        <button id="tab-beta" class="toggle-btn" role="tab" aria-selected="false" onclick="setChannel('beta')">
+          <span class="status-dot dot-beta"></span> Beta Channel
+        </button>
+      </div>
+    </div>
+
     <div class="grid">
       <!-- iOS Section -->
       <div class="card">
         <div class="card-header">
           <div class="platform-icon ios-icon">🍎</div>
-          <div>
-            <div class="card-title">iOS Distribution</div>
+          <div class="card-title-wrap">
+            <div class="card-title">
+              <span>iOS Distribution</span>
+              <span id="badge-ios" class="channel-badge badge-stable">Stable</span>
+            </div>
             <div class="card-subtitle">SideStore, AltStore & LiveContainer</div>
           </div>
         </div>
@@ -335,17 +479,30 @@
 
         <div class="qr-container">
           <canvas id="qr-ios"></canvas>
-          <div class="qr-caption">Scan with iPhone Camera</div>
+          <div class="qr-caption" id="qr-caption-ios">Scan with iPhone Camera</div>
         </div>
 
         <div class="input-group">
           <div class="input-label">
-            <span>SideStore Source URL</span>
+            <span id="label-ios-url">SideStore Source URL (Stable)</span>
             <span id="copied-ios" style="color: var(--accent-blue); display: none;">Copied!</span>
           </div>
           <div class="copy-box">
             <input type="text" id="url-ios" readonly value="https://mehdirben.github.io/tekyida/ios/apps.json">
             <button class="copy-btn" onclick="copyText('url-ios', 'copied-ios')">Copy</button>
+          </div>
+        </div>
+
+        <!-- Direct Channel Summary Links -->
+        <div class="channel-links-summary">
+          <div class="channel-links-title">Available iOS Feeds</div>
+          <div class="channel-link-row">
+            <span>🟢 Stable:</span>
+            <a href="./ios/apps.json" target="_blank">ios/apps.json</a>
+          </div>
+          <div class="channel-link-row">
+            <span>🟡 Beta:</span>
+            <a href="./ios/beta/apps.json" target="_blank">ios/beta/apps.json</a>
           </div>
         </div>
 
@@ -362,8 +519,11 @@
       <div class="card">
         <div class="card-header">
           <div class="platform-icon android-icon">🤖</div>
-          <div>
-            <div class="card-title">Android Distribution</div>
+          <div class="card-title-wrap">
+            <div class="card-title">
+              <span>Android Distribution</span>
+              <span id="badge-android" class="channel-badge badge-stable">Stable</span>
+            </div>
             <div class="card-subtitle">F-Droid, Droid-ify & Neo Store</div>
           </div>
         </div>
@@ -378,12 +538,12 @@
 
         <div class="qr-container">
           <canvas id="qr-android"></canvas>
-          <div class="qr-caption">Scan with F-Droid or Camera</div>
+          <div class="qr-caption" id="qr-caption-android">Scan with F-Droid or Camera</div>
         </div>
 
         <div class="input-group">
           <div class="input-label">
-            <span>F-Droid Repository URL</span>
+            <span id="label-android-url">F-Droid Repository URL (Stable)</span>
             <span id="copied-android" style="color: var(--accent-emerald); display: none;">Copied!</span>
           </div>
           <div class="copy-box android-copy">
@@ -403,6 +563,19 @@
           </div>
         </div>
 
+        <!-- Direct Channel Summary Links -->
+        <div class="channel-links-summary">
+          <div class="channel-links-title">Available Android Repos</div>
+          <div class="channel-link-row android-row">
+            <span>🟢 Stable:</span>
+            <a href="./fdroid/repo" target="_blank">fdroid/repo</a>
+          </div>
+          <div class="channel-link-row android-row">
+            <span>🟡 Beta:</span>
+            <a href="./fdroid/beta/repo" target="_blank">fdroid/beta/repo</a>
+          </div>
+        </div>
+
         <div class="steps">
           <ol>
             <li>Tap <b>Add Repository to F-Droid</b> on your Android device.</li>
@@ -419,6 +592,60 @@
   </div>
 
   <script>
+    const CHANNELS = {
+      stable: {
+        iosUrl: "https://mehdirben.github.io/tekyida/ios/apps.json",
+        iosDeepLink: "sidestore://source?url=https%3A%2F%2Fmehdirben.github.io%2Ftekyida%2Fios%2Fapps.json",
+        iosDownload: "https://github.com/Mehdirben/tekyida/releases/latest",
+        androidUrl: "https://mehdirben.github.io/tekyida/fdroid/repo",
+        androidDeepLink: "fdroidrepo://mehdirben.github.io/tekyida/fdroid/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3",
+        androidDownload: "./fdroid/repo/Tekyida.apk",
+        badgeText: "Stable",
+        badgeClass: "badge-stable"
+      },
+      beta: {
+        iosUrl: "https://mehdirben.github.io/tekyida/ios/beta/apps.json",
+        iosDeepLink: "sidestore://source?url=https%3A%2F%2Fmehdirben.github.io%2Ftekyida%2Fios%2Fbeta%2Fapps.json",
+        iosDownload: "https://github.com/Mehdirben/tekyida/releases",
+        androidUrl: "https://mehdirben.github.io/tekyida/fdroid/beta/repo",
+        androidDeepLink: "fdroidrepo://mehdirben.github.io/tekyida/fdroid/beta/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3",
+        androidDownload: "./fdroid/beta/repo/Tekyida.apk",
+        badgeText: "Beta",
+        badgeClass: "badge-beta"
+      }
+    };
+
+    let currentChannel = 'stable';
+
+    function setChannel(channel) {
+      currentChannel = channel;
+      const data = CHANNELS[channel];
+
+      // Update toggle buttons
+      document.getElementById('tab-stable').classList.toggle('active', channel === 'stable');
+      document.getElementById('tab-beta').classList.toggle('active', channel === 'beta');
+
+      // Update iOS card
+      document.getElementById('badge-ios').textContent = data.badgeText;
+      document.getElementById('badge-ios').className = `channel-badge ${data.badgeClass}`;
+      document.getElementById('btn-sidestore').href = data.iosDeepLink;
+      document.getElementById('btn-download-ipa').href = data.iosDownload;
+      document.getElementById('url-ios').value = data.iosUrl;
+      document.getElementById('label-ios-url').textContent = `SideStore Source URL (${data.badgeText})`;
+
+      // Update Android card
+      document.getElementById('badge-android').textContent = data.badgeText;
+      document.getElementById('badge-android').className = `channel-badge ${data.badgeClass}`;
+      document.getElementById('btn-fdroid').href = data.androidDeepLink;
+      document.getElementById('btn-download-apk').href = data.androidDownload;
+      document.getElementById('url-android').value = data.androidUrl;
+      document.getElementById('label-android-url').textContent = `F-Droid Repository URL (${data.badgeText})`;
+
+      // Re-render QR codes
+      renderQR('qr-ios', data.iosDeepLink);
+      renderQR('qr-android', data.androidDeepLink);
+    }
+
     function copyText(elementId, noticeId) {
       const input = document.getElementById(elementId);
       input.select();
@@ -460,8 +687,7 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      renderQR('qr-ios', 'sidestore://source?url=https%3A%2F%2Fmehdirben.github.io%2Ftekyida%2Fios%2Fapps.json');
-      renderQR('qr-android', 'fdroidrepo://mehdirben.github.io/tekyida/fdroid/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3');
+      setChannel('stable');
     });
   </script>
 </body>
