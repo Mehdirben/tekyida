@@ -40,10 +40,10 @@ public struct SearchView: View {
                 .tabBarMinimizeBehaviorOnScroll()
             }
             .navigationTitle("Search")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .searchable(
                 text: $query,
-                placement: .navigationBarDrawer(displayMode: .always),
+                placement: .automatic,
                 prompt: Text("Contacts, experiences, amounts...")
             )
             .searchScopes($scope) {
