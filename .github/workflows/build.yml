@@ -16,8 +16,9 @@ concurrency:
 jobs:
   # -------------------------------------------------------------
   # Job 1: Quality Gate & Change Detection
+  # - Detects changed paths per platform (Web, Android, iOS, Distribution)
   # - On 'main': Runs strict 100% test coverage, jscpd duplication check, SAST, and typecheck
-  # - On other branches: Fast-track mode (skips heavy test suites, builds IPA & APK directly)
+  # - On other branches: Runs fast unit tests only for changed platforms (skips slow E2E, coverage, and DAST)
   # -------------------------------------------------------------
   quality-gate:
     name: Quality Gate & Change Detection
@@ -25,10 +26,10 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
-      android: ${{ github.ref != 'refs/heads/main' || github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' }}
-      ios: ${{ github.ref != 'refs/heads/main' || github.event_name == 'workflow_dispatch' || steps.filter.outputs.ios == 'true' }}
-      mobile: ${{ github.ref != 'refs/heads/main' || github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' || steps.filter.outputs.ios == 'true' || steps.filter.outputs.distribution == 'true' }}
-      web: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true') }}
+      android: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' }}
+      ios: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.ios == 'true' }}
+      mobile: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' || steps.filter.outputs.ios == 'true' || steps.filter.outputs.distribution == 'true' }}
+      web: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true' }}
       is_main: ${{ github.ref == 'refs/heads/main' }}
     steps:
       - name: Checkout repository
@@ -61,30 +62,48 @@ jobs:
       - name: Fast-Track Notice for Feature/Beta Branch
         if: github.ref != 'refs/heads/main'
         run: |
-          echo "⚡ Fast-track build active for branch '${{ github.ref_name }}'."
-          echo "Skipping full quality gates (duplication, unit tests, coverage, SAST, web E2E, and DAST)."
-          echo "Proceeding directly to IPA and APK compilation for Beta distribution."
+          echo "⚡ Fast-track change detection for branch '${{ github.ref_name }}':"
+          echo "  - Backend changed:     ${{ steps.filter.outputs.backend }}"
+          echo "  - Frontend changed:    ${{ steps.filter.outputs.frontend }}"
+          echo "  - Android changed:     ${{ steps.filter.outputs.android }}"
+          echo "  - iOS changed:         ${{ steps.filter.outputs.ios }}"
+          echo "  - Distribution changed:${{ steps.filter.outputs.distribution }}"
+          echo "Running fast unit tests only on changed platforms (skipping heavy E2E, DAST, and UI simulation)."
 
       - name: Set up Node.js runtime
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Setup npm cache for quality checks
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true'
         uses: actions/cache@v4
         with:
           path: ~/.npm
           key: qg-npm-${{ runner.os }}-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json') }}
 
       - name: Install Quality Gate Dependencies
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true'
         run: |
           [ "${{ steps.filter.outputs.backend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] && npm ci --prefix backend --prefer-offline || true
           [ "${{ steps.filter.outputs.frontend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] && npm ci --prefix frontend --prefer-offline || true
 
-      - name: Run Tekyida Quality Gate (tests/run.sh)
+      # On non-main branches: fast unit tests only for changed JS/TS code
+      - name: Run Fast Web/Backend Unit Tests (Feature/Beta Branch)
+        if: github.ref != 'refs/heads/main' && (steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true')
+        run: |
+          if [ "${{ steps.filter.outputs.backend }}" = "true" ]; then
+            echo "Running backend unit tests..."
+            npm test --prefix backend -- --run
+          fi
+          if [ "${{ steps.filter.outputs.frontend }}" = "true" ]; then
+            echo "Running frontend unit tests..."
+            npm test --prefix frontend -- --run
+          fi
+
+      # On main branch: complete quality gate (100% coverage vitest, jscpd, SAST audit)
+      - name: Run Tekyida Strict Quality Gate (tests/run.sh)
         if: github.ref == 'refs/heads/main'
         env:
           CHANGE_BACKEND: ${{ steps.filter.outputs.backend }}
@@ -160,6 +179,7 @@ jobs:
 
   # -------------------------------------------------------------
   # Job 3: iOS Build (SwiftUI, XcodeGen, Unsigned IPA)
+  # Only executes if changes occurred in ios/**, distribution/**, or workflow_dispatch
   # -------------------------------------------------------------
   build-ios:
     name: Build & Package iOS IPA
@@ -183,8 +203,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      # Stamps the CI run number into CFBundleVersion so each build shows a
-      # distinct version inside LiveContainer
+      # Stamps the CI run number into CFBundleVersion so each build shows a distinct version
       - name: Stamp Build Number
         run: plutil -replace CFBundleVersion -string "${{ github.run_number }}" Sources/App/Info.plist
 
@@ -218,8 +237,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-derived-data-
 
-      # Runs iOS Unit Tests and UI E2E Tests in Simulator ONLY on main
-      - name: Run iOS Unit & UI E2E Tests (Simulator)
+      # On non-main (dev/feature): Fast unit tests only (skips TekyidaUITests simulator automation)
+      - name: Run iOS Unit Tests (Fast - Feature/Beta Branch)
+        if: github.ref != 'refs/heads/main'
+        run: |
+          xcodebuild test \
+            -project Tekyida.xcodeproj \
+            -scheme Tekyida \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -only-testing:TekyidaTests \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      # On main branch: Full suite (Unit Tests AND UI Automation Tests)
+      - name: Run iOS Full Unit & UI E2E Tests (Simulator - Main Branch)
         if: github.ref == 'refs/heads/main'
         run: |
           xcodebuild test \
@@ -310,6 +342,7 @@ jobs:
 
   # -------------------------------------------------------------
   # Job 4: Android Build (Kotlin, Jetpack Compose, Release APK)
+  # Only executes if changes occurred in android/**, distribution/**, or workflow_dispatch
   # -------------------------------------------------------------
   build-android:
     name: Build & Package Android APK
@@ -347,9 +380,8 @@ jobs:
       - name: Ensure Gradle wrapper is executable
         run: chmod +x gradlew
 
-      # Runs Android Unit & Security Tests ONLY on main
-      - name: Run Android Unit & Security Tests
-        if: github.ref == 'refs/heads/main'
+      # Runs Android Unit Tests (fast Kotlin tests on both main & dev)
+      - name: Run Android Unit Tests
         run: ./gradlew testReleaseUnitTest --no-daemon
 
       # Builds the release APK with dynamic versionCode matching CI
@@ -376,7 +408,7 @@ jobs:
 
   # -------------------------------------------------------------
   # Job 5: Web Build, E2E & DAST Dynamic Security Verification
-  # (Only runs on 'main' branch)
+  # (Only runs on 'main' branch when web/backend files change)
   # -------------------------------------------------------------
   build-web:
     name: Build & Verify Web (E2E & DAST)
