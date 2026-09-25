@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Contact Row View
+// MARK: - Contact Row View (Modern Liquid Glass HIG)
 public struct ContactRowView: View {
     let contact: Contact
     let balance: Double
@@ -26,21 +26,21 @@ public struct ContactRowView: View {
     }
 
     public var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 12) {\
             // Main tappable area
             Button(action: {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 onTap()
             }) {
                 HStack(spacing: 12) {
-                    // Squircle User Icon
+                    // Concentric Squircle User Icon
                     ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(AppTheme.primary.opacity(0.12))
-                            .frame(width: 38, height: 38)
+                        ConcentricRectangle(cornerRadius: 14)
+                            .fill(AppTheme.primary.opacity(0.14))
+                            .frame(width: 42, height: 42)
 
                         Image(systemName: "person.fill")
-                            .font(.system(size: 15))
+                            .font(.system(size: 16))
                             .foregroundColor(AppTheme.primary)
                     }
 
@@ -51,7 +51,7 @@ public struct ContactRowView: View {
                             .foregroundColor(.primary)
                             .lineLimit(1)
 
-                        HStack(spacing: 6) {
+                        HStack(spacing: 8) {
                             if let phone = contact.phone, !phone.isEmpty {
                                 HStack(spacing: 3) {
                                     Image(systemName: "phone.fill")
@@ -77,15 +77,16 @@ public struct ContactRowView: View {
             .buttonStyle(ScaleTouchStyle())
 
             // Right Actions: Edit, Delete, Chevron
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 Button(action: {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     onEdit()
                 }) {
                     Image(systemName: "pencil")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
-                        .padding(6)
+                        .frame(width: 30, height: 30)
+                        .background(Color.white.opacity(0.08), in: Circle())
                 }
 
                 Button(action: {
@@ -93,9 +94,10 @@ public struct ContactRowView: View {
                     onDelete()
                 }) {
                     Image(systemName: "trash")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(AppTheme.danger.opacity(0.8))
-                        .padding(6)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppTheme.danger.opacity(0.85))
+                        .frame(width: 30, height: 30)
+                        .background(AppTheme.danger.opacity(0.12), in: Circle())
                 }
 
                 Button(action: {
@@ -103,10 +105,9 @@ public struct ContactRowView: View {
                     onTap()
                 }) {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.secondary.opacity(0.6))
-                        .padding(.vertical, 6)
-                        .padding(.leading, 2)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.secondary.opacity(0.55))
+                        .frame(width: 24, height: 30)
                 }
             }
         }

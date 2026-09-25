@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Experience Detail View
+// MARK: - Experience Detail View (Modern Liquid Glass HIG)
 public struct ExperienceDetailView: View {
     @EnvironmentObject private var state: AppState
     @Environment(\.dismiss) private var dismiss
@@ -37,33 +37,42 @@ public struct ExperienceDetailView: View {
                             }
                             .padding(12)
                             .frame(maxWidth: .infinity)
-                            .background(AppTheme.warningBg, in: RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous))
+                            .background(AppTheme.warningBg, in: ConcentricRectangle(cornerRadius: AppTheme.radiusInput))
+                            .overlay {
+                                ConcentricRectangle(cornerRadius: AppTheme.radiusInput)
+                                    .stroke(AppTheme.warning.opacity(0.3), lineWidth: 1)
+                            }
                         }
 
+                        // Title-Style Section Header
                         HStack {
                             Text("Transactions")
-                                .font(.caption.bold())
-                                .foregroundColor(.secondary)
-                                .textCase(.uppercase)
+                                .font(.headline)
+                                .foregroundColor(.primary)
                             Spacer()
                         }
                         .padding(.horizontal, 4)
+                        .padding(.top, 4)
 
                         let txs = state.experienceTransactions(experience.id)
                         if txs.isEmpty && !isAddingTransaction {
                             GlassEmptyStateView(
                                 systemImage: "doc.text.magnifyingglass",
-                                title: "No transactions in this experience",
+                                title: "No Transactions in this Experience",
                                 subtitle: "Tap the button below to add expenses or payments to this experience."
                             )
                         } else {
-                            ForEach(txs) { tx in
-                                TransactionRowView(
-                                    transaction: tx,
-                                    isMasked: isLocalMasked || state.isAmountsHidden,
-                                    onEdit: { editingTransaction = tx },
-                                    onDelete: { deletingTransaction = tx }
-                                )
+                            GlassEffectContainer {
+                                VStack(spacing: 10) {
+                                    ForEach(txs) { tx in
+                                        TransactionRowView(
+                                            transaction: tx,
+                                            isMasked: isLocalMasked || state.isAmountsHidden,
+                                            onEdit: { editingTransaction = tx },
+                                            onDelete: { deletingTransaction = tx }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -71,6 +80,7 @@ public struct ExperienceDetailView: View {
                 }
 
                 if !experience.closed {
+                    // Floating Liquid Glass Action Bar
                     AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
                         state.createTransaction(
                             notebookId: experience.notebookId,
@@ -88,7 +98,7 @@ public struct ExperienceDetailView: View {
         .navigationTitle(experience.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button(action: {
                         state.toggleExperienceClosed(id: experience.id)
@@ -149,9 +159,9 @@ public struct ExperienceDetailView: View {
         let balance = state.experienceBalance(experience.id)
         return HStack(spacing: 16) {
             ZStack {
-                Circle()
+                ConcentricRectangle(cornerRadius: 18)
                     .fill(AppTheme.primary.opacity(0.15))
-                    .frame(width: 52, height: 52)
+                    .frame(width: 56, height: 56)
 
                 Image(systemName: "safari.fill")
                     .font(.title2)

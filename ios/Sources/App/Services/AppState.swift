@@ -296,6 +296,57 @@ public final class AppState: ObservableObject {
         saveData()
     }
 
+    // MARK: - Semantic Search (Liquid Glass Search Conventions)
+    public struct SearchResults: Sendable {
+        public let contacts: [Contact]
+        public let experiences: [Experience]
+        public let transactions: [Transaction]
+
+        public init(
+            contacts: [Contact] = [],
+            experiences: [Experience] = [],
+            transactions: [Transaction] = []
+        ) {
+            self.contacts = contacts
+            self.experiences = experiences
+            self.transactions = transactions
+        }
+
+        public var isEmpty: Bool {
+            contacts.isEmpty && experiences.isEmpty && transactions.isEmpty
+        }
+
+        public var totalCount: Int {
+            contacts.count + experiences.count + transactions.count
+        }
+    }
+
+    public func search(query: String) -> SearchResults {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !q.isEmpty else {
+            return SearchResults()
+        }
+        let activeId = activeNotebook?.id
+        let matchedContacts = contacts.filter {
+            ($0.notebookId == activeId || activeId == nil) &&
+            ($0.name.lowercased().contains(q) || ($0.phone?.lowercased().contains(q) ?? false))
+        }
+        let matchedExperiences = experiences.filter {
+            ($0.notebookId == activeId || activeId == nil) &&
+            $0.name.lowercased().contains(q)
+        }
+        let matchedTransactions = transactions.filter {
+            ($0.notebookId == activeId || activeId == nil) &&
+            (($0.description?.lowercased().contains(q) ?? false) ||
+             String(format: "%.2f", abs($0.amount)).contains(q))
+        }
+        return SearchResults(
+            contacts: matchedContacts,
+            experiences: matchedExperiences,
+            transactions: matchedTransactions
+        )
+    }
+
     // MARK: - Security & Pin Pad Logic
     public func setPin(_ pin: String) {
         guard pin.count == 6 else { return }
@@ -448,12 +499,12 @@ public final class AppState: ObservableObject {
         experiences = [dinner, gifts]
 
         let now = Date()
-        transactions = [
-            Transaction(notebookId: personal.id, contactId: adam.id, amount: 250.0, description: "Lent for Groceries", date: now.addingTimeInterval(-86400 * 2)),
-            Transaction(notebookId: personal.id, contactId: sara.id, amount: -120.0, description: "Coffee & snacks", date: now.addingTimeInterval(-86400)),
-            Transaction(notebookId: personal.id, contactId: karim.id, amount: 480.0, description: "Concert tickets", date: now.addingTimeInterval(-86400 * 3)),
-            Transaction(notebookId: personal.id, experienceId: dinner.id, amount: 320.0, description: "Main course & dessert", date: now.addingTimeInterval(-3600 * 5)),
-            Transaction(notebookId: personal.id, contactId: sara.id, experienceId: gifts.id, amount: 150.0, description: "Shared present", date: now.addingTimeInterval(-86400 * 5))
+        transactions = [\
+            Transaction(notebookId: personal.id, contactId: adam.id, amount: 250.0, description: "Lent for Groceries", date: now.addingTimeInterval(-86400 * 2)),\
+            Transaction(notebookId: personal.id, contactId: sara.id, amount: -120.0, description: "Coffee & snacks", date: now.addingTimeInterval(-86400)),\
+            Transaction(notebookId: personal.id, contactId: karim.id, amount: 480.0, description: "Concert tickets", date: now.addingTimeInterval(-86400 * 3)),\
+            Transaction(notebookId: personal.id, experienceId: dinner.id, amount: 320.0, description: "Main course & dessert", date: now.addingTimeInterval(-3600 * 5)),\
+            Transaction(notebookId: personal.id, contactId: sara.id, experienceId: gifts.id, amount: 150.0, description: "Shared present", date: now.addingTimeInterval(-86400 * 5))\
         ]
         saveData()
     }

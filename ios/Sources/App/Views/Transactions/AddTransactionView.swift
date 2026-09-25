@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Add Transaction View
+// MARK: - Add Transaction View (Modern Apple Liquid Glass HIG)
 public struct AddTransactionView: View {
     @Binding var isAdding: Bool
     let onAdd: (_ amount: Double, _ description: String?, _ date: Date) -> Void
@@ -21,102 +21,106 @@ public struct AddTransactionView: View {
     public var body: some View {
         VStack(spacing: 12) {
             if isAdding {
-                VStack(spacing: 12) {
+                VStack(spacing: 14) {
                     // Row 1: Direction Toggle & Amount Field
-                    HStack(spacing: 8) {
+                    HStack(spacing: 10) {
                         Button(action: {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             isPositive.toggle()
                         }) {
-                            Text(isPositive ? "They owe you" : "You owe them")
-                                .font(.caption.bold())
-                                .foregroundColor(isPositive ? AppTheme.accent : AppTheme.danger)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 12)
-                                .background(
-                                    isPositive ? AppTheme.accentBg : AppTheme.dangerBg,
-                                    in: RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous)
-                                )
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous)
-                                        .stroke(
-                                            (isPositive ? AppTheme.accent : AppTheme.danger).opacity(0.3),
-                                            lineWidth: 1
-                                        )
-                                }
+                            HStack(spacing: 6) {
+                                Image(systemName: isPositive ? "arrow.down.left" : "arrow.up.right")
+                                    .font(.caption.bold())
+                                Text(isPositive ? "They owe you" : "You owe them")
+                                    .font(.caption.bold())
+                            }
+                            .foregroundColor(isPositive ? AppTheme.accent : AppTheme.danger)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 12)
+                            .background(
+                                isPositive ? AppTheme.accentBg : AppTheme.dangerBg,
+                                in: RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous)
+                            )
+                            .overlay {
+                                RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous)
+                                    .stroke(
+                                        (isPositive ? AppTheme.accent : AppTheme.danger).opacity(0.35),
+                                        lineWidth: 1
+                                    )
+                            }
                         }
+                        .buttonStyle(ScaleTouchStyle())
 
                         TextField("Amount (e.g. 150)", text: $amountString)
                             .keyboardType(.decimalPad)
                             .font(.body.weight(.semibold))
-                            .glassInputStyle()
+                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                     }
 
                     // Row 2: Description Field
                     TextField("Description (optional)", text: $description)
-                        .glassInputStyle()
+                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
                     // Row 3: Date Picker
                     DatePicker("Date", selection: $date, displayedComponents: [.date, .hourAndMinute])
                         .font(.subheadline)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
                         .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
 
-                    // Row 4: Action Buttons
-                    HStack(spacing: 8) {
+                    // Row 4: Action Buttons (Liquid Glass Styled)
+                    HStack(spacing: 10) {
                         Button(action: {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             resetFields()
-                            isAdding = false
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                isAdding = false
+                            }
                         }) {
                             Text("Cancel")
-                                .font(.subheadline.weight(.medium))
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: AppTheme.radiusButton, style: .continuous))
-                                .foregroundColor(.secondary)
                         }
+                        .buttonStyle(
+                            .liquidGlass(
+                                variant: .glass,
+                                size: .regular,
+                                cornerRadius: AppTheme.radiusButton
+                            )
+                        )
 
                         Button(action: submit) {
                             Text("Add Transaction")
-                                .font(.subheadline.bold())
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(AppTheme.primary, in: RoundedRectangle(cornerRadius: AppTheme.radiusButton, style: .continuous))
-                                .foregroundColor(.white)
-                                .shadow(color: AppTheme.primary.opacity(0.3), radius: 6, x: 0, y: 3)
                         }
+                        .buttonStyle(
+                            .liquidGlass(
+                                variant: .prominent,
+                                size: .regular,
+                                cornerRadius: AppTheme.radiusButton
+                            )
+                        )
                         .disabled(invalidAmount)
-                        .opacity(invalidAmount ? 0.5 : 1.0)
+                        .opacity(invalidAmount ? 0.45 : 1.0)
                     }
                 }
-                .padding(14)
+                .padding(16)
                 .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
                 .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .scale(scale: 0.95)),
-                    removal: .opacity.combined(with: .scale(scale: 0.95))
+                    insertion: .opacity.combined(with: .scale(scale: 0.96)),
+                    removal: .opacity.combined(with: .scale(scale: 0.96))
                 ))
             } else {
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                GlassButton(
+                    "Add Transaction",
+                    systemImage: "plus.circle.fill",
+                    style: .primary,
+                    size: .large,
+                    isFullWidth: true
+                ) {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                         isAdding = true
                     }
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.headline)
-                        Text("Add Transaction")
-                            .font(.subheadline.bold())
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(AppTheme.primary, in: RoundedRectangle(cornerRadius: AppTheme.radiusButton, style: .continuous))
-                    .foregroundColor(.white)
-                    .shadow(color: AppTheme.primary.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
-                .buttonStyle(ScaleTouchStyle())
             }
         }
     }

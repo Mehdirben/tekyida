@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Reusable Notebook Header Button
+// MARK: - Reusable Notebook Header Button (Liquid Glass Pill)
 public struct NotebookHeaderButton: View {
     let notebookName: String
     let onTap: () -> Void
@@ -30,15 +30,7 @@ public struct NotebookHeaderButton: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background {
-                Capsule()
-                    .fill(Color.white.opacity(0.15))
-                    .background(.ultraThinMaterial, in: Capsule())
-            }
-            .overlay {
-                Capsule()
-                    .stroke(Color.white.opacity(0.25), lineWidth: 1)
-            }
+            .liquidGlassPill()
         }
         .buttonStyle(ScaleTouchStyle())
     }

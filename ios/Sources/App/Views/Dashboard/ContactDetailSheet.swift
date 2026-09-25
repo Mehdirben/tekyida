@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Contact Detail View
+// MARK: - Contact Detail View (Modern Liquid Glass HIG)
 public struct ContactDetailView: View {
     @EnvironmentObject private var state: AppState
     @Environment(\.dismiss) private var dismiss
@@ -26,14 +26,15 @@ public struct ContactDetailView: View {
                     VStack(spacing: 16) {
                         headerCard
 
+                        // Title-Style Section Header
                         HStack {
                             Text("Activity Timeline")
-                                .font(.caption.bold())
-                                .foregroundColor(.secondary)
-                                .textCase(.uppercase)
+                                .font(.headline)
+                                .foregroundColor(.primary)
                             Spacer()
                         }
                         .padding(.horizontal, 4)
+                        .padding(.top, 4)
 
                         let directTxs = state.directTransactions(for: contact.id)
                         let closedExps = state.closedExperiences(for: contact.id)
@@ -41,27 +42,32 @@ public struct ContactDetailView: View {
                         if directTxs.isEmpty && closedExps.isEmpty && !isAddingTransaction {
                             GlassEmptyStateView(
                                 systemImage: "tray.fill",
-                                title: "No transactions yet",
+                                title: "No Transactions Yet",
                                 subtitle: "Tap the button below to add your first transaction."
                             )
                         } else {
-                            ForEach(closedExps) { exp in
-                                closedExperienceRow(exp)
-                            }
+                            GlassEffectContainer {
+                                VStack(spacing: 10) {
+                                    ForEach(closedExps) { exp in
+                                        closedExperienceRow(exp)
+                                    }
 
-                            ForEach(directTxs) { tx in
-                                TransactionRowView(
-                                    transaction: tx,
-                                    isMasked: isLocalMasked || state.isAmountsHidden,
-                                    onEdit: { editingTransaction = tx },
-                                    onDelete: { deletingTransaction = tx }
-                                )
+                                    ForEach(directTxs) { tx in
+                                        TransactionRowView(
+                                            transaction: tx,
+                                            isMasked: isLocalMasked || state.isAmountsHidden,
+                                            onEdit: { editingTransaction = tx },
+                                            onDelete: { deletingTransaction = tx }
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                     .padding(16)
                 }
 
+                // Floating Liquid Glass Action Bar
                 AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
                     state.createTransaction(
                         notebookId: contact.notebookId,
@@ -77,7 +83,7 @@ public struct ContactDetailView: View {
         .navigationTitle(contact.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Button(action: { isEditingContact = true }) {
                         Label("Edit Contact", systemImage: "pencil")
@@ -122,9 +128,9 @@ public struct ContactDetailView: View {
         let balance = state.contactBalance(contact.id)
         return HStack(spacing: 16) {
             ZStack {
-                Circle()
+                ConcentricRectangle(cornerRadius: 18)
                     .fill(AppTheme.primary.opacity(0.15))
-                    .frame(width: 52, height: 52)
+                    .frame(width: 56, height: 56)
 
                 Text(String(contact.name.prefix(1)).uppercased())
                     .font(.title2.bold())

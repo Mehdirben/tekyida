@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Reusable Transaction Row View
+// MARK: - Reusable Transaction Row View (Modern Liquid Glass HIG)
 public struct TransactionRowView: View {
     let transaction: Transaction
     let isMasked: Bool
@@ -23,9 +23,9 @@ public struct TransactionRowView: View {
         HStack(spacing: 12) {
             // Direction Icon Pill
             ZStack {
-                Circle()
+                ConcentricRectangle(cornerRadius: 12)
                     .fill(transaction.amount > 0 ? AppTheme.accentBg : AppTheme.dangerBg)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 38, height: 38)
 
                 Image(systemName: transaction.amount > 0 ? "arrow.down.left" : "arrow.up.right")
                     .font(.system(size: 14, weight: .bold))
@@ -58,27 +58,33 @@ public struct TransactionRowView: View {
             )
 
             // Actions (Edit, Delete)
-            HStack(spacing: 4) {
-                Button(action: onEdit) {
+            HStack(spacing: 6) {
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onEdit()
+                }) {
                     Image(systemName: "pencil")
-                        .font(.caption)
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 30, height: 30)
                         .background(Color.white.opacity(0.08), in: Circle())
                 }
 
-                Button(action: onDelete) {
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    onDelete()
+                }) {
                     Image(systemName: "trash")
-                        .font(.caption)
-                        .foregroundColor(AppTheme.danger.opacity(0.8))
-                        .frame(width: 28, height: 28)
-                        .background(AppTheme.danger.opacity(0.1), in: Circle())
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppTheme.danger.opacity(0.85))
+                        .frame(width: 30, height: 30)
+                        .background(AppTheme.danger.opacity(0.12), in: Circle())
                 }
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
+        .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
     }
 
     private func formattedDate(_ date: Date) -> String {

@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - PIN Setup & Change Modal Sheet
+// MARK: - PIN Setup & Change Modal Sheet (Modern Liquid Glass HIG)
 public struct PinSetupSheet: View {
     public enum Mode {
         case setup
@@ -35,9 +35,9 @@ public struct PinSetupSheet: View {
                 // Header
                 VStack(spacing: 12) {
                     ZStack {
-                        Circle()
-                            .fill(AppTheme.primary.opacity(0.12))
-                            .frame(width: 60, height: 60)
+                        ConcentricRectangle(cornerRadius: 18)
+                            .fill(AppTheme.primary.opacity(0.14))
+                            .frame(width: 64, height: 64)
 
                         Image(systemName: "lock.shield.fill")
                             .font(.title2)
@@ -70,7 +70,7 @@ public struct PinSetupSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.large])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
                 }
             }

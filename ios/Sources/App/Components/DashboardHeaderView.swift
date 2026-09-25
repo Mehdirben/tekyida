@@ -10,7 +10,7 @@ public struct BrandLogoHeader: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 28, height: 28)
-                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
             Text("Tekyida")
                 .font(.system(size: 20, weight: .bold, design: .rounded))
@@ -24,7 +24,7 @@ public struct BrandLogoHeader: View {
     }
 }
 
-// MARK: - Shared Tekyida Navigation Bar Modifier
+// MARK: - Shared Tekyida Navigation Bar Modifier (Native Liquid Glass Toolbar)
 public struct TekyidaNavigationBarModifier: ViewModifier {
     let notebookName: String
     let onSelectNotebook: () -> Void
@@ -38,11 +38,11 @@ public struct TekyidaNavigationBarModifier: ViewModifier {
         content
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .topBarLeading) {
                     BrandLogoHeader()
                 }
 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .topBarTrailing) {
                     NotebookHeaderButton(
                         notebookName: notebookName,
                         onTap: onSelectNotebook

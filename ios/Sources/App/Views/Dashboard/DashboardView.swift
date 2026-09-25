@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Dashboard Main View
+// MARK: - Dashboard Main View (Modern Liquid Glass Architecture)
 public struct DashboardView: View {
     @EnvironmentObject private var state: AppState
 
@@ -93,10 +93,30 @@ public struct DashboardView: View {
         }
 
         return VStack(spacing: 12) {
+            // Title-Style Section Header
+            HStack {
+                Text("Contacts")
+                    .font(.title3.bold())
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                if !sortedContacts.isEmpty {
+                    Text("\(sortedContacts.count)")
+                        .font(.caption.bold())
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.12), in: Capsule())
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 4)
+
             if sortedContacts.isEmpty {
                 GlassEmptyStateView(
                     systemImage: "person.2.slash",
-                    title: "No contacts yet",
+                    title: "No Contacts Yet",
                     subtitle: "Add your first contact to track money owed or lent."
                 )
             } else {
@@ -118,12 +138,13 @@ public struct DashboardView: View {
                 }
             }
 
-            // Bottom Add Contact button (PWA mobile responsive placement)
+            // Bottom Add Contact button with modern Liquid Glass prominent styling
             ListAddBottomButton(
                 title: "Add Contact",
                 systemImage: "person.badge.plus",
                 action: { showAddContact = true }
             )
+            .padding(.top, 4)
         }
     }
 }

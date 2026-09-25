@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Add / Edit Contact Modal Sheet
+// MARK: - Add / Edit Contact Modal Sheet (Modern Liquid Glass HIG)
 public struct AddContactSheet: View {
     @Environment(\.dismiss) private var dismiss
     let initialContact: Contact?
@@ -25,18 +25,18 @@ public struct AddContactSheet: View {
                 VStack(spacing: 20) {
                     // Contact Avatar Header
                     ZStack {
-                        Circle()
-                            .fill(AppTheme.primary.opacity(0.12))
-                            .frame(width: 64, height: 64)
+                        ConcentricRectangle(cornerRadius: 22)
+                            .fill(AppTheme.primary.opacity(0.14))
+                            .frame(width: 72, height: 72)
 
                         Image(systemName: "person.crop.circle.fill")
-                            .font(.system(size: 40))
+                            .font(.system(size: 44))
                             .symbolRenderingMode(.hierarchical)
                             .foregroundColor(AppTheme.primary)
                     }
-                    .padding(.top, 8)
+                    .padding(.top, 12)
 
-                    // Apple Glass Form Group
+                    // Modern Liquid Glass Form Group
                     VStack(spacing: 14) {
                         HStack(spacing: 12) {
                             Image(systemName: "person.fill")
@@ -49,7 +49,7 @@ public struct AddContactSheet: View {
                                     if newVal.count > 200 { name = String(newVal.prefix(200)) }
                                 }
                         }
-                        .glassInputStyle()
+                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
                         HStack(spacing: 12) {
                             Image(systemName: "phone.fill")
@@ -59,10 +59,23 @@ public struct AddContactSheet: View {
                             TextField("Phone (optional)", text: $phone)
                                 .keyboardType(.phonePad)
                         }
-                        .glassInputStyle()
+                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                     }
                     .padding(16)
                     .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
+
+                    // Bottom Save Button
+                    GlassButton(
+                        initialContact == nil ? "Save Contact" : "Update Contact",
+                        systemImage: initialContact == nil ? "person.badge.plus" : "checkmark",
+                        style: .primary,
+                        size: .large
+                    ) {
+                        save()
+                    }
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .opacity(name.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
+                    .padding(.top, 4)
 
                     Spacer(minLength: 24)
                 }
@@ -72,10 +85,10 @@ public struct AddContactSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium, .large])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button(initialContact == nil ? "Add" : "Done") { save() }
                         .font(.body.bold())
                         .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)

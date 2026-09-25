@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Edit Transaction Modal Sheet
+// MARK: - Edit Transaction Modal Sheet (Modern Liquid Glass HIG)
 public struct EditTransactionSheet: View {
     @Environment(\.dismiss) private var dismiss
     let transaction: Transaction
@@ -29,7 +29,7 @@ public struct EditTransactionSheet: View {
                 VStack(spacing: 20) {
                     // Apple Liquid Glass Card Form
                     VStack(spacing: 16) {
-                        // Segmented Direction Control
+                        // Direction Selector
                         Picker("Direction", selection: $isPositive) {
                             Text("They owe you").tag(true)
                             Text("You owe them").tag(false)
@@ -46,7 +46,7 @@ public struct EditTransactionSheet: View {
                                 .keyboardType(.decimalPad)
                                 .font(.title3.weight(.bold))
                         }
-                        .glassInputStyle()
+                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
                         // Description Field
                         HStack(spacing: 12) {
@@ -56,7 +56,7 @@ public struct EditTransactionSheet: View {
 
                             TextField("Note or description", text: $description)
                         }
-                        .glassInputStyle()
+                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
                         // Date Picker
                         DatePicker("Date & Time", selection: $date, displayedComponents: [.date, .hourAndMinute])
@@ -68,6 +68,19 @@ public struct EditTransactionSheet: View {
                     .padding(16)
                     .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
 
+                    // Bottom Save Button
+                    GlassButton(
+                        "Save Changes",
+                        systemImage: "checkmark",
+                        style: .primary,
+                        size: .large
+                    ) {
+                        save()
+                    }
+                    .disabled(invalidAmount)
+                    .opacity(invalidAmount ? 0.45 : 1.0)
+                    .padding(.top, 4)
+
                     Spacer(minLength: 24)
                 }
                 .padding(20)
@@ -76,11 +89,11 @@ public struct EditTransactionSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium, .large])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
                 }
 
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { save() }
                         .font(.body.bold())
                         .disabled(invalidAmount)

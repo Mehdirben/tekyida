@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Settings View
+// MARK: - Settings View (Modern Liquid Glass HIG)
 public struct SettingsView: View {
     @EnvironmentObject private var state: AppState
 
@@ -71,8 +71,8 @@ public struct SettingsView: View {
 
             HStack(spacing: 14) {
                 ZStack {
-                    Circle()
-                        .fill(AppTheme.primary.opacity(0.12))
+                    ConcentricRectangle(cornerRadius: 14)
+                        .fill(AppTheme.primary.opacity(0.14))
                         .frame(width: 48, height: 48)
 
                     Image(systemName: "person.crop.circle.fill")
@@ -102,8 +102,9 @@ public struct SettingsView: View {
                         .foregroundColor(AppTheme.primary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(AppTheme.primary.opacity(0.1), in: Capsule())
+                        .background(AppTheme.primary.opacity(0.12), in: Capsule())
                 }
+                .buttonStyle(ScaleTouchStyle())
             }
         }
         .padding(16)
@@ -160,6 +161,7 @@ public struct SettingsView: View {
                         .font(.subheadline.bold())
                         .foregroundColor(AppTheme.primary)
                     }
+                    .buttonStyle(ScaleTouchStyle())
 
                     Spacer()
 
@@ -170,10 +172,11 @@ public struct SettingsView: View {
                         }
                         .font(.caption.bold())
                         .foregroundColor(.secondary)
-                        .padding(.horizontal, 10)
+                        .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.08), in: Capsule())
+                        .background(Color.white.opacity(0.1), in: Capsule())
                     }
+                    .buttonStyle(ScaleTouchStyle())
                 }
             }
         }
@@ -292,7 +295,7 @@ public struct SettingsView: View {
     }
 
     private var signOutSection: some View {
-        GlassButton("Sign Out", systemImage: "rectangle.portrait.and.arrow.right", style: .danger) {
+        GlassButton("Sign Out", systemImage: "rectangle.portrait.and.arrow.right", style: .danger, size: .large) {
             showSignOutConfirm = true
         }
         .padding(.top, 4)
@@ -300,9 +303,8 @@ public struct SettingsView: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
-            .font(.caption.bold())
-            .foregroundColor(.secondary)
-            .textCase(.uppercase)
+            .font(.subheadline.bold())
+            .foregroundColor(.primary)
     }
 }
 

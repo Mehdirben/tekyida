@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Notebook Manager Sheet
+// MARK: - Notebook Manager Sheet (Modern Liquid Glass HIG)
 public struct NotebookManagerSheet: View {
     @EnvironmentObject private var state: AppState
     @Environment(\.dismiss) private var dismiss
@@ -19,15 +19,18 @@ public struct NotebookManagerSheet: View {
             ScrollView {
                 VStack(spacing: 20) {
                     // Active Notebooks Section
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 12) {
                         Text("Active Notebooks")
-                            .font(.caption.bold())
-                            .foregroundColor(.secondary)
-                            .textCase(.uppercase)
+                            .font(.headline)
+                            .foregroundColor(.primary)
                             .padding(.horizontal, 4)
 
-                        ForEach(state.activeNotebooksList) { notebook in
-                            notebookRow(notebook, isArchived: false)
+                        GlassEffectContainer {
+                            VStack(spacing: 10) {
+                                ForEach(state.activeNotebooksList) { notebook in
+                                    notebookRow(notebook, isArchived: false)
+                                }
+                            }
                         }
                     }
 
@@ -35,37 +38,45 @@ public struct NotebookManagerSheet: View {
                     if isCreating {
                         VStack(spacing: 12) {
                             TextField("Notebook Name (max 20)", text: $newNotebookName)
-                                .glassInputStyle()
+                                .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                                 .onChange(of: newNotebookName) { _, newVal in
                                     if newVal.count > 20 { newNotebookName = String(newVal.prefix(20)) }
                                 }
 
-                            HStack(spacing: 8) {
+                            HStack(spacing: 10) {
                                 Button("Cancel") {
                                     newNotebookName = ""
                                     isCreating = false
                                 }
-                                .font(.subheadline.bold())
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 10)
-                                .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
-                                .foregroundColor(.secondary)
+                                .buttonStyle(
+                                    .liquidGlass(
+                                        variant: .glass,
+                                        size: .regular,
+                                        cornerRadius: AppTheme.radiusButton
+                                    )
+                                )
 
                                 Button("Create") {
                                     createNotebook()
                                 }
-                                .font(.subheadline.bold())
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 10)
-                                .background(AppTheme.primary, in: RoundedRectangle(cornerRadius: AppTheme.radiusButton, style: .continuous))
-                                .foregroundColor(.white)
+                                .buttonStyle(
+                                    .liquidGlass(
+                                        variant: .prominent,
+                                        size: .regular,
+                                        cornerRadius: AppTheme.radiusButton
+                                    )
+                                )
                                 .disabled(newNotebookName.trimmingCharacters(in: .whitespaces).isEmpty)
+                                .opacity(newNotebookName.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
                             }
                         }
                         .padding(14)
                         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
                     } else {
-                        Button(action: { isCreating = true }) {
+                        Button(action: {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            isCreating = true
+                        }) {
                             HStack(spacing: 8) {
                                 Image(systemName: "plus.circle.fill")
                                     .font(.headline)
@@ -77,29 +88,37 @@ public struct NotebookManagerSheet: View {
                             .padding(.vertical, 12)
                             .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
                         }
+                        .buttonStyle(ScaleTouchStyle())
                     }
 
                     // Archived Notebooks Section
                     if !state.archivedNotebooksList.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
                             Button(action: {
-                                withAnimation { showArchived.toggle() }
+                                withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
+                                    showArchived.toggle()
+                                }
                             }) {
                                 HStack {
                                     Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
                                     Text(showArchived ? "Hide Archived (\(state.archivedNotebooksList.count))" : "Show Archived (\(state.archivedNotebooksList.count))")
-                                        .font(.caption.bold())
+                                        .font(.subheadline.bold())
                                     Spacer()
                                     Image(systemName: showArchived ? "chevron.up" : "chevron.down")
-                                        .font(.caption)
+                                        .font(.caption.bold())
                                 }
                                 .foregroundColor(.secondary)
                                 .padding(.horizontal, 4)
                             }
+                            .buttonStyle(ScaleTouchStyle())
 
                             if showArchived {
-                                ForEach(state.archivedNotebooksList) { notebook in
-                                    notebookRow(notebook, isArchived: true)
+                                GlassEffectContainer {
+                                    VStack(spacing: 10) {
+                                        ForEach(state.archivedNotebooksList) { notebook in
+                                            notebookRow(notebook, isArchived: true)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -111,7 +130,7 @@ public struct NotebookManagerSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium, .large])
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
                         .font(.body.bold())
                 }
@@ -178,15 +197,16 @@ public struct NotebookManagerSheet: View {
                     Spacer()
                 }
             }
+            .buttonStyle(ScaleTouchStyle())
 
             // Actions
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 if editingNotebookId == notebook.id {
                     Button(action: { saveEdit(notebook.id) }) {
                         Image(systemName: "checkmark")
                             .font(.caption.bold())
                             .foregroundColor(AppTheme.accent)
-                            .frame(width: 28, height: 28)
+                            .frame(width: 30, height: 30)
                             .background(AppTheme.accentBg, in: Circle())
                     }
                 } else {
@@ -195,9 +215,9 @@ public struct NotebookManagerSheet: View {
                         editingNotebookName = notebook.name
                     }) {
                         Image(systemName: "pencil")
-                            .font(.caption)
+                            .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.secondary)
-                            .frame(width: 28, height: 28)
+                            .frame(width: 30, height: 30)
                             .background(Color.white.opacity(0.08), in: Circle())
                     }
                 }
@@ -206,9 +226,9 @@ public struct NotebookManagerSheet: View {
                     state.archiveNotebook(id: notebook.id, archived: !isArchived)
                 }) {
                     Image(systemName: isArchived ? "tray.and.arrow.up" : "archivebox")
-                        .font(.caption)
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
-                        .frame(width: 28, height: 28)
+                        .frame(width: 30, height: 30)
                         .background(Color.white.opacity(0.08), in: Circle())
                 }
 
@@ -216,10 +236,10 @@ public struct NotebookManagerSheet: View {
                     deleteConfirmNotebook = notebook
                 }) {
                     Image(systemName: "trash")
-                        .font(.caption)
-                        .foregroundColor(AppTheme.danger.opacity(0.8))
-                        .frame(width: 28, height: 28)
-                        .background(AppTheme.danger.opacity(0.1), in: Circle())
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppTheme.danger.opacity(0.85))
+                        .frame(width: 30, height: 30)
+                        .background(AppTheme.danger.opacity(0.12), in: Circle())
                 }
             }
         }

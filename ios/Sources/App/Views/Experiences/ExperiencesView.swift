@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Experiences Main View
+// MARK: - Experiences Main View (Modern Liquid Glass HIG)
 public struct ExperiencesView: View {
     @EnvironmentObject private var state: AppState
 
@@ -32,7 +32,7 @@ public struct ExperiencesView: View {
                             totalBalanceCard(notebookId: activeNb.id)
                         }
 
-                        // Filter Segmented Control
+                        // Modern Liquid Glass Filter Segmented Control
                         filterSegmentedControl
 
                         // Experiences List
@@ -93,20 +93,19 @@ public struct ExperiencesView: View {
         let total = state.totalExperiencesBalance(for: notebookId)
         return HStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(AppTheme.primary.opacity(0.12))
-                    .frame(width: 40, height: 40)
+                ConcentricRectangle(cornerRadius: 14)
+                    .fill(AppTheme.primary.opacity(0.14))
+                    .frame(width: 44, height: 44)
 
                 Image(systemName: "safari.fill")
-                    .font(.system(size: 18))
+                    .font(.system(size: 20))
                     .foregroundColor(AppTheme.primary)
             }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Open Experiences Total")
-                    .font(.caption2.bold())
+                    .font(.caption.bold())
                     .foregroundColor(.secondary)
-                    .textCase(.uppercase)
 
                 AmountView(
                     amount: total,
@@ -130,7 +129,7 @@ public struct ExperiencesView: View {
                 let isSelected = filterMode == filter
                 Button(action: {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
                         filterMode = filter
                     }
                 }) {
@@ -138,11 +137,17 @@ public struct ExperiencesView: View {
                         .font(.subheadline.bold())
                         .foregroundColor(isSelected ? .white : .secondary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, 9)
                         .background {
                             if isSelected {
-                                RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous)
-                                    .fill(AppTheme.primary)
+                                ConcentricRectangle(cornerRadius: AppTheme.radiusInput)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [AppTheme.primary, AppTheme.primaryDark],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
                                     .shadow(color: AppTheme.primary.opacity(0.3), radius: 6, x: 0, y: 2)
                             }
                         }
@@ -167,10 +172,30 @@ public struct ExperiencesView: View {
         .sorted { $0.createdAt > $1.createdAt }
 
         return VStack(spacing: 12) {
+            // Title-Style Section Header
+            HStack {
+                Text("Experiences")
+                    .font(.title3.bold())
+                    .foregroundColor(.primary)
+
+                Spacer()
+
+                if !filtered.isEmpty {
+                    Text("\(filtered.count)")
+                        .font(.caption.bold())
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.12), in: Capsule())
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.top, 4)
+
             if filtered.isEmpty {
                 GlassEmptyStateView(
                     systemImage: "safari",
-                    title: "No experiences found",
+                    title: "No Experiences Found",
                     subtitle: "Group expenses and split bills with friends using experiences."
                 )
             } else {
@@ -203,12 +228,13 @@ public struct ExperiencesView: View {
                 }
             }
 
-            // Bottom Add Experience button (PWA mobile responsive placement)
+            // Bottom Add Experience button
             ListAddBottomButton(
                 title: "Add Experience",
                 systemImage: "plus",
                 action: { showAddExperience = true }
             )
+            .padding(.top, 4)
         }
     }
 }

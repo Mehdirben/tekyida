@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Add / Edit Experience Sheet
+// MARK: - Add / Edit Experience Sheet (Modern Liquid Glass HIG)
 public struct AddExperienceSheet: View {
     @Environment(\.dismiss) private var dismiss
     let contacts: [Contact]
@@ -28,16 +28,16 @@ public struct AddExperienceSheet: View {
                 VStack(spacing: 20) {
                     // Experience Icon Banner
                     ZStack {
-                        Circle()
-                            .fill(AppTheme.primary.opacity(0.12))
-                            .frame(width: 64, height: 64)
+                        ConcentricRectangle(cornerRadius: 22)
+                            .fill(AppTheme.primary.opacity(0.14))
+                            .frame(width: 72, height: 72)
 
                         Image(systemName: "safari.fill")
-                            .font(.system(size: 34))
+                            .font(.system(size: 38))
                             .symbolRenderingMode(.hierarchical)
                             .foregroundColor(AppTheme.primary)
                     }
-                    .padding(.top, 8)
+                    .padding(.top, 12)
 
                     // Experience Details Card
                     VStack(alignment: .leading, spacing: 14) {
@@ -52,13 +52,12 @@ public struct AddExperienceSheet: View {
                                     if newVal.count > 200 { name = String(newVal.prefix(200)) }
                                 }
                         }
-                        .glassInputStyle()
+                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Linked Contact")
-                                .font(.caption.bold())
-                                .foregroundColor(.secondary)
-                                .textCase(.uppercase)
+                                .font(.subheadline.bold())
+                                .foregroundColor(.primary)
 
                             Picker("Assign to Contact", selection: $selectedContactId) {
                                 Text("None (Standalone Experience)").tag("")
@@ -76,6 +75,19 @@ public struct AddExperienceSheet: View {
                     .padding(16)
                     .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
 
+                    // Bottom Save Button
+                    GlassButton(
+                        initialExperience == nil ? "Save Experience" : "Update Experience",
+                        systemImage: initialExperience == nil ? "plus.circle.fill" : "checkmark",
+                        style: .primary,
+                        size: .large
+                    ) {
+                        save()
+                    }
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .opacity(name.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
+                    .padding(.top, 4)
+
                     Spacer(minLength: 24)
                 }
                 .padding(20)
@@ -84,10 +96,10 @@ public struct AddExperienceSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium, .large])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button(initialExperience == nil ? "Create" : "Done") { save() }
                         .font(.body.bold())
                         .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)

@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Transfer Experience Modal Sheet
+// MARK: - Transfer Experience Modal Sheet (Modern Liquid Glass HIG)
 public struct TransferExperienceSheet: View {
     @EnvironmentObject private var state: AppState
     @Environment(\.dismiss) private var dismiss
@@ -21,12 +21,12 @@ public struct TransferExperienceSheet: View {
         NavigationStack {
             VStack(spacing: 20) {
                 // Info Card
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 14) {
                     HStack(spacing: 12) {
                         ZStack {
-                            Circle()
-                                .fill(AppTheme.primary.opacity(0.15))
-                                .frame(width: 44, height: 44)
+                            ConcentricRectangle(cornerRadius: 14)
+                                .fill(AppTheme.primary.opacity(0.14))
+                                .frame(width: 48, height: 48)
 
                             Image(systemName: "arrow.right.arrow.left")
                                 .font(.headline)
@@ -58,49 +58,63 @@ public struct TransferExperienceSheet: View {
                     } else {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Target Notebook")
-                                .font(.caption2.bold())
-                                .foregroundColor(.secondary)
-                                .textCase(.uppercase)
+                                .font(.subheadline.bold())
+                                .foregroundColor(.primary)
 
                             Picker("Notebook", selection: $selectedNotebookId) {
                                 Text("Select Destination").tag("")
-                                ForEach(otherNotebooks) { nb in
-                                    Text(nb.name).tag(nb.id)
-                                }
-                            }
-                            .pickerStyle(.menu)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
-                        }
-                        .padding(.top, 4)
-                    }
-                }
-                .padding(16)
-                .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
-
-                Spacer()
-            }
-            .padding(20)
-            .navigationTitle("Transfer Experience")
-            .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium])
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Transfer") {
-                        guard !selectedNotebookId.isEmpty else { return }
-                        onTransfer(selectedNotebookId)
-                        dismiss()
-                    }
-                    .font(.body.bold())
-                    .disabled(selectedNotebookId.isEmpty)
-                }
-            }
-        }
-    }
-}
+                                ForEach(otherNotebooks) { nb in\
+                                    Text(nb.name).tag(nb.id)\
+                                }\
+                            }\
+                            .pickerStyle(.menu)\
+                            .frame(maxWidth: .infinity, alignment: .leading)\
+                            .padding(.horizontal, 14)\
+                            .padding(.vertical, 12)\
+                            .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)\
+                        }\
+                        .padding(.top, 4)\
+                    }\
+                }\
+                .padding(16)\
+                .liquidGlassCard(cornerRadius: AppTheme.radiusCard)\
+\
+                if !state.notebooks.filter({ $0.id != experience.notebookId }).isEmpty {\
+                    GlassButton(\
+                        "Confirm Transfer",\
+                        systemImage: "arrow.right.arrow.left",\
+                        style: .primary,\
+                        size: .large\
+                    ) {\
+                        guard !selectedNotebookId.isEmpty else { return }\
+                        onTransfer(selectedNotebookId)\
+                        dismiss()\
+                    }\
+                    .disabled(selectedNotebookId.isEmpty)\
+                    .opacity(selectedNotebookId.isEmpty ? 0.45 : 1.0)\
+                }\
+\
+                Spacer()\
+            }\
+            .padding(20)\
+            .navigationTitle("Transfer Experience")\
+            .navigationBarTitleDisplayMode(.inline)\
+            .liquidGlassSheet(detents: [.medium])\
+            .toolbar {\
+                ToolbarItem(placement: .topBarLeading) {\
+                    Button("Cancel") { dismiss() }\
+                }\
+\
+                ToolbarItem(placement: .topBarTrailing) {\
+                    Button("Transfer") {\
+                        guard !selectedNotebookId.isEmpty else { return }\
+                        onTransfer(selectedNotebookId)\
+                        dismiss()\
+                    }\
+                    .font(.body.bold())\
+                    .disabled(selectedNotebookId.isEmpty)\
+                }\
+            }\
+        }\
+    }\
+}\

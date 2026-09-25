@@ -1,4 +1,5 @@
 import XCTest
+import SwiftUI
 @testable import Tekyida
 
 final class TekyidaTests: XCTestCase {
@@ -107,5 +108,87 @@ final class TekyidaTests: XCTestCase {
 
         XCTAssertTrue(state.disablePin(withCurrentPin: pin))
         XCTAssertFalse(state.isLockConfigured)
+    }
+
+    func testSemanticSearchEngine() {
+        let state = AppState()
+        state.notebooks.removeAll()
+        state.contacts.removeAll()
+        state.experiences.removeAll()
+        state.transactions.removeAll()
+
+        state.createNotebook(name: "Vacation")
+        let nbId = state.notebooks.first!.id
+        state.activeNotebookId = nbId
+
+        state.createContact(notebookId: nbId, name: "Youssef Alaoui", phone: "+212 600-001122")
+        state.createContact(notebookId: nbId, name: "Leila Tazi", phone: "+212 611-334455")
+        let youssefId = state.contacts.first(where: { $0.name == "Youssef Alaoui" })!.id
+
+        state.createExperience(notebookId: nbId, name: "Sahara Desert Trek", contactId: youssefId)
+        let expId = state.experiences.first!.id
+
+        state.createTransaction(notebookId: nbId, contactId: youssefId, amount: 750.0, description: "Camel ride & tent")
+        state.createTransaction(notebookId: nbId, experienceId: expId, amount: 1200.0, description: "Quad bikes")
+
+        // 1. Search by contact name
+        let contactResults = state.search(query: "Youssef")
+        XCTAssertEqual(contactResults.contacts.count, 1)
+        XCTAssertEqual(contactResults.contacts.first?.name, "Youssef Alaoui")
+
+        // 2. Search by phone substring
+        let phoneResults = state.search(query: "3344")
+        XCTAssertEqual(phoneResults.contacts.count, 1)
+        XCTAssertEqual(phoneResults.contacts.first?.name, "Leila Tazi")
+
+        // 3. Search by experience name
+        let expResults = state.search(query: "Sahara")
+        XCTAssertEqual(expResults.experiences.count, 1)
+        XCTAssertEqual(expResults.experiences.first?.name, "Sahara Desert Trek")
+
+        // 4. Search by transaction description
+        let txResults = state.search(query: "Camel")
+        XCTAssertEqual(txResults.transactions.count, 1)
+        XCTAssertEqual(txResults.transactions.first?.description, "Camel ride & tent")
+
+        // 5. Search by amount
+        let amountResults = state.search(query: "1200")
+        XCTAssertEqual(amountResults.transactions.count, 1)
+
+        // 6. Empty search query
+        let emptyResults = state.search(query: "   ")
+        XCTAssertTrue(emptyResults.isEmpty)
+        XCTAssertEqual(emptyResults.totalCount, 0)
+    }
+
+    func testAppTabStructure() {
+        XCTAssertEqual(AppTab.allCases.count, 4)
+        XCTAssertEqual(AppTab.dashboard.title, "Dashboard")
+        XCTAssertEqual(AppTab.experiences.title, "Experiences")
+        XCTAssertEqual(AppTab.search.title, "Search")
+        XCTAssertEqual(AppTab.settings.title, "Settings")
+
+        XCTAssertEqual(AppTab.search.icon, "magnifyingglass")
+    }
+
+    func testLiquidGlassDesignTokensAndConcentricHierarchy() {
+        // Concentric geometric hierarchy: Sheets > Cards > Buttons > Inputs
+        XCTAssertGreaterThan(AppTheme.radiusSheet, AppTheme.radiusCard)
+        XCTAssertGreaterThan(AppTheme.radiusCard, AppTheme.radiusButton)
+        XCTAssertGreaterThanOrEqual(AppTheme.radiusButton, AppTheme.radiusInput)
+
+        // Concentric path computation produces non-empty path
+        let rect = ConcentricRectangle(cornerRadius: 16)
+        let path = rect.path(in: CGRect(x: 0, y: 0, width: 200, height: 60))
+        XCTAssertFalse(path.isEmpty)
+
+        // GlassButton and GlassCard instantiation
+        let btn = GlassButton("Confirm", style: .primary, size: .extraLarge) {}
+        XCTAssertNotNil(btn.body)
+
+        let card = GlassCard {
+            Text("Test Content")
+        }
+        XCTAssertNotNil(card.body)
     }
 }
