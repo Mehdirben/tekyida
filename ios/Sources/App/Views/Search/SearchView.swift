@@ -13,6 +13,7 @@ public struct SearchView: View {
 
     @State private var query: String = ""
     @State private var scope: FilterScope = .all
+    @State private var isSearchPresented: Bool = false
     @State private var selectedContact: Contact?
     @State private var selectedExperience: Experience?
     @State private var editingTransaction: Transaction?
@@ -43,8 +44,23 @@ public struct SearchView: View {
             .navigationBarTitleDisplayMode(.large)
             .searchable(
                 text: $query,
+                isPresented: $isSearchPresented,
                 placement: .automatic,
                 prompt: Text("Contacts, experiences, amounts...")
+            )
+            .onAppear {
+                // Focus the navbar search field (with keyboard) whenever the tab opens
+                if !isSearchPresented {
+                    isSearchPresented = true
+                }
+            }
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    // Dismiss the keyboard when touching outside the search field
+                    if isSearchPresented {
+                        isSearchPresented = false
+                    }
+                }
             )
             .searchScopes($scope) {
                 ForEach(FilterScope.allCases, id: \.self) { item in

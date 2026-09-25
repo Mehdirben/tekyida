@@ -57,30 +57,3 @@ public extension View {
         modifier(TekyidaNavigationBarModifier(notebookName: notebookName, onSelectNotebook: onSelectNotebook))
     }
 }
-
-// MARK: - Dashboard & Experiences Top Header
-public struct DashboardHeaderView: View {
-    let notebookName: String
-    let onSelectNotebook: () -> Void
-
-    public init(notebookName: String, onSelectNotebook: @escaping () -> Void) {
-        self.notebookName = notebookName
-        self.onSelectNotebook = onSelectNotebook
-    }
-
-    public var body: some View {
-        HStack(alignment: .center) {
-            BrandLogoHeader()
-
-            Spacer()
-
-            // Notebook Switcher Pill Button
-            NotebookHeaderButton(
-                notebookName: notebookName,
-                onTap: onSelectNotebook
-            )
-        }
-        .padding(.horizontal, 2)
-        .padding(.bottom, 4)
-    }
-}
