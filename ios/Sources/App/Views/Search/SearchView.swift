@@ -25,36 +25,32 @@ public struct SearchView: View {
             ZStack {
                 MeshGradientBackground()
 
-                VStack(spacing: 0) {
-                    // Liquid Glass Search Input Bar
-                    searchBar
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        .padding(.bottom, 8)
-
-                    // Filter Scope Pills
-                    filterScopeBar
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 12)
-
-                    // Results ScrollView
-                    ScrollView {
-                        VStack(spacing: 20) {
-                            if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                recentOrEmptyState
-                            } else {
-                                resultsSection
-                            }
+                ScrollView {
+                    VStack(spacing: 20) {
+                        if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            recentOrEmptyState
+                        } else {
+                            resultsSection
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 96)
                     }
-                    .scrollDismissesKeyboard(.immediately)
-                    .tabBarMinimizeBehaviorOnScroll()
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 96)
                 }
+                .scrollDismissesKeyboard(.immediately)
+                .tabBarMinimizeBehaviorOnScroll()
             }
             .navigationTitle("Search")
             .navigationBarTitleDisplayMode(.inline)
+            .searchable(
+                text: $query,
+                placement: .navigationBarDrawer(displayMode: .always),
+                prompt: Text("Contacts, experiences, amounts...")
+            )
+            .searchScopes($scope) {
+                ForEach(FilterScope.allCases, id: \.self) { item in
+                    Text(item.rawValue).tag(item)
+                }
+            }
             .sheet(item: $selectedContact) { contact in
                 ContactDetailSheet(contact: contact)
                     .environmentObject(state)
@@ -73,77 +69,6 @@ public struct SearchView: View {
                     state.deleteTransaction(id: id)
                 }
             )
-        }
-    }
-
-    // MARK: - Liquid Glass Search Bar
-    private var searchBar: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(.secondary)
-                .font(.subheadline)
-
-            TextField("Search contacts, experiences, amounts...", text: $query)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
-                .font(.body)
-
-            if !query.isEmpty {
-                Button(action: {
-                    query = ""
-                }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary)
-                        .font(.subheadline)
-                }
-            }
-        }
-        .glassInputStyle(cornerRadius: AppTheme.radiusButton)
-    }
-
-    // MARK: - Filter Scope Bar
-    private var filterScopeBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(FilterScope.allCases, id: \.self) { item in
-                    let isSelected = scope == item
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                            scope = item
-                        }
-                    }) {
-                        Text(item.rawValue)
-                            .font(.caption.bold())
-                            .foregroundColor(isSelected ? .white : .secondary)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background {
-                                if isSelected {
-                                    LinearGradient(
-                                        colors: [AppTheme.primary, AppTheme.primaryDark],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                    .clipShape(Capsule())
-                                    .shadow(color: AppTheme.primary.opacity(0.3), radius: 6, x: 0, y: 3)
-                                } else {
-                                    Capsule()
-                                        .fill(Color.white.opacity(0.08))
-                                        .background(.ultraThinMaterial, in: Capsule())
-                                }
-                            }
-                            .overlay {
-                                Capsule()
-                                    .stroke(
-                                        isSelected ? Color.white.opacity(0.4) : Color.white.opacity(0.15),
-                                        lineWidth: 1
-                                    )
-                            }
-                    }
-                }
-            }
-            .padding(.vertical, 2)
         }
     }
 

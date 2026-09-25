@@ -207,7 +207,7 @@ public struct NotebookManagerSheet: View {
                             .font(.caption.bold())
                             .foregroundColor(AppTheme.accent)
                             .frame(width: 30, height: 30)
-                            .background(AppTheme.accentBg, in: Circle())
+                            .liquidGlassPill()
                     }
                 } else {
                     Button(action: {
@@ -218,7 +218,7 @@ public struct NotebookManagerSheet: View {
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.secondary)
                             .frame(width: 30, height: 30)
-                            .background(Color.white.opacity(0.08), in: Circle())
+                            .liquidGlassPill()
                     }
                 }
 
@@ -229,7 +229,7 @@ public struct NotebookManagerSheet: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
                         .frame(width: 30, height: 30)
-                        .background(Color.white.opacity(0.08), in: Circle())
+                        .liquidGlassPill()
                 }
 
                 Button(action: {
@@ -239,7 +239,7 @@ public struct NotebookManagerSheet: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(AppTheme.danger.opacity(0.85))
                         .frame(width: 30, height: 30)
-                        .background(AppTheme.danger.opacity(0.12), in: Circle())
+                        .liquidGlassPill()
                 }
             }
         }

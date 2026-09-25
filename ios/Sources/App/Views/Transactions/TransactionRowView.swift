@@ -67,7 +67,7 @@ public struct TransactionRowView: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
                         .frame(width: 30, height: 30)
-                        .background(Color.white.opacity(0.08), in: Circle())
+                        .liquidGlassPill()
                 }
 
                 Button(action: {
@@ -78,7 +78,7 @@ public struct TransactionRowView: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(AppTheme.danger.opacity(0.85))
                         .frame(width: 30, height: 30)
-                        .background(AppTheme.danger.opacity(0.12), in: Circle())
+                        .liquidGlassPill()
                 }
             }
         }

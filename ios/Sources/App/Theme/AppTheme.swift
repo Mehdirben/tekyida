@@ -21,15 +21,6 @@ public enum AppTheme {
     public static let warning = Color(red: 245 / 255.0, green: 158 / 255.0, blue: 11 / 255.0)
     public static let warningBg = Color(red: 245 / 255.0, green: 158 / 255.0, blue: 11 / 255.0, opacity: 0.14)
 
-    // Liquid Glass Optical Tokens (Concentric & Refractive)
-    public static let glassBorderLight = Color.white.opacity(0.45)
-    public static let glassBorderDark = Color.white.opacity(0.16)
-    public static let glassHighlightLight = Color.white.opacity(0.75)
-    public static let glassHighlightDark = Color.white.opacity(0.28)
-    public static let glassInnerGlowLight = Color.white.opacity(0.2)
-    public static let glassInnerGlowDark = Color.white.opacity(0.06)
-    public static let glassShadow = Color.black.opacity(0.08)
-
     // Hardware-Concentric Corner Radii (Aligned with modern Apple design)
     public static let radiusCard: CGFloat = 24
     public static let radiusPill: CGFloat = 999
@@ -45,19 +36,5 @@ public extension Color {
         colorScheme == .dark
             ? Color(red: 14 / 255.0, green: 16 / 255.0, blue: 27 / 255.0)
             : Color(red: 245 / 255.0, green: 247 / 255.0, blue: 252 / 255.0)
-    }
-
-    static func glassBorder(for colorScheme: ColorScheme) -> Color {
-        colorScheme == .dark ? AppTheme.glassBorderDark : AppTheme.glassBorderLight
-    }
-
-    static func glassHighlight(for colorScheme: ColorScheme) -> Color {
-        colorScheme == .dark ? AppTheme.glassHighlightDark : AppTheme.glassHighlightLight
-    }
-
-    static func glassBackground(for colorScheme: ColorScheme) -> Color {
-        colorScheme == .dark
-            ? Color(red: 22 / 255.0, green: 26 / 255.0, blue: 42 / 255.0).opacity(0.65)
-            : Color.white.opacity(0.68)
     }
 }

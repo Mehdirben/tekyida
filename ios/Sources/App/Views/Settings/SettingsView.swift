@@ -94,18 +94,14 @@ public struct SettingsView: View {
 
                 Spacer()
 
-                Button(action: {
+                Button("Change") {
                     newEmailText = state.userEmail
                     showChangeEmail = true
-                }) {
-                    Text("Change")
-                        .font(.caption.bold())
-                        .foregroundColor(AppTheme.primary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(AppTheme.primary.opacity(0.12), in: Capsule())
                 }
-                .buttonStyle(ScaleTouchStyle())
+                .font(.caption.bold())
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .controlSize(.small)
             }
         }
         .padding(16)
@@ -151,7 +147,7 @@ public struct SettingsView: View {
             }
 
             if state.isLockConfigured {
-                Divider().background(Color.white.opacity(0.1))
+                Divider()
 
                 HStack {
                     Button(action: { pinSetupMode = .change }) {
@@ -166,18 +162,11 @@ public struct SettingsView: View {
 
                     Spacer()
 
-                    Button(action: { state.lockApp() }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "lock.fill")
-                            Text("Lock Now")
-                        }
+                    Button("Lock Now", action: { state.lockApp() })
                         .font(.caption.bold())
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.1), in: Capsule())
-                    }
-                    .buttonStyle(ScaleTouchStyle())
+                        .buttonStyle(.bordered)
+                        .buttonBorderShape(.capsule)
+                        .controlSize(.small)
                 }
             }
         }
@@ -215,7 +204,7 @@ public struct SettingsView: View {
                 .frame(maxWidth: 190)
             }
 
-            Divider().background(Color.white.opacity(0.1))
+            Divider()
 
             // Language Selector
             HStack {
@@ -243,7 +232,7 @@ public struct SettingsView: View {
                 .foregroundColor(AppTheme.primary)
             }
 
-            Divider().background(Color.white.opacity(0.1))
+            Divider()
 
             // Hide Amounts on Launch
             Toggle(isOn: Binding(
@@ -267,7 +256,7 @@ public struct SettingsView: View {
                 }
             }
 
-            Divider().background(Color.white.opacity(0.1))
+            Divider()
 
             // Transfer Redirect Toggle
             Toggle(isOn: Binding(

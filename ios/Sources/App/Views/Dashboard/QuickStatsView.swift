@@ -79,13 +79,9 @@ public struct QuickStatsView: View {
                         Image(systemName: isHidden ? "eye.slash.fill" : "eye.fill")
                             .font(.subheadline.bold())
                             .foregroundColor(.secondary)
-                            .padding(10)
-                            .background(Color.white.opacity(0.12), in: Circle())
-                            .overlay {
-                                Circle().stroke(Color.white.opacity(0.2), lineWidth: 1)
-                            }
+                            .frame(width: 36, height: 36)
+                            .liquidGlassPill()
                     }
-                    .buttonStyle(ScaleTouchStyle())
                 }
                 .padding(16)
                 .liquidGlassCard(cornerRadius: AppTheme.radiusCard)

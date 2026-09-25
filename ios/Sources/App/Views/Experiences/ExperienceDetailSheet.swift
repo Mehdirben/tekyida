@@ -190,7 +190,7 @@ public struct ExperienceDetailView: View {
                             title: c.name,
                             systemImage: "person.fill",
                             color: .secondary,
-                            backgroundColor: Color.white.opacity(0.1)
+                            backgroundColor: Color(uiColor: .secondarySystemFill)
                         )
                     }
                 }

@@ -108,7 +108,7 @@ public struct DashboardView: View {
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 9)
                         .padding(.vertical, 4)
-                        .background(Color.white.opacity(0.12), in: Capsule())
+                        .background(Color(uiColor: .secondarySystemFill), in: Capsule())
                 }
             }
             .padding(.horizontal, 4)

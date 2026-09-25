@@ -22,34 +22,13 @@ public struct AddTransactionView: View {
         VStack(spacing: 12) {
             if isAdding {
                 VStack(spacing: 14) {
-                    // Row 1: Direction Toggle & Amount Field
+                    // Row 1: Direction & Amount Field
                     HStack(spacing: 10) {
-                        Button(action: {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            isPositive.toggle()
-                        }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: isPositive ? "arrow.down.left" : "arrow.up.right")
-                                    .font(.caption.bold())
-                                Text(isPositive ? "They owe you" : "You owe them")
-                                    .font(.caption.bold())
-                            }
-                            .foregroundColor(isPositive ? AppTheme.accent : AppTheme.danger)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 12)
-                            .background(
-                                isPositive ? AppTheme.accentBg : AppTheme.dangerBg,
-                                in: RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous)
-                            )
-                            .overlay {
-                                RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous)
-                                    .stroke(
-                                        (isPositive ? AppTheme.accent : AppTheme.danger).opacity(0.35),
-                                        lineWidth: 1
-                                    )
-                            }
+                        Picker("Direction", selection: $isPositive) {
+                            Text("They owe you").tag(true)
+                            Text("You owe them").tag(false)
                         }
-                        .buttonStyle(ScaleTouchStyle())
+                        .pickerStyle(.segmented)
 
                         TextField("Amount (e.g. 150)", text: $amountString)
                             .keyboardType(.decimalPad)

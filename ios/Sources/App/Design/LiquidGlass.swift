@@ -60,7 +60,6 @@ public struct GlassEffectContainer<Content: View>: View {
 
 // MARK: - Native Apple Liquid Glass ViewModifier
 public struct LiquidGlassModifier: ViewModifier {
-    @Environment(\.colorScheme) private var colorScheme
     let style: LiquidGlassStyle
     let cornerRadius: CGFloat
     let isInteractive: Bool
@@ -106,109 +105,27 @@ public struct LiquidGlassModifier: ViewModifier {
     @ViewBuilder
     private func fallbackBody(content: Content) -> some View {
         content
-            .background {
-                glassBackground
-            }
-            .overlay {
-                specularHighlightRim
-            }
-            .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: shadowY)
+            .background { materialBackground }
     }
 
+    /// Pre-iOS 26: classic native system materials.
     @ViewBuilder
-    private var glassBackground: some View {
+    private var materialBackground: some View {
         switch style {
         case .card:
-            ConcentricRectangle(cornerRadius: cornerRadius)
-                .fill(Color.glassBackground(for: colorScheme))
-                .background(.ultraThinMaterial, in: ConcentricRectangle(cornerRadius: cornerRadius))
-
+            ConcentricRectangle(cornerRadius: cornerRadius).fill(.regularMaterial)
         case .surface:
-            ConcentricRectangle(cornerRadius: cornerRadius)
-                .fill(colorScheme == .dark ? Color.white.opacity(0.06) : Color.white.opacity(0.65))
-                .background(.ultraThinMaterial, in: ConcentricRectangle(cornerRadius: cornerRadius))
-
+            ConcentricRectangle(cornerRadius: cornerRadius).fill(.ultraThinMaterial)
         case .pill:
-            Capsule(style: .continuous)
-                .fill(colorScheme == .dark ? Color.white.opacity(0.09) : Color.white.opacity(0.72))
-                .background(.ultraThinMaterial, in: Capsule(style: .continuous))
-
+            Capsule(style: .continuous).fill(.regularMaterial)
         case .button:
-            ConcentricRectangle(cornerRadius: cornerRadius)
-                .fill(colorScheme == .dark ? Color.white.opacity(0.12) : Color.white.opacity(0.82))
-                .background(.thinMaterial, in: ConcentricRectangle(cornerRadius: cornerRadius))
-
+            ConcentricRectangle(cornerRadius: cornerRadius).fill(.thinMaterial)
         case .prominent:
-            ConcentricRectangle(cornerRadius: cornerRadius)
-                .fill(
-                    LinearGradient(
-                        colors: [AppTheme.primary, AppTheme.primaryDark],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-
+            ConcentricRectangle(cornerRadius: cornerRadius).fill(AppTheme.primary)
         case .input:
-            ConcentricRectangle(cornerRadius: cornerRadius)
-                .fill(colorScheme == .dark ? Color.black.opacity(0.28) : Color.white.opacity(0.55))
-                .background(.thinMaterial, in: ConcentricRectangle(cornerRadius: cornerRadius))
-
+            ConcentricRectangle(cornerRadius: cornerRadius).fill(Color(uiColor: .secondarySystemFill))
         case .bar, .floating:
-            ConcentricRectangle(cornerRadius: cornerRadius)
-                .fill(colorScheme == .dark ? Color.black.opacity(0.4) : Color.white.opacity(0.75))
-                .background(.ultraThinMaterial, in: ConcentricRectangle(cornerRadius: cornerRadius))
-        }
-    }
-
-    @ViewBuilder
-    private var specularHighlightRim: some View {
-        let rimGradient = LinearGradient(
-            stops: [
-                .init(color: colorScheme == .dark ? Color.white.opacity(0.45) : Color.white.opacity(0.9), location: 0.0),
-                .init(color: colorScheme == .dark ? Color.white.opacity(0.12) : Color.white.opacity(0.35), location: 0.45),
-                .init(color: colorScheme == .dark ? Color.black.opacity(0.25) : Color.white.opacity(0.12), location: 1.0),
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-
-        switch style {
-        case .pill:
-            Capsule(style: .continuous)
-                .stroke(rimGradient, lineWidth: 1.2)
-        default:
-            ConcentricRectangle(cornerRadius: cornerRadius)
-                .stroke(rimGradient, lineWidth: 1.2)
-        }
-    }
-
-    private var shadowColor: Color {
-        if colorScheme == .dark {
-            return Color.black.opacity(0.4)
-        } else {
-            return Color(red: 90 / 255.0, green: 107 / 255.0, blue: 170 / 255.0).opacity(0.12)
-        }
-    }
-
-    private var shadowRadius: CGFloat {
-        switch style {
-        case .card, .prominent: return 16
-        case .floating: return 20
-        case .surface, .bar: return 10
-        case .pill: return 12
-        case .button: return 8
-        case .input: return 4
-        }
-    }
-
-    private var shadowY: CGFloat {
-        switch style {
-        case .card, .prominent: return 8
-        case .floating: return 10
-        case .surface, .bar: return 4
-        case .pill: return 6
-        case .button: return 4
-        case .input: return 2
+            ConcentricRectangle(cornerRadius: cornerRadius).fill(.ultraThinMaterial)
         }
     }
 }
@@ -255,7 +172,6 @@ public struct LiquidGlassButtonStyle: ButtonStyle {
     let variant: Variant
     let size: Size
     let cornerRadius: CGFloat
-    @Environment(\.colorScheme) private var colorScheme
 
     public init(
         variant: Variant = .glass,
@@ -312,89 +228,34 @@ public struct LiquidGlassButtonStyle: ButtonStyle {
     }
     #endif
 
+    /// Pre-iOS 26: classic native button styles (bordered / borderedProminent).
     @ViewBuilder
     private func fallbackBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(size.font)
-            .padding(.vertical, size.verticalPadding)
-            .padding(.horizontal, size.horizontalPadding)
-            .foregroundColor(foregroundColor)
-            .background {
-                backgroundShape(isPressed: configuration.isPressed)
-            }
-            .overlay {
-                ConcentricRectangle(cornerRadius: cornerRadius)
-                    .stroke(borderGradient(isPressed: configuration.isPressed), lineWidth: 1.2)
-            }
-            .shadow(color: shadowColor(isPressed: configuration.isPressed), radius: configuration.isPressed ? 4 : 10, x: 0, y: configuration.isPressed ? 2 : 5)
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
-            .animation(.spring(response: 0.22, dampingFraction: 0.68), value: configuration.isPressed)
-    }
+        let label = configuration.label.font(size.font)
+        let controlSize: ControlSize = size == .regular ? .regular : .large
 
-    @ViewBuilder
-    private func backgroundShape(isPressed: Bool) -> some View {
         switch variant {
         case .prominent:
-            LinearGradient(
-                colors: isPressed
-                    ? [AppTheme.primaryDark, AppTheme.primary]
-                    : [AppTheme.primary, AppTheme.primaryDark],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .clipShape(ConcentricRectangle(cornerRadius: cornerRadius))
-
+            Button(action: configuration.trigger) { label }
+                .controlSize(controlSize)
+                .buttonBorderShape(.roundedRectangle(radius: cornerRadius))
+                .tint(AppTheme.primary)
+                .buttonStyle(.borderedProminent)
+        case .danger:
+            Button(action: configuration.trigger) { label }
+                .controlSize(controlSize)
+                .buttonBorderShape(.roundedRectangle(radius: cornerRadius))
+                .tint(AppTheme.danger)
+                .buttonStyle(.borderedProminent)
         case .glass:
-            ConcentricRectangle(cornerRadius: cornerRadius)
-                .fill(colorScheme == .dark ? Color.white.opacity(isPressed ? 0.16 : 0.1) : Color.white.opacity(isPressed ? 0.88 : 0.75))
-                .background(.ultraThinMaterial, in: ConcentricRectangle(cornerRadius: cornerRadius))
-
-        case .danger:
-            LinearGradient(
-                colors: isPressed
-                    ? [AppTheme.danger.opacity(0.85), AppTheme.danger]
-                    : [AppTheme.danger, AppTheme.danger.opacity(0.88)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .clipShape(ConcentricRectangle(cornerRadius: cornerRadius))
-
+            Button(action: configuration.trigger) { label }
+                .controlSize(controlSize)
+                .buttonBorderShape(.roundedRectangle(radius: cornerRadius))
+                .tint(AppTheme.primary)
+                .buttonStyle(.bordered)
         case .clear:
-            ConcentricRectangle(cornerRadius: cornerRadius)
-                .fill(Color.white.opacity(isPressed ? 0.12 : 0.04))
-                .background(.ultraThinMaterial, in: ConcentricRectangle(cornerRadius: cornerRadius))
-        }
-    }
-
-    private var foregroundColor: Color {
-        switch variant {
-        case .prominent, .danger:
-            return .white
-        case .glass, .clear:
-            return .primary
-        }
-    }
-
-    private func borderGradient(isPressed: Bool) -> LinearGradient {
-        LinearGradient(
-            stops: [
-                .init(color: colorScheme == .dark ? Color.white.opacity(isPressed ? 0.6 : 0.4) : Color.white.opacity(0.9), location: 0.0),
-                .init(color: colorScheme == .dark ? Color.white.opacity(0.15) : Color.white.opacity(0.3), location: 0.5),
-                .init(color: colorScheme == .dark ? Color.clear : Color.white.opacity(0.1), location: 1.0),
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-
-    private func shadowColor(isPressed: Bool) -> Color {
-        switch variant {
-        case .prominent:
-            return AppTheme.primary.opacity(isPressed ? 0.2 : 0.35)
-        case .danger:
-            return AppTheme.danger.opacity(isPressed ? 0.2 : 0.35)
-        case .glass, .clear:
-            return colorScheme == .dark ? Color.black.opacity(0.3) : Color.black.opacity(0.08)
+            Button(action: configuration.trigger) { label }
+                .buttonStyle(.plain)
         }
     }
 }

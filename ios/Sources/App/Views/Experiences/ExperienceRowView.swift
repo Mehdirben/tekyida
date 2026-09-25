@@ -99,7 +99,7 @@ public struct ExperienceRowView: View {
             }
             .buttonStyle(ScaleTouchStyle())
 
-            Divider().background(Color.white.opacity(0.1))
+            Divider()
 
             // Action Buttons Bar
             HStack(spacing: 8) {
@@ -117,17 +117,7 @@ public struct ExperienceRowView: View {
                     .foregroundColor(experience.closed ? AppTheme.warning : AppTheme.accent)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
-                    .background(
-                        (experience.closed ? AppTheme.warningBg : AppTheme.accentBg),
-                        in: Capsule()
-                    )
-                    .overlay {
-                        Capsule()
-                            .stroke(
-                                (experience.closed ? AppTheme.warning : AppTheme.accent).opacity(0.25),
-                                lineWidth: 1
-                            )
-                    }
+                    .liquidGlassPill()
                 }
                 .buttonStyle(ScaleTouchStyle())
 
@@ -142,7 +132,7 @@ public struct ExperienceRowView: View {
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.secondary)
                             .frame(width: 30, height: 30)
-                            .background(Color.white.opacity(0.08), in: Circle())
+                            .liquidGlassPill()
                     }
 
                     Button(action: {
@@ -153,7 +143,7 @@ public struct ExperienceRowView: View {
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.secondary)
                             .frame(width: 30, height: 30)
-                            .background(Color.white.opacity(0.08), in: Circle())
+                            .liquidGlassPill()
                     }
 
                     Button(action: {
@@ -164,7 +154,7 @@ public struct ExperienceRowView: View {
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(AppTheme.danger.opacity(0.85))
                             .frame(width: 30, height: 30)
-                            .background(AppTheme.danger.opacity(0.12), in: Circle())
+                            .liquidGlassPill()
                     }
 
                     Button(action: {

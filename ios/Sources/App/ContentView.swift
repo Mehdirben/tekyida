@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - App Navigation Tabs (Modern Liquid Glass HIG)
+// MARK: - App Navigation Tabs
 public enum AppTab: Int, CaseIterable, Identifiable, Hashable, Sendable {
     case dashboard = 0
     case experiences = 1
@@ -26,15 +26,6 @@ public enum AppTab: Int, CaseIterable, Identifiable, Hashable, Sendable {
         case .search: return "magnifyingglass"
         }
     }
-
-    public var activeIcon: String {
-        switch self {
-        case .dashboard: return "house.fill"
-        case .experiences: return "safari.fill"
-        case .settings: return "gearshape.fill"
-        case .search: return "magnifyingglass"
-        }
-    }
 }
 
 // MARK: - Root Content View
@@ -45,21 +36,11 @@ struct ContentView: View {
 
     init(state: AppState? = nil) {
         self.state = state ?? AppState()
-        // Hide the docked UIKit tab bar only where the custom floating bar is used
-        #if compiler(>=6.2)
-        if #available(iOS 26.0, *) {
-            // Native Liquid Glass tab bar is shown
-        } else {
-            UITabBar.appearance().isHidden = true
-        }
-        #else
-        UITabBar.appearance().isHidden = true
-        #endif
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            tabBarRoot
+        ZStack {
+            nativeTabView
 
             // Fullscreen App Lock Screen if configured & active
             if state.isAppLocked && state.isLockConfigured {
@@ -78,68 +59,54 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Tab Bar Root (Native Liquid Glass on iOS 26+, custom floating bar below)
+    // MARK: - Native Tab Bar (all versions)
+    // iOS 26+: native Liquid Glass tabs with the dedicated search role.
+    // Pre-iOS 26: the classic native tab bar.
     @ViewBuilder
-    private var tabBarRoot: some View {
-        #if compiler(>=6.2)
-        if #available(iOS 26.0, *) {
-            nativeLiquidGlassTabBar
-        } else {
-            legacyFloatingGlassTabBar
-        }
-        #else
-        legacyFloatingGlassTabBar
-        #endif
-    }
-
-    // MARK: - Native Liquid Glass Tab Bar (iOS 26+)
-    // System tab bar with real Liquid Glass, dedicated search tab role
-    // and minimize-on-scroll behavior.
-    #if compiler(>=6.2)
-    @available(iOS 26.0, *)
-    private var nativeLiquidGlassTabBar: some View {
+    private var nativeTabView: some View {
         TabView(selection: $selectedTab) {
-            Tab(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon, value: AppTab.dashboard) {
-                DashboardView()
+            #if compiler(>=6.2)
+            if #available(iOS 26.0, *) {
+                Tab(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon, value: AppTab.dashboard) {
+                    DashboardView()
+                }
+                Tab(AppTab.experiences.title, systemImage: AppTab.experiences.icon, value: AppTab.experiences) {
+                    ExperiencesView()
+                }
+                Tab(AppTab.settings.title, systemImage: AppTab.settings.icon, value: AppTab.settings) {
+                    SettingsView()
+                }
+                Tab(AppTab.search.title, systemImage: AppTab.search.icon, value: AppTab.search, role: .search) {
+                    SearchView()
+                }
+            } else {
+                classicTabs
             }
-            Tab(AppTab.experiences.title, systemImage: AppTab.experiences.icon, value: AppTab.experiences) {
-                ExperiencesView()
-            }
-            Tab(AppTab.settings.title, systemImage: AppTab.settings.icon, value: AppTab.settings) {
-                SettingsView()
-            }
-            Tab(AppTab.search.title, systemImage: AppTab.search.icon, value: AppTab.search, role: .search) {
-                SearchView()
-            }
+            #else
+            classicTabs
+            #endif
         }
         .tint(AppTheme.primary)
     }
-    #endif
 
-    // MARK: - Legacy Floating Glass Tab Bar (pre-iOS 26)
-    private var legacyFloatingGlassTabBar: some View {
-        ZStack(alignment: .bottom) {
-            TabView(selection: $selectedTab) {
-                DashboardView()
-                    .tag(AppTab.dashboard)
+    // MARK: - Classic Native Tabs (pre-iOS 26)
+    @ViewBuilder
+    private var classicTabs: some View {
+        DashboardView()
+            .tabItem { Label(AppTab.dashboard.title, systemImage: AppTab.dashboard.icon) }
+            .tag(AppTab.dashboard)
 
-                ExperiencesView()
-                    .tag(AppTab.experiences)
+        ExperiencesView()
+            .tabItem { Label(AppTab.experiences.title, systemImage: AppTab.experiences.icon) }
+            .tag(AppTab.experiences)
 
-                SettingsView()
-                    .tag(AppTab.settings)
+        SettingsView()
+            .tabItem { Label(AppTab.settings.title, systemImage: AppTab.settings.icon) }
+            .tag(AppTab.settings)
 
-                SearchView()
-                    .tag(AppTab.search)
-            }
-            .toolbar(.hidden, for: .tabBar)
-            .tint(AppTheme.primary)
-
-            // Topmost Liquid Glass Layer: Floating Capsule Pill + Detached Search Bubble
-            FloatingLiquidGlassBar(selectedTab: $selectedTab)
-                .padding(.bottom, 12)
-                .zIndex(10)
-        }
+        SearchView()
+            .tabItem { Label(AppTab.search.title, systemImage: AppTab.search.icon) }
+            .tag(AppTab.search)
     }
 
     private var resolvedColorScheme: ColorScheme? {

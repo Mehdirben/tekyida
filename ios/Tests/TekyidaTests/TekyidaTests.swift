@@ -191,11 +191,4 @@ final class TekyidaTests: XCTestCase {
         }
         XCTAssertNotNil(card.body)
     }
-
-    func testFloatingLiquidGlassBarNavigation() {
-        var tab: AppTab = .dashboard
-        let binding = Binding<AppTab>(get: { tab }, set: { newTab in tab = newTab })
-        let bar = FloatingLiquidGlassBar(selectedTab: binding)
-        XCTAssertNotNil(bar.body)
-    }
 }

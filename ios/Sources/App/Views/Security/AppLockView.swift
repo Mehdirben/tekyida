@@ -50,19 +50,19 @@ public struct AppLockView: View {
                 Spacer()
 
                 // Emergency Sign Out Option
-                Button(action: {
+                Button {
                     showSignOutAlert = true
-                }) {
+                } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "rectangle.portrait.and.arrow.right")
                         Text("Sign Out")
                     }
                     .font(.caption.bold())
-                    .foregroundColor(AppTheme.danger)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(AppTheme.dangerBg, in: Capsule())
                 }
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .controlSize(.small)
+                .tint(AppTheme.danger)
                 .padding(.bottom, 24)
             }
             .padding(.horizontal, 24)

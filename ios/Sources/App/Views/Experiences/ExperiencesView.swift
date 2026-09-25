@@ -125,38 +125,12 @@ public struct ExperiencesView: View {
     }
 
     private var filterSegmentedControl: some View {
-        HStack(spacing: 6) {
+        Picker("Filter", selection: $filterMode) {
             ForEach(ExperienceFilter.allCases, id: \.self) { filter in
-                let isSelected = filterMode == filter
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
-                        filterMode = filter
-                    }
-                }) {
-                    Text(filter.rawValue)
-                        .font(.subheadline.bold())
-                        .foregroundColor(isSelected ? .white : .secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background {
-                            if isSelected {
-                                ConcentricRectangle(cornerRadius: AppTheme.radiusInput)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [AppTheme.primary, AppTheme.primaryDark],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
-                                    .shadow(color: AppTheme.primary.opacity(0.3), radius: 6, x: 0, y: 2)
-                            }
-                        }
-                }
+                Text(filter.rawValue).tag(filter)
             }
         }
-        .padding(4)
-        .liquidGlassFlat(cornerRadius: AppTheme.radiusInput + 4)
+        .pickerStyle(.segmented)
     }
 
     private var experiencesList: some View {
@@ -187,7 +161,7 @@ public struct ExperiencesView: View {
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 9)
                         .padding(.vertical, 4)
-                        .background(Color.white.opacity(0.12), in: Capsule())
+                        .background(Color(uiColor: .secondarySystemFill), in: Capsule())
                 }
             }
             .padding(.horizontal, 4)
