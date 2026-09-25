@@ -148,7 +148,7 @@ jobs:
             RELEASE_TAG="beta-${{ github.run_number }}"
             IS_BETA="true"
             PRERELEASE_FLAG="--prerelease"
-            RELEASE_TITLE="Beta Build ${{ github.run_number }} (${{ github.ref_name }})"
+            RELEASE_TITLE="Build ${{ github.run_number }} Beta (${{ github.ref_name }})"
           fi
 
           echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
