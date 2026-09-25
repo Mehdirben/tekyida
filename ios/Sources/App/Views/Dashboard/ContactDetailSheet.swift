@@ -120,7 +120,8 @@ public struct ContactDetailView: View {
 
     private var headerCard: some View {
         let balance = state.contactBalance(contact.id)
-        return HStack(spacing: 16) {\n            ZStack {
+        return HStack(spacing: 16) {
+            ZStack {
                 Circle()
                     .fill(AppTheme.primary.opacity(0.15))
                     .frame(width: 52, height: 52)
