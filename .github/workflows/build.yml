@@ -17,8 +17,8 @@ jobs:
   # -------------------------------------------------------------
   # Job 1: Quality Gate & Change Detection
   # - Detects changed paths per platform (Web, Android, iOS, Distribution)
-  # - On 'main': Runs strict 100% test coverage, jscpd duplication check, SAST, and typecheck
-  # - On other branches: Runs fast unit tests only for changed platforms (skips slow E2E, coverage, and DAST)
+  # - Web & Backend tests run here in Quality Gate (fast unit tests on dev; 100% coverage on main)
+  # - Android and iOS tests DO NOT run here (they run inside their respective build jobs)
   # -------------------------------------------------------------
   quality-gate:
     name: Quality Gate & Change Detection
@@ -68,7 +68,7 @@ jobs:
           echo "  - Android changed:     ${{ steps.filter.outputs.android }}"
           echo "  - iOS changed:         ${{ steps.filter.outputs.ios }}"
           echo "  - Distribution changed:${{ steps.filter.outputs.distribution }}"
-          echo "Running fast unit tests only on changed platforms (skipping heavy E2E, DAST, and UI simulation)."
+          echo "Only changed platforms will execute unit tests and builds."
 
       - name: Set up Node.js runtime
         if: github.ref == 'refs/heads/main' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true'
@@ -117,6 +117,7 @@ jobs:
 
   # -------------------------------------------------------------
   # Job 2: Initialize GitHub Release (Stable or Beta Pre-release)
+  # Carries forward previous assets so unchanged platforms keep their last build
   # -------------------------------------------------------------
   init-release:
     name: Initialize Release & Carry Forward Assets
@@ -163,12 +164,20 @@ jobs:
               --generate-notes
           fi
 
-          # Carry forward previous release assets so both APK and IPA are guaranteed
-          LATEST_TAG=$(gh release list --repo "${{ github.repository }}" --limit 4 --json tagName -q '.[].tagName' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
-          if [ -n "$LATEST_TAG" ]; then
-            echo "Carrying forward assets from previous release: $LATEST_TAG"
+          # Carry forward previous release assets:
+          # On Beta: picks the most recent Beta pre-release (or fallback to latest release)
+          # On Main: picks the most recent Stable release
+          if [ "$IS_BETA" = "true" ]; then
+            PREV_TAG=$(gh release list --repo "${{ github.repository }}" --limit 10 --json tagName,isPrerelease -q '.[] | select(.isPrerelease == true) | .tagName' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
+            [ -z "$PREV_TAG" ] && PREV_TAG=$(gh release list --repo "${{ github.repository }}" --limit 4 --json tagName -q '.[].tagName' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
+          else
+            PREV_TAG=$(gh release list --repo "${{ github.repository }}" --exclude-pre-releases --limit 4 --json tagName -q '.[].tagName' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
+          fi
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "Carrying forward assets from previous release: $PREV_TAG"
             mkdir -p previous-assets
-            gh release download "$LATEST_TAG" --repo "${{ github.repository }}" --pattern "Tekyida.*" --pattern "apps*.json" --dir previous-assets || true
+            gh release download "$PREV_TAG" --repo "${{ github.repository }}" --pattern "Tekyida.*" --pattern "apps*.json" --dir previous-assets || true
             if ls previous-assets/* >/dev/null 2>&1; then
               gh release upload "$RELEASE_TAG" \
                 --repo "${{ github.repository }}" \
@@ -179,7 +188,7 @@ jobs:
 
   # -------------------------------------------------------------
   # Job 3: iOS Build (SwiftUI, XcodeGen, Unsigned IPA)
-  # Only executes if changes occurred in ios/**, distribution/**, or workflow_dispatch
+  # Only runs if iOS files changed (skips tests and build if unchanged)
   # -------------------------------------------------------------
   build-ios:
     name: Build & Package iOS IPA
@@ -237,6 +246,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-derived-data-
 
+      # iOS Tests run here inside the iOS job:
       # On non-main (dev/feature): Fast unit tests only (skips TekyidaUITests simulator automation)
       - name: Run iOS Unit Tests (Fast - Feature/Beta Branch)
         if: github.ref != 'refs/heads/main'
@@ -342,7 +352,7 @@ jobs:
 
   # -------------------------------------------------------------
   # Job 4: Android Build (Kotlin, Jetpack Compose, Release APK)
-  # Only executes if changes occurred in android/**, distribution/**, or workflow_dispatch
+  # Only runs if Android files changed (skips tests and build if unchanged)
   # -------------------------------------------------------------
   build-android:
     name: Build & Package Android APK
@@ -380,6 +390,7 @@ jobs:
       - name: Ensure Gradle wrapper is executable
         run: chmod +x gradlew
 
+      # Android Tests run here inside the Android job:
       # Runs Android Unit Tests (fast Kotlin tests on both main & dev)
       - name: Run Android Unit Tests
         run: ./gradlew testReleaseUnitTest --no-daemon
