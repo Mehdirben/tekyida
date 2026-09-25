@@ -27,17 +27,21 @@ public struct ExperiencesView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        NotebookHeaderButton(
+                        // Top Header (Logo + Sync dot left, Notebook Switcher right)
+                        DashboardHeaderView(
                             notebookName: state.activeNotebook?.name ?? "Select Notebook",
-                            onTap: { showNotebookManager = true }
+                            onSelectNotebook: { showNotebookManager = true }
                         )
 
+                        // Open Experiences Total Balance Card
                         if let activeNb = state.activeNotebook {
                             totalBalanceCard(notebookId: activeNb.id)
                         }
 
+                        // Filter Segmented Control
                         filterSegmentedControl
 
+                        // Experiences List
                         experiencesList
                     }
                     .padding(.horizontal, 16)
@@ -45,26 +49,15 @@ public struct ExperiencesView: View {
                     .padding(.bottom, 96)
                 }
             }
-            .navigationTitle("Experiences")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        showAddExperience = true
-                    }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(AppTheme.primary)
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showNotebookManager) {
                 NotebookManagerSheet()
             }
             .sheet(isPresented: $showAddExperience) {
                 if let activeNb = state.activeNotebook {
                     let nbContacts = state.contacts.filter { $0.notebookId == activeNb.id }
-                    AddExperienceSheet(contacts: nbContacts) { name, contactId in
+                    AddExperienceSheet(contacts: nbContacts) { name, contactId in\
                         state.createExperience(notebookId: activeNb.id, name: name, contactId: contactId)
                     }
                 }
@@ -104,12 +97,12 @@ public struct ExperiencesView: View {
         let total = state.totalExperiencesBalance(for: notebookId)
         return HStack(spacing: 14) {
             ZStack {
-                Circle()
-                    .fill(AppTheme.primary.opacity(0.15))
-                    .frame(width: 44, height: 44)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(AppTheme.primary.opacity(0.12))
+                    .frame(width: 40, height: 40)
 
                 Image(systemName: "safari.fill")
-                    .font(.headline)
+                    .font(.system(size: 18))
                     .foregroundColor(AppTheme.primary)
             }
 
@@ -213,6 +206,13 @@ public struct ExperiencesView: View {
                     )
                 }
             }
+
+            // Bottom Add Experience button (PWA mobile responsive placement)
+            ListAddBottomButton(
+                title: "Add Experience",
+                systemImage: "plus",
+                action: { showAddExperience = true }
+            )
         }
     }
 }

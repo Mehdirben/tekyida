@@ -18,25 +18,25 @@ public struct SettingsView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Profile & Email Card
+                        // Profile & Account
                         profileSection
 
-                        // Security & App Lock Card
+                        // Security & App Lock
                         securitySection
 
-                        // Appearance & Preferences Card
+                        // Preferences & Controls
                         preferencesSection
 
-                        // Sign Out Button
+                        // Sign Out
                         signOutSection
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
-                    .padding(.bottom, 96) // Avoid floating tab bar overlap
+                    .padding(.bottom, 96)
                 }
             }
             .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .sheet(item: Binding(
                 get: { pinSetupMode.map { IdentifiablePinMode(mode: $0) } },
                 set: { pinSetupMode = $0?.mode }
@@ -72,11 +72,12 @@ public struct SettingsView: View {
             HStack(spacing: 14) {
                 ZStack {
                     Circle()
-                        .fill(AppTheme.primary.opacity(0.15))
+                        .fill(AppTheme.primary.opacity(0.12))
                         .frame(width: 48, height: 48)
 
                     Image(systemName: "person.crop.circle.fill")
                         .font(.title)
+                        .symbolRenderingMode(.hierarchical)
                         .foregroundColor(AppTheme.primary)
                 }
 
@@ -99,7 +100,7 @@ public struct SettingsView: View {
                     Text("Change")
                         .font(.caption.bold())
                         .foregroundColor(AppTheme.primary)
-                        .padding(.horizontal, 10)
+                        .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                         .background(AppTheme.primary.opacity(0.1), in: Capsule())
                 }
@@ -113,16 +114,23 @@ public struct SettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             sectionHeader("Security & Privacy")
 
-            // App Lock Toggle
+            // App Lock Toggle Row
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("App Lock PIN")
-                        .font(.subheadline.bold())
-                        .foregroundColor(.primary)
+                HStack(spacing: 12) {
+                    Image(systemName: "lock.shield.fill")
+                        .foregroundColor(AppTheme.primary)
+                        .symbolRenderingMode(.hierarchical)
+                        .frame(width: 24)
 
-                    Text("Require 6-digit PIN to access Tekyida")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("App Lock PIN")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.primary)
+
+                        Text("Require 6-digit PIN on launch & resume")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
                 }
 
                 Spacer()
@@ -141,13 +149,10 @@ public struct SettingsView: View {
             }
 
             if state.isLockConfigured {
-                Divider()
-                    .background(Color.white.opacity(0.1))
+                Divider().background(Color.white.opacity(0.1))
 
                 HStack {
-                    Button(action: {
-                        pinSetupMode = .change
-                    }) {
+                    Button(action: { pinSetupMode = .change }) {
                         HStack(spacing: 6) {
                             Image(systemName: "key.fill")
                             Text("Change PIN")
@@ -158,9 +163,7 @@ public struct SettingsView: View {
 
                     Spacer()
 
-                    Button(action: {
-                        state.lockApp()
-                    }) {
+                    Button(action: { state.lockApp() }) {
                         HStack(spacing: 6) {
                             Image(systemName: "lock.fill")
                             Text("Lock Now")
@@ -184,9 +187,15 @@ public struct SettingsView: View {
 
             // Appearance Theme Mode
             HStack {
-                Text("Appearance")
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
+                HStack(spacing: 12) {
+                    Image(systemName: "circle.lefthalf.filled")
+                        .foregroundColor(.secondary)
+                        .frame(width: 24)
+
+                    Text("Appearance")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                }
 
                 Spacer()
 
@@ -199,16 +208,22 @@ public struct SettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .frame(maxWidth: 200)
+                .frame(maxWidth: 190)
             }
 
             Divider().background(Color.white.opacity(0.1))
 
             // Language Selector
             HStack {
-                Text("Language")
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
+                HStack(spacing: 12) {
+                    Image(systemName: "globe")
+                        .foregroundColor(.secondary)
+                        .frame(width: 24)
+
+                    Text("Language")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                }
 
                 Spacer()
 
@@ -226,19 +241,25 @@ public struct SettingsView: View {
 
             Divider().background(Color.white.opacity(0.1))
 
-            // Hide Amounts on Load Toggle
+            // Hide Amounts on Launch
             Toggle(isOn: Binding(
                 get: { state.amountsHiddenByDefault },
                 set: { state.updateAmountsHiddenDefault($0) }
             )) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Hide Amounts on Launch")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-
-                    Text("Mask currency figures by default")
-                        .font(.caption2)
+                HStack(spacing: 12) {
+                    Image(systemName: "eye.slash.fill")
                         .foregroundColor(.secondary)
+                        .frame(width: 24)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Hide Amounts on Launch")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+
+                        Text("Mask currency figures by default")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
 
@@ -249,14 +270,20 @@ public struct SettingsView: View {
                 get: { state.transferRedirect },
                 set: { state.updateTransferRedirect($0) }
             )) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Navigate on Transfer")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-
-                    Text("Switch active notebook when moving an experience")
-                        .font(.caption2)
+                HStack(spacing: 12) {
+                    Image(systemName: "arrow.right.arrow.left")
                         .foregroundColor(.secondary)
+                        .frame(width: 24)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Navigate on Transfer")
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+
+                        Text("Switch active notebook when moving an experience")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
         }
@@ -268,7 +295,7 @@ public struct SettingsView: View {
         GlassButton("Sign Out", systemImage: "rectangle.portrait.and.arrow.right", style: .danger) {
             showSignOutConfirm = true
         }
-        .padding(.top, 8)
+        .padding(.top, 4)
     }
 
     private func sectionHeader(_ title: String) -> some View {

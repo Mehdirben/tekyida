@@ -19,68 +19,86 @@ public struct TransferExperienceSheet: View {
 
     public var body: some View {
         NavigationStack {
-            ZStack {
-                MeshGradientBackground()
+            VStack(spacing: 20) {
+                // Info Card
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(AppTheme.primary.opacity(0.15))
+                                .frame(width: 44, height: 44)
 
-                VStack(spacing: 20) {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text("Transfer Experience")
-                            .font(.headline)
-                            .foregroundColor(.primary)
+                            Image(systemName: "arrow.right.arrow.left")
+                                .font(.headline)
+                                .foregroundColor(AppTheme.primary)
+                        }
 
-                        Text("Moving '\(experience.name)' to another notebook will also move all its transactions. Any linked contact will be unlinked as contacts belong to specific notebooks.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(experience.name)
+                                .font(.headline)
+                                .foregroundColor(.primary)
 
-                        let otherNotebooks = state.notebooks.filter { $0.id != experience.notebookId }
-
-                        if otherNotebooks.isEmpty {
-                            Text("No other notebooks available. Create another notebook first.")
+                            Text("Move to another notebook")
                                 .font(.caption)
-                                .foregroundColor(AppTheme.warning)
-                                .padding(.vertical, 8)
-                        } else {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Destination Notebook")
-                                    .font(.caption.bold())
-                                    .foregroundColor(.secondary)
-
-                                Picker("Target Notebook", selection: $selectedNotebookId) {
-                                    Text("Select Notebook").tag("")
-                                    ForEach(otherNotebooks) { nb in
-                                        Text(nb.name).tag(nb.id)
-                                    }
-                                }
-                                .pickerStyle(.menu)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 10)
-                                .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
-                            }
+                                .foregroundColor(.secondary)
                         }
                     }
-                    .padding(20)
-                    .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
 
-                    Spacer()
+                    Text("Moving this experience will transfer all associated transactions. Contacts are notebook-scoped, so any contact link will be detached.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
 
-                    GlassButton("Transfer Experience", systemImage: "arrow.right.arrow.left", style: .primary) {
+                    let otherNotebooks = state.notebooks.filter { $0.id != experience.notebookId }
+
+                    if otherNotebooks.isEmpty {
+                        Text("No other notebooks found. Create another notebook first.")
+                            .font(.caption)
+                            .foregroundColor(AppTheme.warning)
+                            .padding(.top, 4)
+                    } else {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Target Notebook")
+                                .font(.caption2.bold())
+                                .foregroundColor(.secondary)
+                                .textCase(.uppercase)
+
+                            Picker("Notebook", selection: $selectedNotebookId) {
+                                Text("Select Destination").tag("")
+                                ForEach(otherNotebooks) { nb in
+                                    Text(nb.name).tag(nb.id)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
+                        }
+                        .padding(.top, 4)
+                    }
+                }
+                .padding(16)
+                .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
+
+                Spacer()
+            }
+            .padding(20)
+            .navigationTitle("Transfer Experience")
+            .navigationBarTitleDisplayMode(.inline)
+            .liquidGlassSheet(detents: [.medium])
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Transfer") {
                         guard !selectedNotebookId.isEmpty else { return }
                         onTransfer(selectedNotebookId)
                         dismiss()
                     }
+                    .font(.body.bold())
                     .disabled(selectedNotebookId.isEmpty)
-                    .opacity(selectedNotebookId.isEmpty ? 0.5 : 1.0)
-                }
-                .padding(20)
-            }
-            .navigationTitle("Transfer")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
                 }
             }
         }

@@ -77,9 +77,11 @@ public struct ContactDetailSheet: View {
             }
             .navigationTitle(contact.name)
             .navigationBarTitleDisplayMode(.inline)
+            .liquidGlassSheet(detents: [.large])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Close") { dismiss() }
+                    Button("Done") { dismiss() }
+                        .font(.body.bold())
                 }
 
                 ToolbarItem(placement: .primaryAction) {
@@ -93,6 +95,7 @@ public struct ContactDetailSheet: View {
                     } label: {
                         Image(systemName: "ellipsis.circle")
                             .font(.headline)
+                            .symbolRenderingMode(.hierarchical)
                     }
                 }
             }

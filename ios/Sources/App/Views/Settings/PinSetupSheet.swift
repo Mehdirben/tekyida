@@ -29,53 +29,49 @@ public struct PinSetupSheet: View {
 
     public var body: some View {
         NavigationStack {
-            ZStack {
-                MeshGradientBackground()
+            VStack(spacing: 24) {
+                Spacer()
 
-                VStack(spacing: 24) {
-                    Spacer()
+                // Header
+                VStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(AppTheme.primary.opacity(0.12))
+                            .frame(width: 60, height: 60)
 
-                    // Icon & Instruction Title
-                    VStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(AppTheme.primary.opacity(0.15))
-                                .frame(width: 56, height: 56)
-
-                            Image(systemName: "lock.shield.fill")
-                                .font(.title2)
-                                .foregroundColor(AppTheme.primary)
-                        }
-
-                        Text(instructionTitle)
-                            .font(.title3.bold())
-                            .foregroundColor(.primary)
-
-                        Text(instructionSubtitle)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+                        Image(systemName: "lock.shield.fill")
+                            .font(.title2)
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundColor(AppTheme.primary)
                     }
 
-                    // Keypad
-                    PinPadView(
-                        pin: $pin,
-                        isError: isError
-                    ) { enteredPin in
-                        handlePinComplete(enteredPin)
-                    }
+                    Text(instructionTitle)
+                        .font(.title3.bold())
+                        .foregroundColor(.primary)
 
-                    Spacer()
+                    Text(instructionSubtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
                 }
-                .padding(24)
+
+                // Apple Glass Keypad
+                PinPadView(
+                    pin: $pin,
+                    isError: isError
+                ) { enteredPin in
+                    handlePinComplete(enteredPin)
+                }
+
+                Spacer()
             }
+            .padding(24)
             .navigationTitle(navTitle)
             .navigationBarTitleDisplayMode(.inline)
+            .liquidGlassSheet(detents: [.large])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                    Button("Cancel") { dismiss() }
                 }
             }
         }

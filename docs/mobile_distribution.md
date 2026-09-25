@@ -34,8 +34,10 @@ Tekyida maintains cryptographically signed F-Droid repositories that serve relea
 * **Stable Repo URL:** `https://mehdirben.github.io/tekyida/fdroid/repo`
 * **Beta Repo URL:** `https://mehdirben.github.io/tekyida/fdroid/beta/repo`
 * **Direct Add Link (Stable):** [Add Stable to F-Droid](fdroidrepo://mehdirben.github.io/tekyida/fdroid/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3)
-* **Direct Add Link (Beta):** [Add Beta to F-Droid](fdroidrepo://mehdirben.github.io/tekyida/fdroid/beta/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3)
-* **SHA-256 Signing Fingerprint (Shared across Stable & Beta):**
+* **Direct Add Link (Beta):** [Add Beta to F-Droid](fdroidrepo://mehdirben.github.io/tekyida/fdroid/beta/repo?fingerprint=6119382BB2492E3B4C1B30A9E37F212B17AF78377C088CC42DFC426E835FB62B)
+* **SHA-256 Fingerprint (Beta):**
+  `6119382BB2492E3B4C1B30A9E37F212B17AF78377C088CC42DFC426E835FB62B`
+* **SHA-256 Fingerprint (Stable):**
   `E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3`
 * **Direct APK Download:**
   - Stable: `https://mehdirben.github.io/tekyida/fdroid/repo/Tekyida.apk`

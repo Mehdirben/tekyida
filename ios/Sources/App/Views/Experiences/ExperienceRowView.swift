@@ -38,85 +38,136 @@ public struct ExperienceRowView: View {
     }
 
     public var body: some View {
-        Button(action: {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            onTap()
-        }) {
-            VStack(alignment: .leading, spacing: 10) {
-                // Row 1: Icon, Title & Balance
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(AppTheme.primary.opacity(0.15))
-                            .frame(width: 40, height: 40)
+        VStack(spacing: 8) {
+            // Main Tappable Info Area
+            Button(action: {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                onTap()
+            }) {
+                VStack(spacing: 6) {
+                    // Row 1: Icon, Title & Balance
+                    HStack(spacing: 10) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(AppTheme.primary.opacity(0.12))
+                                .frame(width: 38, height: 38)
 
-                        Image(systemName: "safari.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(AppTheme.primary)
-                    }
+                            Image(systemName: "safari.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(AppTheme.primary)
+                        }
 
-                    VStack(alignment: .leading, spacing: 3) {
                         Text(experience.name)
-                            .font(.headline)
+                            .font(.subheadline.bold())
                             .foregroundColor(.primary)
                             .lineLimit(1)
 
-                        HStack(spacing: 6) {
-                            if let contact = contactName {
-                                StatusBadge(
-                                    title: contact,
-                                    systemImage: "person.fill",
-                                    color: .secondary,
-                                    backgroundColor: Color.white.opacity(0.1)
-                                )
+                        Spacer()
+
+                        AmountView(
+                            amount: balance,
+                            isHidden: isMasked,
+                            font: .subheadline,
+                            fontWeight: .bold
+                        )
+                    }
+
+                    // Row 2: Contact Chip & Transaction Count
+                    HStack(spacing: 6) {
+                        if let contact = contactName {
+                            HStack(spacing: 3) {
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 9))
+                                Text(contact)
+                                    .font(.caption2)
                             }
+                            .foregroundColor(.secondary)
 
-                            StatusBadge(
-                                title: experience.closed ? "Closed" : "Open",
-                                systemImage: experience.closed ? "lock.fill" : "lock.open.fill",
-                                color: experience.closed ? AppTheme.warning : AppTheme.accent,
-                                backgroundColor: experience.closed ? AppTheme.warningBg : AppTheme.accentBg
-                            )
-
-                            Text("• \(transactionCount) txs")
+                            Text("•")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                         }
+
+                        Text("\(transactionCount) transactions")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+
+                        Spacer()
                     }
-
-                    Spacer()
-
-                    AmountView(
-                        amount: balance,
-                        isHidden: isMasked,
-                        font: .subheadline,
-                        fontWeight: .bold
-                    )
-
-                    Image(systemName: "chevron.right")
-                        .font(.caption2.bold())
-                        .foregroundColor(.secondary.opacity(0.6))
+                    .padding(.leading, 48)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
+            .buttonStyle(ScaleTouchStyle())
+
+            Divider().background(Color.white.opacity(0.08))
+
+            // Action Buttons Bar
+            HStack(spacing: 8) {
+                // Lock / Unlock status toggle button
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    onToggleClosed()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: experience.closed ? "lock.fill" : "lock.open.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(experience.closed ? "Closed" : "Open")
+                            .font(.caption2.bold())
+                    }
+                    .foregroundColor(experience.closed ? AppTheme.warning : AppTheme.accent)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        (experience.closed ? AppTheme.warning : AppTheme.accent).opacity(0.12),
+                        in: Capsule()
+                    )
+                }
+
+                Spacer()
+
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onEdit()
+                }) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .padding(6)
+                }
+
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onTransfer()
+                }) {
+                    Image(systemName: "arrow.right.arrow.left")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .padding(6)
+                }
+
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    onDelete()
+                }) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 12))
+                        .foregroundColor(AppTheme.danger.opacity(0.8))
+                        .padding(6)
+                }
+
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onTap()
+                }) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary.opacity(0.6))
+                        .padding(6)
+                }
+            }
         }
-        .buttonStyle(ScaleTouchStyle())
-        .contextMenu {
-            Button(action: onToggleClosed) {
-                Label(experience.closed ? "Reopen Experience" : "Close Experience",
-                      systemImage: experience.closed ? "lock.open" : "lock")
-            }
-            Button(action: onEdit) {
-                Label("Edit Experience", systemImage: "pencil")
-            }
-            Button(action: onTransfer) {
-                Label("Transfer to Notebook", systemImage: "arrow.right.arrow.left")
-            }
-            Button(role: .destructive, action: onDelete) {
-                Label("Delete Experience", systemImage: "trash")
-            }
-        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
 }

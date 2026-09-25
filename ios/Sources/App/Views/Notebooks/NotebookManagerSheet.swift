@@ -16,111 +16,104 @@ public struct NotebookManagerSheet: View {
 
     public var body: some View {
         NavigationStack {
-            ZStack {
-                MeshGradientBackground()
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Active Notebooks Section
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Active Notebooks")
+                            .font(.caption.bold())
+                            .foregroundColor(.secondary)
+                            .textCase(.uppercase)
+                            .padding(.horizontal, 4)
 
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Section 1: Active Notebooks
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Active Notebooks")
-                                .font(.caption.bold())
-                                .foregroundColor(.secondary)
-                                .textCase(.uppercase)
-                                .padding(.horizontal, 4)
-
-                            ForEach(state.activeNotebooksList) { notebook in
-                                notebookRow(notebook, isArchived: false)
-                            }
+                        ForEach(state.activeNotebooksList) { notebook in
+                            notebookRow(notebook, isArchived: false)
                         }
+                    }
 
-                        // Section 2: Create New Notebook
-                        if isCreating {
-                            VStack(spacing: 12) {
-                                TextField("Notebook Name (max 20)", text: $newNotebookName)
-                                    .glassInputStyle()
-                                    .onChange(of: newNotebookName) { _, newVal in
-                                        if newVal.count > 20 {
-                                            newNotebookName = String(newVal.prefix(20))
-                                        }
-                                    }
-
-                                HStack(spacing: 8) {
-                                    Button("Cancel") {
-                                        newNotebookName = ""
-                                        isCreating = false
-                                    }
-                                    .font(.subheadline.bold())
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                    .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
-                                    .foregroundColor(.secondary)
-
-                                    Button("Create") {
-                                        createNotebook()
-                                    }
-                                    .font(.subheadline.bold())
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                    .background(AppTheme.primary, in: RoundedRectangle(cornerRadius: AppTheme.radiusButton, style: .continuous))
-                                    .foregroundColor(.white)
-                                    .disabled(newNotebookName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    // Create New Notebook Form / Button
+                    if isCreating {
+                        VStack(spacing: 12) {
+                            TextField("Notebook Name (max 20)", text: $newNotebookName)
+                                .glassInputStyle()
+                                .onChange(of: newNotebookName) { _, newVal in
+                                    if newVal.count > 20 { newNotebookName = String(newVal.prefix(20)) }
                                 }
-                            }
-                            .padding(14)
-                            .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
-                        } else {
-                            Button(action: {
-                                isCreating = true
-                            }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "plus")
-                                    Text("New Notebook")
+
+                            HStack(spacing: 8) {
+                                Button("Cancel") {
+                                    newNotebookName = ""
+                                    isCreating = false
                                 }
                                 .font(.subheadline.bold())
-                                .foregroundColor(AppTheme.primary)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
+                                .padding(.vertical, 10)
+                                .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
+                                .foregroundColor(.secondary)
+
+                                Button("Create") {
+                                    createNotebook()
+                                }
+                                .font(.subheadline.bold())
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(AppTheme.primary, in: RoundedRectangle(cornerRadius: AppTheme.radiusButton, style: .continuous))
+                                .foregroundColor(.white)
+                                .disabled(newNotebookName.trimmingCharacters(in: .whitespaces).isEmpty)
                             }
                         }
+                        .padding(14)
+                        .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
+                    } else {
+                        Button(action: { isCreating = true }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.headline)
+                                Text("New Notebook")
+                                    .font(.subheadline.bold())
+                            }
+                            .foregroundColor(AppTheme.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
+                        }
+                    }
 
-                        // Section 3: Archived Notebooks Toggle
-                        if !state.archivedNotebooksList.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Button(action: {
-                                    withAnimation { showArchived.toggle() }
-                                }) {
-                                    HStack {
-                                        Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
-                                        Text(showArchived ? "Hide Archived Notebooks" : "Show Archived Notebooks (\(state.archivedNotebooksList.count))")
-                                            .font(.caption.bold())
-                                        Spacer()
-                                        Image(systemName: showArchived ? "chevron.up" : "chevron.down")
-                                            .font(.caption)
-                                    }
-                                    .foregroundColor(.secondary)
-                                    .padding(.horizontal, 4)
+                    // Archived Notebooks Section
+                    if !state.archivedNotebooksList.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Button(action: {
+                                withAnimation { showArchived.toggle() }
+                            }) {
+                                HStack {
+                                    Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
+                                    Text(showArchived ? "Hide Archived (\(state.archivedNotebooksList.count))" : "Show Archived (\(state.archivedNotebooksList.count))")
+                                        .font(.caption.bold())
+                                    Spacer()
+                                    Image(systemName: showArchived ? "chevron.up" : "chevron.down")
+                                        .font(.caption)
                                 }
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 4)
+                            }
 
-                                if showArchived {
-                                    ForEach(state.archivedNotebooksList) { notebook in
-                                        notebookRow(notebook, isArchived: true)
-                                    }
+                            if showArchived {
+                                ForEach(state.archivedNotebooksList) { notebook in
+                                    notebookRow(notebook, isArchived: true)
                                 }
                             }
                         }
                     }
-                    .padding(20)
                 }
+                .padding(20)
             }
             .navigationTitle("Notebooks")
             .navigationBarTitleDisplayMode(.inline)
+            .liquidGlassSheet(detents: [.medium, .large])
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
+                    Button("Done") { dismiss() }
+                        .font(.body.bold())
                 }
             }
             .alert(
@@ -130,9 +123,7 @@ public struct NotebookManagerSheet: View {
                     set: { if !$0 { deleteConfirmNotebook = nil } }
                 ),
                 actions: {
-                    Button("Cancel", role: .cancel) {
-                        deleteConfirmNotebook = nil
-                    }
+                    Button("Cancel", role: .cancel) { deleteConfirmNotebook = nil }
                     Button("Delete", role: .destructive) {
                         if let nb = deleteConfirmNotebook {
                             state.deleteNotebook(id: nb.id)
@@ -161,6 +152,7 @@ public struct NotebookManagerSheet: View {
                 HStack(spacing: 12) {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "book.closed")
                         .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
                         .foregroundColor(isSelected ? AppTheme.primary : .secondary)
 
                     VStack(alignment: .leading, spacing: 2) {
@@ -187,7 +179,7 @@ public struct NotebookManagerSheet: View {
                 }
             }
 
-            // Notebook Action Buttons
+            // Actions
             HStack(spacing: 4) {
                 if editingNotebookId == notebook.id {
                     Button(action: { saveEdit(notebook.id) }) {

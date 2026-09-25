@@ -301,11 +301,13 @@ jobs:
 
           if [ "$IS_BETA" = "true" ]; then
             FEED_NAME="Tekyida (Beta)"
+            APP_NAME="Tekyida (Beta)"
             FEED_ID="com.tekyida.ios.source.beta"
             VERSION_STR="1.0-beta"
             VERSION_DESC="Beta build from branch ${{ github.ref_name }} (commit ${{ github.sha }})"
           else
             FEED_NAME="Tekyida (Stable)"
+            APP_NAME="Tekyida (Stable)"
             FEED_ID="com.tekyida.ios.source"
             VERSION_STR="1.0"
             VERSION_DESC="Automated build from commit ${{ github.sha }}"
@@ -318,7 +320,7 @@ jobs:
             "apps": [
               {
                 "bundleIdentifier": "com.tekyida.app",
-                "name": "Tekyida",
+                "name": "$APP_NAME",
                 "developerName": "Tekyida",
                 "localizedDescription": "Modern IOU Tracker for iOS & Android",
                 "iconURL": "https://raw.githubusercontent.com/${{ github.repository }}/main/distribution/fdroid/icon.png",
@@ -578,68 +580,14 @@ jobs:
             cp assets-beta/Tekyida.apk assets-stable/Tekyida.apk
           fi
 
-          # 2. Setup iOS SideStore source feeds (Stable & Beta)
+          # 2. Setup iOS SideStore source feeds (Strict Normalization for Stable & Beta)
           if [ -f assets-stable/apps.json ]; then
             cp assets-stable/apps.json site-pages/ios/apps.json
-          else
-            cat <<EOF > site-pages/ios/apps.json
-          {
-            "name": "Tekyida (Stable)",
-            "identifier": "com.tekyida.ios.source",
-            "apps": [
-              {
-                "bundleIdentifier": "com.tekyida.app",
-                "name": "Tekyida",
-                "developerName": "Tekyida",
-                "localizedDescription": "Modern IOU Tracker for iOS & Android",
-                "iconURL": "https://raw.githubusercontent.com/${{ github.repository }}/main/distribution/fdroid/icon.png",
-                "versions": [
-                  {
-                    "version": "1.0",
-                    "buildVersion": "${{ github.run_number }}",
-                    "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-                    "minOSVersion": "17.0",
-                    "localizedDescription": "Stable release",
-                    "downloadURL": "https://github.com/${{ github.repository }}/releases/download/$LATEST_STABLE_TAG/Tekyida.ipa",
-                    "size": 0
-                  }
-                ]
-              }
-            ]
-          }
-          EOF
           fi
-
           if [ -f assets-beta/apps.json ]; then
             cp assets-beta/apps.json site-pages/ios/beta/apps.json
-          else
-            cat <<EOF > site-pages/ios/beta/apps.json
-          {
-            "name": "Tekyida (Beta)",
-            "identifier": "com.tekyida.ios.source.beta",
-            "apps": [
-              {
-                "bundleIdentifier": "com.tekyida.app",
-                "name": "Tekyida",
-                "developerName": "Tekyida",
-                "localizedDescription": "Modern IOU Tracker for iOS & Android (Beta)",
-                "iconURL": "https://raw.githubusercontent.com/${{ github.repository }}/main/distribution/fdroid/icon.png",
-                "versions": [
-                  {
-                    "version": "1.0-beta",
-                    "buildVersion": "${{ github.run_number }}",
-                    "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-                    "minOSVersion": "17.0",
-                    "localizedDescription": "Beta preview release",
-                    "downloadURL": "https://github.com/${{ github.repository }}/releases/download/$LATEST_BETA_TAG/Tekyida.ipa",
-                    "size": 0
-                  }
-                ]
-              }
-            ]
-          }
-          EOF
           fi
+          python3 distribution/sidestore/format_sources.py "${{ github.repository }}" "${{ github.run_number }}" "$LATEST_STABLE_TAG" "$LATEST_BETA_TAG" 
 
           # 3. Setup Android F-Droid: STABLE Channel
           # Place APK into repo/ and app icon into metadata/ (NEVER put icon.png into repo/)
@@ -662,17 +610,19 @@ jobs:
             cp assets-beta/Tekyida.apk site-pages/fdroid/beta/repo/Tekyida.apk
           fi
           cp distribution/fdroid/config-beta.yml site-pages/fdroid/beta/config.yml
-          cp distribution/fdroid/keystore.p12 site-pages/fdroid/beta/keystore.p12
+          cp distribution/fdroid/keystore-beta.p12 site-pages/fdroid/beta/keystore-beta.p12
           cp distribution/fdroid/icon.png site-pages/fdroid/beta/icon.png
           cp -r distribution/fdroid/metadata/* site-pages/fdroid/beta/metadata/
 
           cd site-pages/fdroid/beta
+          export ANDROID_HOME=/usr/local/lib/android/sdk
+          export PATH="$HOME/.local/bin:$PATH"
           fdroid update --create-metadata --pretty
           cd ../../..
 
           # 5. Security Clean-up: remove sensitive keystore and config before deployment
           rm -f site-pages/fdroid/keystore.p12 site-pages/fdroid/config.yml
-          rm -f site-pages/fdroid/beta/keystore.p12 site-pages/fdroid/beta/config.yml
+          rm -f site-pages/fdroid/beta/keystore-beta.p12 site-pages/fdroid/beta/config-beta.yml
 
       # Clean up any existing github-pages artifact from previous attempts of this run to prevent duplicates on rerun
       - name: Clean up existing Pages artifacts

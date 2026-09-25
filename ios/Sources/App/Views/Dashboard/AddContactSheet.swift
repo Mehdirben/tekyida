@@ -21,59 +21,64 @@ public struct AddContactSheet: View {
 
     public var body: some View {
         NavigationStack {
-            ZStack {
-                MeshGradientBackground()
-
+            ScrollView {
                 VStack(spacing: 20) {
-                    VStack(spacing: 16) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Full Name")
-                                .font(.caption.bold())
-                                .foregroundColor(.secondary)
+                    // Contact Avatar Header
+                    ZStack {
+                        Circle()
+                            .fill(AppTheme.primary.opacity(0.12))
+                            .frame(width: 64, height: 64)
 
-                            TextField("e.g. John Doe", text: $name)
-                                .glassInputStyle()
+                        Image(systemName: "person.crop.circle.fill")
+                            .font(.system(size: 40))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundColor(AppTheme.primary)
+                    }
+                    .padding(.top, 8)
+
+                    // Apple Glass Form Group
+                    VStack(spacing: 14) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "person.fill")
+                                .foregroundColor(AppTheme.primary)
+                                .frame(width: 24)
+
+                            TextField("Full Name (e.g. Sarah Smith)", text: $name)
+                                .textInputAutocapitalization(.words)
                                 .onChange(of: name) { _, newVal in
-                                    if newVal.count > 200 {
-                                        name = String(newVal.prefix(200))
-                                    }
+                                    if newVal.count > 200 { name = String(newVal.prefix(200)) }
                                 }
                         }
+                        .glassInputStyle()
 
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Phone Number (optional)")
-                                .font(.caption.bold())
-                                .foregroundColor(.secondary)
+                        HStack(spacing: 12) {
+                            Image(systemName: "phone.fill")
+                                .foregroundColor(AppTheme.accent)
+                                .frame(width: 24)
 
-                            TextField("e.g. +212 600-000000", text: $phone)
+                            TextField("Phone (optional)", text: $phone)
                                 .keyboardType(.phonePad)
-                                .glassInputStyle()
                         }
+                        .glassInputStyle()
                     }
-                    .padding(20)
+                    .padding(16)
                     .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
 
-                    Spacer()
-
-                    GlassButton(
-                        initialContact == nil ? "Add Contact" : "Save Changes",
-                        systemImage: "person.badge.plus",
-                        style: .primary
-                    ) {
-                        save()
-                    }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                    .opacity(name.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1.0)
+                    Spacer(minLength: 24)
                 }
                 .padding(20)
             }
             .navigationTitle(initialContact == nil ? "New Contact" : "Edit Contact")
             .navigationBarTitleDisplayMode(.inline)
+            .liquidGlassSheet(detents: [.medium, .large])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(initialContact == nil ? "Add" : "Done") { save() }
+                        .font(.body.bold())
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
         }

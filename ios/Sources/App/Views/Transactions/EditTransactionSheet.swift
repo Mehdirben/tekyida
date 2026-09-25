@@ -25,83 +25,65 @@ public struct EditTransactionSheet: View {
 
     public var body: some View {
         NavigationStack {
-            ZStack {
-                MeshGradientBackground()
-
+            ScrollView {
                 VStack(spacing: 20) {
-                    // Form Card
+                    // Apple Liquid Glass Card Form
                     VStack(spacing: 16) {
-                        // Direction Selector
-                        HStack(spacing: 12) {
-                            directionButton(
-                                title: "They owe you",
-                                isSelected: isPositive,
-                                color: AppTheme.accent,
-                                bgColor: AppTheme.accentBg
-                            ) {
-                                isPositive = true
-                            }
-
-                            directionButton(
-                                title: "You owe them",
-                                isSelected: !isPositive,
-                                color: AppTheme.danger,
-                                bgColor: AppTheme.dangerBg
-                            ) {
-                                isPositive = false
-                            }
+                        // Segmented Direction Control
+                        Picker("Direction", selection: $isPositive) {
+                            Text("They owe you").tag(true)
+                            Text("You owe them").tag(false)
                         }
+                        .pickerStyle(.segmented)
 
-                        // Amount
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Amount (MAD)")
-                                .font(.caption.bold())
-                                .foregroundColor(.secondary)
+                        // Amount Field
+                        HStack(spacing: 12) {
+                            Text("MAD")
+                                .font(.subheadline.bold())
+                                .foregroundColor(isPositive ? AppTheme.accent : AppTheme.danger)
 
-                            TextField("Amount", text: $amountString)
+                            TextField("0.00", text: $amountString)
                                 .keyboardType(.decimalPad)
                                 .font(.title3.weight(.bold))
-                                .glassInputStyle()
                         }
+                        .glassInputStyle()
 
-                        // Description
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Description")
-                                .font(.caption.bold())
+                        // Description Field
+                        HStack(spacing: 12) {
+                            Image(systemName: "note.text")
                                 .foregroundColor(.secondary)
+                                .frame(width: 20)
 
-                            TextField("Description (optional)", text: $description)
-                                .glassInputStyle()
+                            TextField("Note or description", text: $description)
                         }
+                        .glassInputStyle()
 
-                        // Date
+                        // Date Picker
                         DatePicker("Date & Time", selection: $date, displayedComponents: [.date, .hourAndMinute])
                             .font(.subheadline)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
                             .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
                     }
-                    .padding(20)
+                    .padding(16)
                     .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
 
-                    Spacer()
-
-                    // Save Action
-                    GlassButton("Save Changes", systemImage: "checkmark.circle.fill", style: .primary) {
-                        save()
-                    }
-                    .disabled(invalidAmount)
-                    .opacity(invalidAmount ? 0.5 : 1.0)
+                    Spacer(minLength: 24)
                 }
                 .padding(20)
             }
             .navigationTitle("Edit Transaction")
             .navigationBarTitleDisplayMode(.inline)
+            .liquidGlassSheet(detents: [.medium, .large])
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                    Button("Cancel") { dismiss() }
+                }
+
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { save() }
+                        .font(.body.bold())
+                        .disabled(invalidAmount)
                 }
             }
         }
@@ -112,30 +94,6 @@ public struct EditTransactionSheet: View {
             return true
         }
         return false
-    }
-
-    private func directionButton(
-        title: String,
-        isSelected: Bool,
-        color: Color,
-        bgColor: Color,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            action()
-        }) {
-            Text(title)
-                .font(.subheadline.bold())
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .foregroundColor(isSelected ? color : .secondary)
-                .background(isSelected ? bgColor : Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous)
-                        .stroke(isSelected ? color.opacity(0.4) : Color.white.opacity(0.1), lineWidth: 1)
-                }
-        }
     }
 
     private func save() {

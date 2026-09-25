@@ -19,11 +19,13 @@ public struct DashboardView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        NotebookHeaderButton(
+                        // Top Header (Logo + Sync dot left, Notebook Switcher right)
+                        DashboardHeaderView(
                             notebookName: state.activeNotebook?.name ?? "Select Notebook",
-                            onTap: { showNotebookManager = true }
+                            onSelectNotebook: { showNotebookManager = true }
                         )
 
+                        // QuickStats Widgets
                         if let activeNb = state.activeNotebook {
                             QuickStatsView(
                                 moneyOwed: state.moneyOwed(for: activeNb.id),
@@ -36,6 +38,7 @@ public struct DashboardView: View {
                             )
                         }
 
+                        // Contacts Section
                         contactsSection
                     }
                     .padding(.horizontal, 16)
@@ -43,27 +46,8 @@ public struct DashboardView: View {
                     .padding(.bottom, 96)
                 }
             }
-            .navigationTitle("Tekyida")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Image("AppLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 28, height: 28)
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        showAddContact = true
-                    }) {
-                        Image(systemName: "person.crop.circle.badge.plus")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(AppTheme.primary)
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showNotebookManager) {
                 NotebookManagerSheet()
             }
@@ -112,23 +96,7 @@ public struct DashboardView: View {
             return c1.name.localizedCaseInsensitiveCompare(c2.name) == .orderedAscending
         }
 
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Contacts (\(currentContacts.count))")
-                    .font(.caption.bold())
-                    .foregroundColor(.secondary)
-                    .textCase(.uppercase)
-
-                Spacer()
-
-                Button(action: { showAddContact = true }) {
-                    Label("Add", systemImage: "plus")
-                        .font(.caption.bold())
-                        .foregroundColor(AppTheme.primary)
-                }
-            }
-            .padding(.horizontal, 4)
-
+        return VStack(spacing: 12) {
             if sortedContacts.isEmpty {
                 GlassEmptyStateView(
                     systemImage: "person.2.slash",
@@ -153,6 +121,13 @@ public struct DashboardView: View {
                     )
                 }
             }
+
+            // Bottom Add Contact button (PWA mobile responsive placement)
+            ListAddBottomButton(
+                title: "Add Contact",
+                systemImage: "person.badge.plus",
+                action: { showAddContact = true }
+            )
         }
     }
 }

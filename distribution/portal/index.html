@@ -601,17 +601,19 @@
         androidDeepLink: "fdroidrepo://mehdirben.github.io/tekyida/fdroid/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3",
         androidDownload: "./fdroid/repo/Tekyida.apk",
         badgeText: "Stable",
-        badgeClass: "badge-stable"
+        badgeClass: "badge-stable",
+        fingerprint: "E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3"
       },
       beta: {
         iosUrl: "https://mehdirben.github.io/tekyida/ios/beta/apps.json",
         iosDeepLink: "sidestore://source?url=https%3A%2F%2Fmehdirben.github.io%2Ftekyida%2Fios%2Fbeta%2Fapps.json",
         iosDownload: "https://github.com/Mehdirben/tekyida/releases",
         androidUrl: "https://mehdirben.github.io/tekyida/fdroid/beta/repo",
-        androidDeepLink: "fdroidrepo://mehdirben.github.io/tekyida/fdroid/beta/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3",
+        androidDeepLink: "fdroidrepo://mehdirben.github.io/tekyida/fdroid/beta/repo?fingerprint=6119382BB2492E3B4C1B30A9E37F212B17AF78377C088CC42DFC426E835FB62B",
         androidDownload: "./fdroid/beta/repo/Tekyida.apk",
         badgeText: "Beta",
-        badgeClass: "badge-beta"
+        badgeClass: "badge-beta",
+        fingerprint: "6119382BB2492E3B4C1B30A9E37F212B17AF78377C088CC42DFC426E835FB62B"
       }
     };
 
@@ -640,6 +642,7 @@
       document.getElementById('btn-download-apk').href = data.androidDownload;
       document.getElementById('url-android').value = data.androidUrl;
       document.getElementById('label-android-url').textContent = `F-Droid Repository URL (${data.badgeText})`;
+      document.getElementById('url-fp').value = data.fingerprint;
 
       // Re-render QR codes
       renderQR('qr-ios', data.iosDeepLink);

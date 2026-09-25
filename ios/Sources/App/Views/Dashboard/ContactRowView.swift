@@ -26,68 +26,92 @@ public struct ContactRowView: View {
     }
 
     public var body: some View {
-        Button(action: {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            onTap()
-        }) {
-            HStack(spacing: 12) {
-                // Initials Circle
-                ZStack {
-                    Circle()
-                        .fill(AppTheme.primary.opacity(0.15))
-                        .frame(width: 42, height: 42)
+        HStack(spacing: 12) {
+            // Main tappable area
+            Button(action: {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                onTap()
+            }) {
+                HStack(spacing: 12) {
+                    // Squircle User Icon
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(AppTheme.primary.opacity(0.12))
+                            .frame(width: 38, height: 38)
 
-                    Text(initials(contact.name))
-                        .font(.subheadline.bold())
-                        .foregroundColor(AppTheme.primary)
-                }
-
-                // Name & Phone
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(contact.name)
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-
-                    if let phone = contact.phone, !phone.isEmpty {
-                        Text(phone)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 15))
+                            .foregroundColor(AppTheme.primary)
                     }
+
+                    // Name, Phone & Inline Balance
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(contact.name)
+                            .font(.subheadline.bold())
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+
+                        HStack(spacing: 6) {
+                            if let phone = contact.phone, !phone.isEmpty {
+                                HStack(spacing: 3) {
+                                    Image(systemName: "phone.fill")
+                                        .font(.system(size: 9))
+                                    Text(phone)
+                                        .font(.caption2)
+                                }
+                                .foregroundColor(.secondary)
+                            }
+
+                            AmountView(
+                                amount: balance,
+                                isHidden: isMasked,
+                                font: .caption2,
+                                fontWeight: .bold
+                            )
+                        }
+                    }
+
+                    Spacer()
+                }
+            }
+            .buttonStyle(ScaleTouchStyle())
+
+            // Right Actions: Edit, Delete, Chevron
+            HStack(spacing: 4) {
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onEdit()
+                }) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(6)
                 }
 
-                Spacer()
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    onDelete()
+                }) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(AppTheme.danger.opacity(0.8))
+                        .padding(6)
+                }
 
-                // Balance
-                AmountView(
-                    amount: balance,
-                    isHidden: isMasked,
-                    font: .subheadline,
-                    fontWeight: .bold
-                )
-
-                Image(systemName: "chevron.right")
-                    .font(.caption2.bold())
-                    .foregroundColor(.secondary.opacity(0.6))
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
-        }
-        .buttonStyle(ScaleTouchStyle())
-        .contextMenu {
-            Button(action: onEdit) {
-                Label("Edit Contact", systemImage: "pencil")
-            }
-            Button(role: .destructive, action: onDelete) {
-                Label("Delete Contact", systemImage: "trash")
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onTap()
+                }) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary.opacity(0.6))
+                        .padding(.vertical, 6)
+                        .padding(.leading, 2)
+                }
             }
         }
-    }
-
-    private func initials(_ name: String) -> String {
-        let parts = name.split(separator: " ").prefix(2)
-        if parts.isEmpty { return "?" }
-        return parts.compactMap { $0.first.map(String.init) }.joined().uppercased()
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
 }

@@ -15,7 +15,7 @@ Tekyida provides automated, direct-to-device app updates through community sidel
 | **iOS** | 🟢 Stable | SideStore / AltStore | `https://mehdirben.github.io/tekyida/ios/apps.json` | [⚡ Add Stable](sidestore://source?url=https%3A%2F%2Fmehdirben.github.io%2Ftekyida%2Fios%2Fapps.json) |
 | **iOS** | 🟡 Beta | SideStore / AltStore | `https://mehdirben.github.io/tekyida/ios/beta/apps.json` | [⚡ Add Beta](sidestore://source?url=https%3A%2F%2Fmehdirben.github.io%2Ftekyida%2Fios%2Fbeta%2Fapps.json) |
 | **Android** | 🟢 Stable | F-Droid / Droid-ify | `https://mehdirben.github.io/tekyida/fdroid/repo` | [⚡ Add Stable](fdroidrepo://mehdirben.github.io/tekyida/fdroid/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3) |
-| **Android** | 🟡 Beta | F-Droid / Droid-ify | `https://mehdirben.github.io/tekyida/fdroid/beta/repo` | [⚡ Add Beta](fdroidrepo://mehdirben.github.io/tekyida/fdroid/beta/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3) |
+| **Android** | 🟡 Beta | F-Droid / Droid-ify | `https://mehdirben.github.io/tekyida/fdroid/beta/repo` | [⚡ Add Beta](fdroidrepo://mehdirben.github.io/tekyida/fdroid/beta/repo?fingerprint=6119382BB2492E3B4C1B30A9E37F212B17AF78377C088CC42DFC426E835FB62B) |
 
 > Complete instructions and QR codes are available in the [Mobile Distribution Guide](docs/mobile_distribution.md).
 
