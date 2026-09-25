@@ -89,7 +89,7 @@ struct ContentView: View {
             Tab(AppTab.settings.title, systemImage: AppTab.settings.icon, value: AppTab.settings) {
                 SettingsView()
             }
-            Tab(AppTab.search.title, systemImage: AppTab.search.icon, value: AppTab.search, role: .search) {
+            Tab(AppTab.search.title, systemImage: AppTab.search.icon, value: AppTab.search) {
                 SearchView()
             }
         }

@@ -20,8 +20,8 @@ jobs:
   # -------------------------------------------------------------
   # Job 1: Quality Gate & Change Detection
   # - Detects changed paths per platform (Web, Android, iOS, Distribution)
-  # - Web & Backend tests run here in Quality Gate (fast unit tests on dev; 100% coverage on main)
-  # - Android and iOS tests DO NOT run here (they run inside their respective build jobs)
+  # - Web & Backend tests run here in Quality Gate (100% coverage on main; skipped on other branches)
+  # - Android and iOS tests DO NOT run here (they run inside their respective build jobs on main)
   # -------------------------------------------------------------
   quality-gate:
     name: Quality Gate & Change Detection
@@ -71,41 +71,29 @@ jobs:
           echo "  - Android changed:     ${{ steps.filter.outputs.android }}"
           echo "  - iOS changed:         ${{ steps.filter.outputs.ios }}"
           echo "  - Distribution changed:${{ steps.filter.outputs.distribution }}"
-          echo "Only changed platforms will execute unit tests and builds."
+          echo "Unit tests are skipped on non-main branches for fast delivery."
 
       - name: Set up Node.js runtime
-        if: github.ref == 'refs/heads/main' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true'
+        if: github.ref == 'refs/heads/main'
         uses: actions/setup-node@v5
         with:
           node-version: 22
 
       - name: Setup npm cache for quality checks
-        if: github.ref == 'refs/heads/main' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true'
+        if: github.ref == 'refs/heads/main'
         uses: actions/cache@v5
         with:
           path: ~/.npm
           key: qg-npm-${{ runner.os }}-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json') }}
 
       - name: Install Quality Gate Dependencies
-        if: github.ref == 'refs/heads/main' || steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true'
+        if: github.ref == 'refs/heads/main'
         run: |
           [ "${{ steps.filter.outputs.backend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] && npm ci --prefix backend --prefer-offline || true
           [ "${{ steps.filter.outputs.frontend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] && npm ci --prefix frontend --prefer-offline || true
 
-      # On non-main branches: fast unit tests only for changed JS/TS code
-      - name: Run Fast Web/Backend Unit Tests (Feature/Beta Branch)
-        if: github.ref != 'refs/heads/main' && (steps.filter.outputs.backend == 'true' || steps.filter.outputs.frontend == 'true')
-        run: |
-          if [ "${{ steps.filter.outputs.backend }}" = "true" ]; then
-            echo "Running backend unit tests..."
-            npm test --prefix backend -- --run
-          fi
-          if [ "${{ steps.filter.outputs.frontend }}" = "true" ]; then
-            echo "Running frontend unit tests..."
-            npm test --prefix frontend -- --run
-          fi
-
       # On main branch: complete quality gate (100% coverage vitest, jscpd, SAST audit)
+      # Unit tests are skipped on non-main branches
       - name: Run Tekyida Strict Quality Gate (tests/run.sh)
         if: github.ref == 'refs/heads/main'
         env:
@@ -262,8 +250,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-derived-data-
 
-      # Prepares the CoreSimulator daemon and identifies a concrete simulator destination ID
+      # Prepares the CoreSimulator daemon and identifies a concrete simulator destination ID (only needed for tests on main)
       - name: Prepare iOS Simulator
+        if: github.ref == 'refs/heads/main'
         run: |
           xcrun simctl list devices available
           SIM_ID=$(xcrun simctl list devices available | grep -i "iPhone" | grep -oE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -n 1 || true)
@@ -280,20 +269,8 @@ jobs:
           fi
 
       # iOS Tests run here inside the iOS job:
-      # On non-main (dev/feature): Fast unit tests only (skips TekyidaUITests simulator automation)
-      - name: Run iOS Unit Tests (Fast - Feature/Beta Branch)
-        if: github.ref != 'refs/heads/main'
-        run: |
-          xcodebuild test \
-            -project Tekyida.xcodeproj \
-            -scheme Tekyida \
-            -destination "${SIMULATOR_DESTINATION}" \
-            -only-testing:TekyidaTests \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
-
       # On main branch: Full suite (Unit Tests AND UI Automation Tests)
+      # Unit tests are skipped on other branches
       - name: Run iOS Full Unit & UI E2E Tests (Simulator - Main Branch)
         if: github.ref == 'refs/heads/main'
         run: |
@@ -424,8 +401,9 @@ jobs:
         run: chmod +x gradlew
 
       # Android Tests run here inside the Android job:
-      # Runs Android Unit Tests (fast Kotlin tests on both main & dev)
+      # Runs Android Unit Tests only on main branch (skipped on other branches)
       - name: Run Android Unit Tests
+        if: github.ref == 'refs/heads/main'
         run: ./gradlew testReleaseUnitTest --no-daemon
 
       # Builds the release APK with dynamic versionCode matching CI
