@@ -11,24 +11,27 @@ struct ContentView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // Main Content Tabs
-            Group {
-                switch selectedTab {
-                case .dashboard:
-                    DashboardView()
-                case .experiences:
-                    ExperiencesView()
-                case .settings:
-                    SettingsView()
+        TabView(selection: $selectedTab) {
+            DashboardView()
+                .tabItem {
+                    Label("Dashboard", systemImage: "book.closed.fill")
                 }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .environmentObject(state)
+                .tag(AppTab.dashboard)
 
-            // Floating Liquid Glass Navigation Bar
-            FloatingTabBar(selectedTab: $selectedTab)
+            ExperiencesView()
+                .tabItem {
+                    Label("Experiences", systemImage: "safari.fill")
+                }
+                .tag(AppTab.experiences)
+
+            SettingsView()
+                .tabItem {
+                    Label("Settings", systemImage: "gearshape.fill")
+                }
+                .tag(AppTab.settings)
         }
+        .tint(AppTheme.primary)
+        .environmentObject(state)
         .preferredColorScheme(resolvedColorScheme)
         .overlay {
             if state.isAppLocked {

@@ -6,7 +6,7 @@ public struct DashboardView: View {
 
     @State private var showNotebookManager: Bool = false
     @State private var showAddContact: Bool = false
-    @State private var selectedContact: Contact?
+    @State private var navigatedContact: Contact?
     @State private var editingContact: Contact?
     @State private var deletingContact: Contact?
 
@@ -19,12 +19,6 @@ public struct DashboardView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Top Header (Logo + Sync dot left, Notebook Switcher right)
-                        DashboardHeaderView(
-                            notebookName: state.activeNotebook?.name ?? "Select Notebook",
-                            onSelectNotebook: { showNotebookManager = true }
-                        )
-
                         // QuickStats Widgets
                         if let activeNb = state.activeNotebook {
                             QuickStatsView(
@@ -43,11 +37,16 @@ public struct DashboardView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
-                    .padding(.bottom, 96)
+                    .padding(.bottom, 24)
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar(.hidden, for: .navigationBar)
+            .tekyidaNavigationBar(
+                notebookName: state.activeNotebook?.name ?? "Select Notebook",
+                onSelectNotebook: { showNotebookManager = true }
+            )
+            .navigationDestination(item: $navigatedContact) { contact in
+                ContactDetailView(contact: contact)
+            }
             .sheet(isPresented: $showNotebookManager) {
                 NotebookManagerSheet()
             }
@@ -57,9 +56,6 @@ public struct DashboardView: View {
                         state.createContact(notebookId: activeNb.id, name: name, phone: phone)
                     }
                 }
-            }
-            .sheet(item: $selectedContact) { contact in
-                ContactDetailSheet(contact: contact)
             }
             .sheet(item: $editingContact) { contact in
                 AddContactSheet(contact: contact) { name, phone in
@@ -110,7 +106,7 @@ public struct DashboardView: View {
                         balance: state.contactBalance(contact.id),
                         isMasked: state.isAmountsHidden,
                         onTap: {
-                            selectedContact = contact
+                            navigatedContact = contact
                         },
                         onEdit: {
                             editingContact = contact

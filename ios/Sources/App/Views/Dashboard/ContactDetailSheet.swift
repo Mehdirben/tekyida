@@ -1,7 +1,7 @@
 import SwiftUI
 
-// MARK: - Contact Detail Sheet
-public struct ContactDetailSheet: View {
+// MARK: - Contact Detail View
+public struct ContactDetailView: View {
     @EnvironmentObject private var state: AppState
     @Environment(\.dismiss) private var dismiss
     let contact: Contact
@@ -18,118 +18,109 @@ public struct ContactDetailSheet: View {
     }
 
     public var body: some View {
-        NavigationStack {
-            ZStack {
-                MeshGradientBackground()
+        ZStack {
+            MeshGradientBackground()
 
-                VStack(spacing: 0) {
-                    ScrollView {
-                        VStack(spacing: 16) {
-                            headerCard
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        headerCard
 
-                            HStack {
-                                Text("Activity Timeline")
-                                    .font(.caption.bold())
-                                    .foregroundColor(.secondary)
-                                    .textCase(.uppercase)
-                                Spacer()
+                        HStack {
+                            Text("Activity Timeline")
+                                .font(.caption.bold())
+                                .foregroundColor(.secondary)
+                                .textCase(.uppercase)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 4)
+
+                        let directTxs = state.directTransactions(for: contact.id)
+                        let closedExps = state.closedExperiences(for: contact.id)
+
+                        if directTxs.isEmpty && closedExps.isEmpty && !isAddingTransaction {
+                            GlassEmptyStateView(
+                                systemImage: "tray.fill",
+                                title: "No transactions yet",
+                                subtitle: "Tap the button below to add your first transaction."
+                            )
+                        } else {
+                            ForEach(closedExps) { exp in
+                                closedExperienceRow(exp)
                             }
-                            .padding(.horizontal, 4)
 
-                            let directTxs = state.directTransactions(for: contact.id)
-                            let closedExps = state.closedExperiences(for: contact.id)
-
-                            if directTxs.isEmpty && closedExps.isEmpty && !isAddingTransaction {
-                                GlassEmptyStateView(
-                                    systemImage: "tray.fill",
-                                    title: "No transactions yet",
-                                    subtitle: "Tap the button below to add your first transaction."
+                            ForEach(directTxs) { tx in
+                                TransactionRowView(
+                                    transaction: tx,
+                                    isMasked: isLocalMasked || state.isAmountsHidden,
+                                    onEdit: { editingTransaction = tx },
+                                    onDelete: { deletingTransaction = tx }
                                 )
-                            } else {
-                                ForEach(closedExps) { exp in
-                                    closedExperienceRow(exp)
-                                }
-
-                                ForEach(directTxs) { tx in
-                                    TransactionRowView(
-                                        transaction: tx,
-                                        isMasked: isLocalMasked || state.isAmountsHidden,
-                                        onEdit: { editingTransaction = tx },
-                                        onDelete: { deletingTransaction = tx }
-                                    )
-                                }
                             }
                         }
-                        .padding(16)
-                    }
-
-                    AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
-                        state.createTransaction(
-                            notebookId: contact.notebookId,
-                            contactId: contact.id,
-                            amount: amount,
-                            description: desc,
-                            date: date
-                        )
                     }
                     .padding(16)
                 }
-            }
-            .navigationTitle(contact.name)
-            .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.large])
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                        .font(.body.bold())
-                }
 
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button(action: { isEditingContact = true }) {
-                            Label("Edit Contact", systemImage: "pencil")
-                        }
-                        Button(role: .destructive, action: { isConfirmingDeleteContact = true }) {
-                            Label("Delete Contact", systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .font(.headline)
-                            .symbolRenderingMode(.hierarchical)
+                AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
+                    state.createTransaction(
+                        notebookId: contact.notebookId,
+                        contactId: contact.id,
+                        amount: amount,
+                        description: desc,
+                        date: date
+                    )
+                }
+                .padding(16)
+            }
+        }
+        .navigationTitle(contact.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Button(action: { isEditingContact = true }) {
+                        Label("Edit Contact", systemImage: "pencil")
                     }
+                    Button(role: .destructive, action: { isConfirmingDeleteContact = true }) {
+                        Label("Delete Contact", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .font(.headline)
+                        .symbolRenderingMode(.hierarchical)
                 }
             }
-            .sheet(isPresented: $isEditingContact) {
-                AddContactSheet(contact: contact) { newName, newPhone in
-                    state.updateContact(id: contact.id, name: newName, phone: newPhone)
-                }
+        }
+        .sheet(isPresented: $isEditingContact) {
+            AddContactSheet(contact: contact) { newName, newPhone in
+                state.updateContact(id: contact.id, name: newName, phone: newPhone)
             }
-            .transactionModals(
-                editingTransaction: $editingTransaction,
-                deletingTransaction: $deletingTransaction,
-                onSave: { id, amount, desc, date in
-                    state.updateTransaction(id: id, amount: amount, description: desc, date: date)
-                },
-                onDelete: { id in
-                    state.deleteTransaction(id: id)
-                }
-            )
-            .alert("Delete Contact?", isPresented: $isConfirmingDeleteContact) {
-                Button("Cancel", role: .cancel) {}
-                Button("Delete", role: .destructive) {
-                    state.deleteContact(id: contact.id)
-                    dismiss()
-                }
-            } message: {
-                Text("Deleting this contact will remove all direct transactions and unlink any associated experiences.")
+        }
+        .transactionModals(
+            editingTransaction: $editingTransaction,
+            deletingTransaction: $deletingTransaction,
+            onSave: { id, amount, desc, date in
+                state.updateTransaction(id: id, amount: amount, description: desc, date: date)
+            },
+            onDelete: { id in
+                state.deleteTransaction(id: id)
             }
+        )
+        .alert("Delete Contact?", isPresented: $isConfirmingDeleteContact) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                state.deleteContact(id: contact.id)
+                dismiss()
+            }
+        } message: {
+            Text("Deleting this contact will remove all direct transactions and unlink any associated experiences.")
         }
     }
 
     private var headerCard: some View {
         let balance = state.contactBalance(contact.id)
-        return HStack(spacing: 16) {
-            ZStack {
+        return HStack(spacing: 16) {\n            ZStack {
                 Circle()
                     .fill(AppTheme.primary.opacity(0.15))
                     .frame(width: 52, height: 52)
@@ -203,3 +194,6 @@ public struct ContactDetailSheet: View {
         .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
     }
 }
+
+// MARK: - Backwards Compatibility Alias
+public typealias ContactDetailSheet = ContactDetailView

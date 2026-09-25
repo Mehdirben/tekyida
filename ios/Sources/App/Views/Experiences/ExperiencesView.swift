@@ -7,7 +7,7 @@ public struct ExperiencesView: View {
     @State private var filterMode: ExperienceFilter = .all
     @State private var showNotebookManager: Bool = false
     @State private var showAddExperience: Bool = false
-    @State private var selectedExperience: Experience?
+    @State private var navigatedExperience: Experience?
     @State private var editingExperience: Experience?
     @State private var transferringExperience: Experience?
     @State private var deletingExperience: Experience?
@@ -27,12 +27,6 @@ public struct ExperiencesView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Top Header (Logo + Sync dot left, Notebook Switcher right)
-                        DashboardHeaderView(
-                            notebookName: state.activeNotebook?.name ?? "Select Notebook",
-                            onSelectNotebook: { showNotebookManager = true }
-                        )
-
                         // Open Experiences Total Balance Card
                         if let activeNb = state.activeNotebook {
                             totalBalanceCard(notebookId: activeNb.id)
@@ -46,11 +40,16 @@ public struct ExperiencesView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
-                    .padding(.bottom, 96)
+                    .padding(.bottom, 24)
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar(.hidden, for: .navigationBar)
+            .tekyidaNavigationBar(
+                notebookName: state.activeNotebook?.name ?? "Select Notebook",
+                onSelectNotebook: { showNotebookManager = true }
+            )
+            .navigationDestination(item: $navigatedExperience) { exp in
+                ExperienceDetailView(experience: exp)
+            }
             .sheet(isPresented: $showNotebookManager) {
                 NotebookManagerSheet()
             }
@@ -61,9 +60,6 @@ public struct ExperiencesView: View {
                         state.createExperience(notebookId: activeNb.id, name: name, contactId: contactId)
                     }
                 }
-            }
-            .sheet(item: $selectedExperience) { exp in
-                ExperienceDetailSheet(experience: exp)
             }
             .sheet(item: $editingExperience) { exp in
                 let nbContacts = state.contacts.filter { $0.notebookId == exp.notebookId }
@@ -189,7 +185,7 @@ public struct ExperiencesView: View {
                         transactionCount: txCount,
                         isMasked: state.isAmountsHidden,
                         onTap: {
-                            selectedExperience = exp
+                            navigatedExperience = exp
                         },
                         onToggleClosed: {
                             state.toggleExperienceClosed(id: exp.id)

@@ -1,7 +1,7 @@
 import SwiftUI
 
-// MARK: - Experience Detail Sheet
-public struct ExperienceDetailSheet: View {
+// MARK: - Experience Detail View
+public struct ExperienceDetailView: View {
     @EnvironmentObject private var state: AppState
     @Environment(\.dismiss) private var dismiss
     let experience: Experience
@@ -19,137 +19,129 @@ public struct ExperienceDetailSheet: View {
     }
 
     public var body: some View {
-        NavigationStack {
-            ZStack {
-                MeshGradientBackground()
+        ZStack {
+            MeshGradientBackground()
 
-                VStack(spacing: 0) {
-                    ScrollView {
-                        VStack(spacing: 16) {
-                            headerCard
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 16) {
+                        headerCard
 
-                            if experience.closed {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "lock.fill")
-                                        .foregroundColor(AppTheme.warning)
-                                    Text("This experience is closed. Reopen it to make changes.")
-                                        .font(.caption.bold())
-                                        .foregroundColor(AppTheme.warning)
-                                }
-                                .padding(12)
-                                .frame(maxWidth: .infinity)
-                                .background(AppTheme.warningBg, in: RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous))
-                            }
-
-                            HStack {
-                                Text("Transactions")
+                        if experience.closed {
+                            HStack(spacing: 8) {
+                                Image(systemName: "lock.fill")
+                                    .foregroundColor(AppTheme.warning)
+                                Text("This experience is closed. Reopen it to make changes.")
                                     .font(.caption.bold())
-                                    .foregroundColor(.secondary)
-                                    .textCase(.uppercase)
-                                Spacer()
+                                    .foregroundColor(AppTheme.warning)
                             }
-                            .padding(.horizontal, 4)
-
-                            let txs = state.experienceTransactions(experience.id)
-                            if txs.isEmpty && !isAddingTransaction {
-                                GlassEmptyStateView(
-                                    systemImage: "doc.text.magnifyingglass",
-                                    title: "No transactions in this experience",
-                                    subtitle: "Tap the button below to add expenses or payments to this experience."
-                                )
-                            } else {
-                                ForEach(txs) { tx in
-                                    TransactionRowView(
-                                        transaction: tx,
-                                        isMasked: isLocalMasked || state.isAmountsHidden,
-                                        onEdit: { editingTransaction = tx },
-                                        onDelete: { deletingTransaction = tx }
-                                    )
-                                }
-                            }
+                            .padding(12)
+                            .frame(maxWidth: .infinity)
+                            .background(AppTheme.warningBg, in: RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous))
                         }
-                        .padding(16)
-                    }
 
-                    if !experience.closed {
-                        AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
-                            state.createTransaction(
-                                notebookId: experience.notebookId,
-                                contactId: experience.contactId,
-                                experienceId: experience.id,
-                                amount: amount,
-                                description: desc,
-                                date: date
+                        HStack {
+                            Text("Transactions")
+                                .font(.caption.bold())
+                                .foregroundColor(.secondary)
+                                .textCase(.uppercase)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 4)
+
+                        let txs = state.experienceTransactions(experience.id)
+                        if txs.isEmpty && !isAddingTransaction {
+                            GlassEmptyStateView(
+                                systemImage: "doc.text.magnifyingglass",
+                                title: "No transactions in this experience",
+                                subtitle: "Tap the button below to add expenses or payments to this experience."
                             )
+                        } else {
+                            ForEach(txs) { tx in
+                                TransactionRowView(
+                                    transaction: tx,
+                                    isMasked: isLocalMasked || state.isAmountsHidden,
+                                    onEdit: { editingTransaction = tx },
+                                    onDelete: { deletingTransaction = tx }
+                                )
+                            }
                         }
-                        .padding(16)
                     }
-                }
-            }
-            .navigationTitle(experience.name)
-            .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.large])
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                        .font(.body.bold())
+                    .padding(16)
                 }
 
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button(action: {
-                            state.toggleExperienceClosed(id: experience.id)
-                        }) {
-                            Label(experience.closed ? "Reopen Experience" : "Close Experience",
-                                  systemImage: experience.closed ? "lock.open" : "lock")
-                        }
-                        Button(action: { isEditingExperience = true }) {
-                            Label("Edit Experience", systemImage: "pencil")
-                        }
-                        Button(action: { isTransferringExperience = true }) {
-                            Label("Transfer to Notebook", systemImage: "arrow.right.arrow.left")
-                        }
-                        Button(role: .destructive, action: { isConfirmingDeleteExperience = true }) {
-                            Label("Delete Experience", systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .font(.headline)
-                            .symbolRenderingMode(.hierarchical)
+                if !experience.closed {
+                    AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
+                        state.createTransaction(
+                            notebookId: experience.notebookId,
+                            contactId: experience.contactId,
+                            experienceId: experience.id,
+                            amount: amount,
+                            description: desc,
+                            date: date
+                        )
                     }
+                    .padding(16)
                 }
             }
-            .sheet(isPresented: $isEditingExperience) {
-                let nbContacts = state.contacts.filter { $0.notebookId == experience.notebookId }
-                AddExperienceSheet(contacts: nbContacts, experience: experience) { name, contactId in
-                    state.updateExperience(id: experience.id, name: name, contactId: contactId)
+        }
+        .navigationTitle(experience.name)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Button(action: {
+                        state.toggleExperienceClosed(id: experience.id)
+                    }) {
+                        Label(experience.closed ? "Reopen Experience" : "Close Experience",
+                              systemImage: experience.closed ? "lock.open" : "lock")
+                    }
+                    Button(action: { isEditingExperience = true }) {
+                        Label("Edit Experience", systemImage: "pencil")
+                    }
+                    Button(action: { isTransferringExperience = true }) {
+                        Label("Transfer to Notebook", systemImage: "arrow.right.arrow.left")
+                    }
+                    Button(role: .destructive, action: { isConfirmingDeleteExperience = true }) {
+                        Label("Delete Experience", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .font(.headline)
+                        .symbolRenderingMode(.hierarchical)
                 }
             }
-            .sheet(isPresented: $isTransferringExperience) {
-                TransferExperienceSheet(experience: experience) { targetNotebookId in
-                    state.transferExperience(id: experience.id, to: targetNotebookId)
-                    dismiss()
-                }
+        }
+        .sheet(isPresented: $isEditingExperience) {
+            let nbContacts = state.contacts.filter { $0.notebookId == experience.notebookId }
+            AddExperienceSheet(contacts: nbContacts, experience: experience) { name, contactId in
+                state.updateExperience(id: experience.id, name: name, contactId: contactId)
             }
-            .transactionModals(
-                editingTransaction: $editingTransaction,
-                deletingTransaction: $deletingTransaction,
-                onSave: { id, amount, desc, date in
-                    state.updateTransaction(id: id, amount: amount, description: desc, date: date)
-                },
-                onDelete: { id in
-                    state.deleteTransaction(id: id)
-                }
-            )
-            .alert("Delete Experience?", isPresented: $isConfirmingDeleteExperience) {
-                Button("Cancel", role: .cancel) {}
-                Button("Delete", role: .destructive) {
-                    state.deleteExperience(id: experience.id)
-                    dismiss()
-                }
-            } message: {
-                Text("Deleting this experience will remove all of its associated transactions.")
+        }
+        .sheet(isPresented: $isTransferringExperience) {
+            TransferExperienceSheet(experience: experience) { targetNotebookId in
+                state.transferExperience(id: experience.id, to: targetNotebookId)
+                dismiss()
             }
+        }
+        .transactionModals(
+            editingTransaction: $editingTransaction,
+            deletingTransaction: $deletingTransaction,
+            onSave: { id, amount, desc, date in
+                state.updateTransaction(id: id, amount: amount, description: desc, date: date)
+            },
+            onDelete: { id in
+                state.deleteTransaction(id: id)
+            }
+        )
+        .alert("Delete Experience?", isPresented: $isConfirmingDeleteExperience) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) {
+                state.deleteExperience(id: experience.id)
+                dismiss()
+            }
+        } message: {
+            Text("Deleting '\(experience.name)' will remove all of its associated transactions.")
         }
     }
 
@@ -209,3 +201,6 @@ public struct ExperienceDetailSheet: View {
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
 }
+
+// MARK: - Backwards Compatibility Alias
+public typealias ExperienceDetailSheet = ExperienceDetailView
