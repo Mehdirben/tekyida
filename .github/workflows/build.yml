@@ -309,9 +309,15 @@ jobs:
           npx --prefix frontend playwright install --with-deps chromium
 
       - name: Build Next.js Production Web App
+        env:
+          NEXT_PUBLIC_CONVEX_URL: https://tekyida-convex-api.codecy.dev
+          NEXT_PUBLIC_CONVEX_SITE_URL: https://tekyida-convex-site.codecy.dev
         run: |
           npm run build --prefix frontend
 
       - name: Run Web E2E & DAST Security Suite
+        env:
+          NEXT_PUBLIC_CONVEX_URL: https://tekyida-convex-api.codecy.dev
+          NEXT_PUBLIC_CONVEX_SITE_URL: https://tekyida-convex-site.codecy.dev
         run: |
           npm run test:e2e --prefix frontend

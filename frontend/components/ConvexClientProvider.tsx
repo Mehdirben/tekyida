@@ -4,9 +4,10 @@ import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
 import { ReactNode } from "react";
 
-const convex = new ConvexReactClient(
-    process.env.NEXT_PUBLIC_CONVEX_URL as string
-);
+const convexUrl =
+    process.env.NEXT_PUBLIC_CONVEX_URL || "https://tekyida-convex-api.codecy.dev";
+
+const convex = new ConvexReactClient(convexUrl);
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
     return <ConvexAuthProvider client={convex}>{children}</ConvexAuthProvider>;
