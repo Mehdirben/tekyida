@@ -48,19 +48,21 @@ jobs:
               - 'ios/**'
               - 'package*.json'
 
-      - name: Set up Node.js
+      - name: Set up Node.js runtime
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install Dependencies
+      - name: Setup npm cache for quality checks
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: qg-npm-${{ runner.os }}-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json') }}
+
+      - name: Install Quality Gate Dependencies
         run: |
-          if [ "${{ steps.filter.outputs.backend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            npm ci --prefix backend
-          fi
-          if [ "${{ steps.filter.outputs.frontend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            npm ci --prefix frontend
-          fi
+          [ "${{ steps.filter.outputs.backend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] && npm ci --prefix backend --prefer-offline || true
+          [ "${{ steps.filter.outputs.frontend }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ] && npm ci --prefix frontend --prefer-offline || true
 
       - name: Run Tekyida Quality Gate (tests/run.sh)
         env:
@@ -149,6 +151,15 @@ jobs:
       - name: Show Xcode Version
         run: xcodebuild -version
 
+      # Caches Homebrew downloads to avoid re-downloading bottles on macOS
+      - name: Cache Homebrew Downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Homebrew
+          key: ${{ runner.os }}-brew-xcodegen-${{ hashFiles('ios/project.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-brew-xcodegen-
+
       # Installs XcodeGen, which converts project.yml into a real .xcodeproj file.
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -156,6 +167,15 @@ jobs:
       # Generates Tekyida.xcodeproj from project.yml.
       - name: Generate Xcode Project
         run: xcodegen generate
+
+      # Caches Xcode DerivedData for faster simulator test & build times
+      - name: Cache Xcode DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-derived-data-${{ hashFiles('ios/project.yml', 'ios/Sources/**', 'ios/Tests/**') }}
+          restore-keys: |
+            ${{ runner.os }}-derived-data-
 
       # Runs iOS Unit Tests and UI E2E Tests in Simulator
       - name: Run iOS Unit & UI E2E Tests (Simulator)
@@ -310,19 +330,48 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Set up Node.js
+      - name: Set up Node.js runtime for web
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install Dependencies
+      - name: Setup Web npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: web-npm-${{ runner.os }}-${{ hashFiles('backend/package-lock.json', 'frontend/package-lock.json') }}
+
+      - name: Install Web Packages
         run: |
-          npm ci --prefix backend
-          npm ci --prefix frontend
+          npm ci --prefix backend --prefer-offline
+          npm ci --prefix frontend --prefer-offline
+
+      - name: Cache Next.js Build Cache
+        uses: actions/cache@v4
+        with:
+          path: frontend/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('frontend/package-lock.json', 'frontend/app/**', 'frontend/components/**', 'frontend/lib/**') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-
+
+      - name: Cache Playwright Browser Binaries
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
       - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           npx --prefix frontend playwright install --with-deps chromium
+
+      - name: Install Playwright System Dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: |
+          npx --prefix frontend playwright install-deps chromium
 
       - name: Build Next.js Production Web App
         env:
