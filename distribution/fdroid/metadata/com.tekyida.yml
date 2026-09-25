@@ -1,0 +1,19 @@
+Categories:
+  - Finance
+License: MIT
+AuthorName: "Tekyida Team"
+SourceCode: "https://github.com/Mehdirben/tekyida"
+IssueTracker: "https://github.com/Mehdirben/tekyida/issues"
+WebSite: "https://mehdirben.github.io/tekyida"
+
+Name: "Tekyida"
+Summary: "Modern IOU Tracker"
+Description: |
+  Tekyida is a modern, mobile-first IOU (I Owe You) tracker built for tracking debts between friends, family, and colleagues.
+
+  Features:
+  - Multiple Notebooks: Organize debts by context (personal, business, trips)
+  - Real-time Sync & Offline-First mutation queue
+  - Optimistic UI updates
+  - Bilingual: Full French and English support
+  - Dark / Light Mode with automatic system detection

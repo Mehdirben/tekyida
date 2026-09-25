@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tekyida — Mobile Installation & Sources</title>
+  <meta name="description" content="Official distribution sources for Tekyida on iOS (SideStore/LiveContainer) and Android (F-Droid).">
+  <link rel="icon" href="./fdroid/icon.png" type="image/png">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(22, 30, 46, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-emerald: #10b981;
+      --accent-emerald-hover: #059669;
+      --accent-blue: #3b82f6;
+      --accent-blue-hover: #2563eb;
+      --code-bg: rgba(15, 23, 42, 0.85);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.12) 0px, transparent 50%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2.5rem 1rem 4rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #10b981, #047857);
+      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+    }
+
+    .logo-badge img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(to right, #ffffff, #d1d5db);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .tagline {
+      font-size: 1.125rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    @media (min-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 2rem;
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .platform-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .ios-icon {
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .android-icon {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .card-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+
+    .card-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 0.875rem 1.25rem;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      border: none;
+      gap: 0.5rem;
+    }
+
+    .btn-ios {
+      background-color: var(--accent-blue);
+      color: white;
+    }
+
+    .btn-ios:hover {
+      background-color: var(--accent-blue-hover);
+    }
+
+    .btn-android {
+      background-color: var(--accent-emerald);
+      color: white;
+    }
+
+    .btn-android:hover {
+      background-color: var(--accent-emerald-hover);
+    }
+
+    .btn-secondary {
+      background-color: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      margin-top: 0.6rem;
+    }
+
+    .btn-secondary:hover {
+      background-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .qr-container {
+      margin: 1.5rem 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.25rem;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .qr-container canvas {
+      width: 180px;
+      height: 180px;
+    }
+
+    .qr-caption {
+      margin-top: 0.75rem;
+      font-size: 0.75rem;
+      color: #4b5563;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .input-group {
+      margin-top: 1rem;
+    }
+
+    .input-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .copy-box {
+      display: flex;
+      background: var(--code-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .copy-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 0.65rem 0.85rem;
+      color: #93c5fd;
+      font-size: 0.8rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      outline: none;
+    }
+
+    .android-copy input {
+      color: #6ee7b7;
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: var(--text);
+      padding: 0 0.85rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .steps {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--card-border);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .steps ol {
+      padding-left: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    footer {
+      margin-top: 3.5rem;
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    footer a {
+      color: var(--accent-emerald);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+  <!-- Minimalist, zero-dependency QR code generator -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-badge">
+        <img src="./fdroid/icon.png" alt="Tekyida App Icon" onerror="this.innerText='📓'">
+      </div>
+      <h1>Tekyida Mobile Sources</h1>
+      <p class="tagline">Install and receive seamless, auto-updating builds for iOS (SideStore / LiveContainer) and Android (F-Droid / Droid-ify / Neo Store).</p>
+    </header>
+
+    <div class="grid">
+      <!-- iOS Section -->
+      <div class="card">
+        <div class="card-header">
+          <div class="platform-icon ios-icon">🍎</div>
+          <div>
+            <div class="card-title">iOS Distribution</div>
+            <div class="card-subtitle">SideStore, AltStore & LiveContainer</div>
+          </div>
+        </div>
+
+        <a id="btn-sidestore" href="sidestore://source?url=https%3A%2F%2Fmehdirben.github.io%2Ftekyida%2Fios%2Fapps.json" class="btn btn-ios">
+          ⚡ Add Source to SideStore
+        </a>
+
+        <a id="btn-download-ipa" href="https://github.com/Mehdirben/tekyida/releases/latest" target="_blank" class="btn btn-secondary">
+          📦 Download Unsigned IPA
+        </a>
+
+        <div class="qr-container">
+          <canvas id="qr-ios"></canvas>
+          <div class="qr-caption">Scan with iPhone Camera</div>
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">
+            <span>SideStore Source URL</span>
+            <span id="copied-ios" style="color: var(--accent-blue); display: none;">Copied!</span>
+          </div>
+          <div class="copy-box">
+            <input type="text" id="url-ios" readonly value="https://mehdirben.github.io/tekyida/ios/apps.json">
+            <button class="copy-btn" onclick="copyText('url-ios', 'copied-ios')">Copy</button>
+          </div>
+        </div>
+
+        <div class="steps">
+          <ol>
+            <li>Tap <b>Add Source to SideStore</b> or scan the QR code above.</li>
+            <li>Alternatively, in SideStore: open <b>Sources</b> → tap <b>+</b> → paste URL.</li>
+            <li>Tekyida will appear in your browse list with 1-tap updates.</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Android Section -->
+      <div class="card">
+        <div class="card-header">
+          <div class="platform-icon android-icon">🤖</div>
+          <div>
+            <div class="card-title">Android Distribution</div>
+            <div class="card-subtitle">F-Droid, Droid-ify & Neo Store</div>
+          </div>
+        </div>
+
+        <a id="btn-fdroid" href="fdroidrepo://mehdirben.github.io/tekyida/fdroid/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3" class="btn btn-android">
+          ⚡ Add Repository to F-Droid
+        </a>
+
+        <a id="btn-download-apk" href="./fdroid/repo/Tekyida.apk" class="btn btn-secondary">
+          📦 Direct APK Download
+        </a>
+
+        <div class="qr-container">
+          <canvas id="qr-android"></canvas>
+          <div class="qr-caption">Scan with F-Droid or Camera</div>
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">
+            <span>F-Droid Repository URL</span>
+            <span id="copied-android" style="color: var(--accent-emerald); display: none;">Copied!</span>
+          </div>
+          <div class="copy-box android-copy">
+            <input type="text" id="url-android" readonly value="https://mehdirben.github.io/tekyida/fdroid/repo">
+            <button class="copy-btn" onclick="copyText('url-android', 'copied-android')">Copy</button>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">
+            <span>Repository Fingerprint (SHA-256)</span>
+            <span id="copied-fp" style="color: var(--accent-emerald); display: none;">Copied!</span>
+          </div>
+          <div class="copy-box android-copy">
+            <input type="text" id="url-fp" readonly value="E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3">
+            <button class="copy-btn" onclick="copyText('url-fp', 'copied-fp')">Copy</button>
+          </div>
+        </div>
+
+        <div class="steps">
+          <ol>
+            <li>Tap <b>Add Repository to F-Droid</b> on your Android device.</li>
+            <li>Or in F-Droid: <b>Settings</b> → <b>Repositories</b> → tap <b>+</b> → paste URL.</li>
+            <li>Sync repositories to get automatic update notifications for Tekyida.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Tekyida — Modern IOU Tracker • Open Source on <a href="https://github.com/Mehdirben/tekyida" target="_blank">GitHub</a></p>
+    </footer>
+  </div>
+
+  <script>
+    function copyText(elementId, noticeId) {
+      const input = document.getElementById(elementId);
+      input.select();
+      input.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(input.value).then(() => {
+        const notice = document.getElementById(noticeId);
+        notice.style.display = 'inline';
+        setTimeout(() => { notice.style.display = 'none'; }, 2000);
+      });
+    }
+
+    function renderQR(canvasId, text) {
+      try {
+        if (typeof qrcode !== 'undefined') {
+          const qr = qrcode(0, 'M');
+          qr.addData(text);
+          qr.make();
+          const canvas = document.getElementById(canvasId);
+          const ctx = canvas.getContext('2d');
+          const size = 180;
+          const count = qr.getModuleCount();
+          const scale = size / count;
+          canvas.width = size;
+          canvas.height = size;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, size, size);
+          ctx.fillStyle = '#0f172a';
+          for (let row = 0; row < count; row++) {
+            for (let col = 0; col < count; col++) {
+              if (qr.isDark(row, col)) {
+                ctx.fillRect(Math.round(col * scale), Math.round(row * scale), Math.ceil(scale), Math.ceil(scale));
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error("QR generation failed", e);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderQR('qr-ios', 'sidestore://source?url=https%3A%2F%2Fmehdirben.github.io%2Ftekyida%2Fios%2Fapps.json');
+      renderQR('qr-android', 'fdroidrepo://mehdirben.github.io/tekyida/fdroid/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3');
+    });
+  </script>
+</body>
+</html>

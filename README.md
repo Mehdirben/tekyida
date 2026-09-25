@@ -1,82 +1,60 @@
-# Tekyida — IOU Tracker 📓💰
+# Tekyida
 
-A modern, mobile-first IOU (I Owe You) tracker built for tracking debts between friends, family, and colleagues. Manage multiple notebooks, log transactions in Moroccan Dirhams (MAD), and stay synced across devices.
+A modern, mobile-first IOU (I Owe You) tracker built with Next.js, Convex, SwiftUI, and Jetpack Compose.
 
-> **Architecture:** Clean multi-platform repository supporting Web, iOS, Android, Convex Backend, and Documentation.
+## 📱 Mobile App Installation (iOS & Android)
 
----
+Tekyida provides automated, direct-to-device app updates through community sideloading feeds hosted on **GitHub Pages**:
 
-## ✨ Features
+👉 **[Tekyida Mobile Installation Portal](https://mehdirben.github.io/tekyida/)**
 
-- **Multiple Notebooks** — Organize debts by context (personal, business, trips)
-- **Contact Management** — Add contacts with optional phone numbers per notebook
-- **Transaction Tracking** — Log who owes whom, how much, and why
-- **Real-time Sync** — All data syncs instantly via Convex
-- **Offline-First** — Full offline support with IndexedDB-backed mutation queue and query cache
-- **Optimistic Updates** — All changes appear instantly in the UI, even offline
-- **Sync Indicators** — Per-item unsynced icons (☁✕) and global sync status badge
-- **Bilingual** — Full French / English support with one-click toggle
-- **Dark / Light Mode** — Automatic system detection + manual toggle (iOS status bar aware)
-- **PWA & Native Mobile** — Web PWA, Native iOS (SwiftUI), and Native Android (Jetpack Compose)
-- **Secure Auth** — Email & password authentication via Convex Auth
+| Platform | Store / Method | Source URL | Quick Action |
+| :--- | :--- | :--- | :--- |
+| **iOS** | SideStore / AltStore | `https://mehdirben.github.io/tekyida/ios/apps.json` | [⚡ Add to SideStore](sidestore://source?url=https%3A%2F%2Fmehdirben.github.io%2Ftekyida%2Fios%2Fapps.json) |
+| **Android** | F-Droid / Droid-ify | `https://mehdirben.github.io/tekyida/fdroid/repo` | [⚡ Add to F-Droid](fdroidrepo://mehdirben.github.io/tekyida/fdroid/repo?fingerprint=E48D12FB013F44B533153C957BFF75B7702DE74595F6054CBF464F7E64A31DC3) |
+
+> Complete instructions and QR codes are available in the [Mobile Distribution Guide](docs/mobile_distribution.md).
 
 ---
 
-## 📁 Repository Structure
+## 🏗 Architecture
 
-The root directory contains only the dedicated platform and service folders:
+Tekyida is a monorepo consisting of:
+
+- **`frontend/`** — Next.js 15 (App Router), React 19, Tailwind CSS, shadcn/ui
+- **`backend/`** — Convex reactive database, Auth, Mutations & Queries
+- **`ios/`** — Native iOS app (SwiftUI, XcodeGen, LiveContainer-compatible unsigned IPA)
+- **`android/`** — Native Android app (Kotlin, Jetpack Compose, Material 3, signed APK)
+- **`distribution/`** — Mobile distribution assets (F-Droid repository & SideStore portal)
+- **`tests/`** — Centralized test harness, code duplication checks, quality gates
 
 ```text
 tekyida/
-├── docs/                     # Specifications, migration guides, and architecture records
-│   ├── architecture.md
-│   ├── dokploy_guide.md
-│   ├── migration_guide.md
-│   └── README.md
-│
-├── frontend/                 # Next.js 16 Web Application (App Router, Tailwind CSS)
+├── frontend/                 # Next.js web application
 │   ├── app/                  # App Router pages and layouts
-│   ├── components/           # UI components & features
-│   ├── contexts/             # Theme, Sync, & Visibility contexts
-│   ├── hooks/                # React hooks (offline cache, etc.)
-│   ├── i18n/                 # Translation dictionaries (en, fr)
-│   ├── lib/                  # Utilities & offline queue
-│   ├── public/               # Static assets & PWA manifest
-│   ├── scripts/              # Icon generation scripts
-│   ├── Dockerfile            # Container build for web app
-│   ├── compose.yaml          # Docker Compose service definition
-│   ├── .env.example          # Frontend environment template
-│   ├── .env.local            # Frontend local environment
-│   ├── .gitignore            # Frontend ignore rules
-│   ├── package.json          # Dependencies & scripts
-│   └── tsconfig.json         # TypeScript configuration
+│   ├── components/           # UI components
+│   └── lib/                  # Utilities, offline queue, state management
 │
-├── backend/                  # Convex backend database & serverless functions
-│   ├── convex/
-│   │   ├── _generated/       # Convex client code & types
-│   │   ├── schema.ts         # Database schema
-│   │   ├── auth.ts           # Authentication logic
-│   │   └── ...               # Queries & mutations
-│   ├── .env.example          # Backend environment template
-│   ├── .env.local            # Backend credentials
-│   ├── .gitignore            # Backend ignore rules
-│   ├── package.json          # Convex dependencies & scripts
-│   └── README.md
+├── backend/                  # Convex backend
+│   ├── convex/               # Schemas, queries, mutations, auth
+│   └── vitest.config.ts      # Backend test configuration
 │
-├── ios/                      # Native iOS App (SwiftUI, XcodeGen)
-│   ├── Sources/App/          # Swift source code & assets
-│   ├── project.yml           # XcodeGen specification
-│   ├── .env.example          # iOS environment template
-│   ├── .gitignore            # Xcode ignore rules
-│   └── README.md
+├── ios/                      # Native iOS application
+│   ├── Sources/App/          # SwiftUI views, models, networking
+│   ├── Tests/                # iOS Unit & UI test suites
+│   └── project.yml           # XcodeGen configuration
 │
-├── android/                  # Native Android App (Kotlin, Jetpack Compose)
-│   ├── app/                  # Application code, resources & build script
-│   ├── build.gradle.kts      # Top-level build script
-│   ├── settings.gradle.kts   # Project settings
-│   ├── .env.example          # Android environment template
-│   ├── .gitignore            # Android & Gradle ignore rules
-│   └── README.md
+├── android/                  # Native Android application
+│   ├── app/src/main/         # Jetpack Compose UI, ViewModels, repository
+│   └── app/src/test/         # Android Unit & Security test suites
+│
+├── distribution/             # Sideloading feeds and portals
+│   ├── portal/               # Web portal for SideStore / F-Droid
+│   └── fdroid/               # F-Droid repo config, keystore, metadata
+│
+├── tests/                    # Quality gate & validation harness
+│   ├── run.sh                # Main test runner (100% test coverage)
+│   └── jscpd.json            # Strict duplication configuration
 │
 ├── .github/                  # GitHub Actions CI/CD workflows
 ├── .gitignore                # Root gitignore
@@ -131,7 +109,9 @@ CI builds are automatically triggered on push to main via `.github/workflows/bui
 
 ## 📚 Documentation
 
-Detailed documentation is in [docs/](file:///home/mehdi/projects/tekyida/docs/):
-- [Architecture Overview](file:///home/mehdi/projects/tekyida/docs/architecture.md)
-- [Dokploy Deployment Guide](file:///home/mehdi/projects/tekyida/docs/dokploy_guide.md)
-- [Migration Guide](file:///home/mehdi/projects/tekyida/docs/migration_guide.md)
+Detailed documentation is in [docs/](docs/):
+- [Mobile App Distribution Guide](docs/mobile_distribution.md)
+- [Architecture Overview](docs/architecture.md)
+- [Dokploy Deployment Guide](docs/dokploy_guide.md)
+- [Migration Guide](docs/migration_guide.md)
+- [Test & Quality Plan](docs/tests-plan.md)

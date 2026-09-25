@@ -22,7 +22,7 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       android: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' }}
       ios: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.ios == 'true' }}
-      mobile: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' || steps.filter.outputs.ios == 'true' }}
+      mobile: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.android == 'true' || steps.filter.outputs.ios == 'true' || steps.filter.outputs.distribution == 'true' }}
       web: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend == 'true' || steps.filter.outputs.backend == 'true' }}
     steps:
       - name: Checkout repository
@@ -43,10 +43,14 @@ jobs:
               - 'package*.json'
             android:
               - 'android/**'
+              - 'distribution/**'
               - 'package*.json'
             ios:
               - 'ios/**'
+              - 'distribution/**'
               - 'package*.json'
+            distribution:
+              - 'distribution/**'
 
       - name: Set up Node.js runtime
         uses: actions/setup-node@v4
@@ -217,7 +221,7 @@ jobs:
             "name": "Tekyida LiveContainer Source",
             "identifier": "com.tekyida.ios.source",
             "apps": [
-              {\
+              {
                 "bundleIdentifier": "com.tekyida.app",
                 "name": "Tekyida",
                 "developerName": "Tekyida",
@@ -291,9 +295,9 @@ jobs:
       - name: Run Android Unit & Security Tests
         run: ./gradlew testReleaseUnitTest --no-daemon
 
-      # Builds the release APK without signing.
+      # Builds the release APK with dynamic versionCode matching CI
       - name: Build Release APK
-        run: ./gradlew assembleRelease --no-daemon -x lint
+        run: ./gradlew assembleRelease -PversionCode=${{ github.run_number }} --no-daemon -x lint
 
       # Renames to Tekyida.apk for standard naming
       - name: Prepare APK Asset
@@ -386,3 +390,124 @@ jobs:
           NEXT_PUBLIC_CONVEX_SITE_URL: https://tekyida-convex-site.codecy.dev
         run: |
           npm run test:e2e --prefix frontend
+
+  # -------------------------------------------------------------
+  # Job 6: Deploy Mobile Distribution Portal & Repositories (GitHub Pages)
+  # -------------------------------------------------------------
+  deploy-distribution:
+    name: Deploy Mobile Distribution (SideStore & F-Droid)
+    needs: [ quality-gate, init-release, build-ios, build-android ]
+    if: |
+      always() &&
+      !cancelled() &&
+      needs.quality-gate.result == 'success' &&
+      needs.quality-gate.outputs.mobile == 'true' &&
+      (needs.build-ios.result == 'success' || needs.build-ios.result == 'skipped') &&
+      (needs.build-android.result == 'success' || needs.build-android.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # Sets up Java JDK 17 for keytool and F-Droid index signing
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # Installs F-Droid server via pipx for accurate Android resources parsing
+      - name: Install F-Droid Server
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y apksigner pipx
+          pipx install fdroidserver
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      # Fetches latest release assets (APK, IPA, apps.json)
+      - name: Download Mobile Release Assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p release-assets
+          gh release download "build-${{ github.run_number }}" \
+            --repo "${{ github.repository }}" \
+            --pattern "Tekyida.*" \
+            --pattern "apps.json" \
+            --dir release-assets || true
+
+      # Builds the static GitHub Pages distribution site
+      - name: Assemble Mobile Distribution Site
+        run: |
+          mkdir -p site-pages/ios site-pages/fdroid/repo site-pages/fdroid/metadata
+          cp distribution/portal/index.html site-pages/index.html
+          cp distribution/fdroid/icon.png site-pages/fdroid/icon.png
+
+          # 1. Setup iOS SideStore source feed
+          if [ -f release-assets/apps.json ]; then
+            cp release-assets/apps.json site-pages/ios/apps.json
+          else
+            cat <<EOF > site-pages/ios/apps.json
+            {
+              "name": "Tekyida LiveContainer Source",
+              "identifier": "com.tekyida.ios.source",
+              "apps": [
+                {
+                  "bundleIdentifier": "com.tekyida.app",
+                  "name": "Tekyida",
+                  "developerName": "Tekyida",
+                  "localizedDescription": "Modern IOU Tracker for iOS & Android",
+                  "iconURL": "https://raw.githubusercontent.com/${{ github.repository }}/main/ios/Sources/App/Assets.xcassets/AppIcon.appiconset/icon-1024.png",
+                  "versions": [
+                    {
+                      "version": "1.0",
+                      "buildVersion": "${{ github.run_number }}",
+                      "date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+                      "minOSVersion": "17.0",
+                      "localizedDescription": "Automated build from commit ${{ github.sha }}",
+                      "downloadURL": "https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_number }}/Tekyida.ipa",
+                      "size": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          EOF
+          fi
+
+          # 2. Setup Android F-Droid repo
+          if [ -f release-assets/Tekyida.apk ]; then
+            cp release-assets/Tekyida.apk site-pages/fdroid/repo/Tekyida.apk
+          fi
+          cp distribution/fdroid/config.yml site-pages/fdroid/config.yml
+          cp distribution/fdroid/keystore.p12 site-pages/fdroid/keystore.p12
+          cp distribution/fdroid/icon.png site-pages/fdroid/repo/icon.png
+          cp distribution/fdroid/metadata/com.tekyida.yml site-pages/fdroid/metadata/
+
+          # 3. Generate signed F-Droid repository indexes
+          cd site-pages/fdroid
+          export ANDROID_HOME=/usr/local/lib/android/sdk
+          export PATH="$HOME/.local/bin:$PATH"
+          fdroid update --create-metadata --pretty
+          cd ../..
+
+          # 4. Clean sensitive signing files before deploying to public GitHub Pages
+          rm -f site-pages/fdroid/keystore.p12 site-pages/fdroid/config.yml
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site-pages/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

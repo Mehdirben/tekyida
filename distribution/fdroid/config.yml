@@ -1,0 +1,9 @@
+repo_url: "https://mehdirben.github.io/tekyida/fdroid/repo"
+repo_name: "Tekyida"
+repo_icon: "icon.png"
+repo_description: "Modern IOU Tracker for iOS & Android"
+archive_older: 0
+keystore: "keystore.p12"
+keystorepass: "tekyidafdroid2026"
+keypass: "tekyidafdroid2026"
+repo_keyalias: "tekyida"
