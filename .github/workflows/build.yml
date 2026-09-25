@@ -219,6 +219,19 @@ jobs:
       - name: Stamp Build Number
         run: plutil -replace CFBundleVersion -string "${{ github.run_number }}" Sources/App/Info.plist
 
+      # Native Liquid Glass (Tab API, .glass buttons, glassEffect) only compiles with
+      # the iOS 26 SDK / Swift 6.2 compiler; select the newest Xcode on the runner image
+      - name: Select Newest Xcode
+        run: |
+          NEWEST_XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Selecting $NEWEST_XCODE"
+          sudo xcode-select -s "$NEWEST_XCODE"
+          xcodebuild -version
+          MAJOR=$(basename "$NEWEST_XCODE" | grep -oE '[0-9]+' | head -1)
+          if [ "${MAJOR:-0}" -lt 26 ]; then
+            echo "::warning::Runner only has Xcode $MAJOR; the native Liquid Glass code paths (iOS 26 SDK / Swift 6.2) will be compiled out. Use a runner image that ships Xcode 26+."
+          fi
+
       # Purely informational: logs which Xcode version compiled the app
       - name: Show Xcode Version
         run: xcodebuild -version
