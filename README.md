@@ -2,6 +2,8 @@
 
 A modern, mobile-first IOU (I Owe You) tracker built with Next.js, Convex, SwiftUI, and Jetpack Compose.
 
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+
 ## 📱 Mobile App Installation (iOS & Android)
 
 Tekyida provides automated, direct-to-device app updates through community sideloading feeds hosted on **GitHub Pages**:
@@ -57,6 +59,7 @@ tekyida/
 │   └── jscpd.json            # Strict duplication configuration
 │
 ├── .github/                  # GitHub Actions CI/CD workflows
+├── LICENSE                   # GNU Affero General Public License v3.0
 ├── .gitignore                # Root gitignore
 └── README.md                 # Project README
 ```
@@ -102,8 +105,7 @@ CI builds are automatically triggered on push to main via `.github/workflows/bui
 ### 4. Android App (`android/`)
 
 1. Open `android/` directory in Android Studio.
-2. Let Gradle sync dependencies.
-3. Run on an emulator or Android device.
+2. Let Gradle sync dependencies.\n3. Run on an emulator or Android device.
 
 ---
 
@@ -115,3 +117,9 @@ Detailed documentation is in [docs/](docs/):
 - [Dokploy Deployment Guide](docs/dokploy_guide.md)
 - [Migration Guide](docs/migration_guide.md)
 - [Test & Quality Plan](docs/tests-plan.md)
+
+---
+
+## 📄 License
+
+Tekyida is free and open-source software licensed under the **GNU Affero General Public License v3.0** (`AGPL-3.0-only`). See the [LICENSE](LICENSE) file for the complete license terms.

@@ -1,6 +1,7 @@
 {
   "name": "tekyida-root",
   "private": true,
+  "license": "AGPL-3.0-only",
   "scripts": {
     "test": "./tests/run.sh",
     "test:backend": "npm --prefix backend test -- --coverage",
