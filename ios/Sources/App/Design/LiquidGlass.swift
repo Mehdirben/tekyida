@@ -20,7 +20,28 @@ public struct LiquidGlassModifier: ViewModifier {
         self.cornerRadius = cornerRadius
     }
 
+    @ViewBuilder
     public func body(content: Content) -> some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, macOS 26.0, *) {
+            switch style {
+            case .pill:
+                content.glassEffect(.regular, in: Capsule(style: .continuous))
+            case .card:
+                content.glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
+            case .surface, .button, .input:
+                content.glassEffect(.subtle, in: .rect(cornerRadius: cornerRadius))
+            }
+        } else {
+            fallbackBody(content: content)
+        }
+        #else
+        fallbackBody(content: content)
+        #endif
+    }
+
+    @ViewBuilder
+    private func fallbackBody(content: Content) -> some View {
         content
             .background {
                 glassBackground
