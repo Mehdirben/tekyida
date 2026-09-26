@@ -9,6 +9,18 @@ public struct TransferExperienceSheet: View {
 
     @State private var selectedNotebookId: String = ""
 
+    private var activeOtherNotebooks: [Notebook] {
+        state.activeNotebooksList.filter { $0.id != experience.notebookId }
+    }
+
+    private var archivedOtherNotebooks: [Notebook] {
+        state.archivedNotebooksList.filter { $0.id != experience.notebookId }
+    }
+
+    private var hasOtherNotebooks: Bool {
+        !activeOtherNotebooks.isEmpty || !archivedOtherNotebooks.isEmpty
+    }
+
     public init(
         experience: Experience,
         onTransfer: @escaping (_ targetNotebookId: String) -> Void
@@ -47,10 +59,6 @@ public struct TransferExperienceSheet: View {
                     Text("Moving this experience will transfer all associated transactions. Contacts are notebook-scoped, so any contact link will be detached.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
-
-                    let activeOtherNotebooks = state.activeNotebooksList.filter { $0.id != experience.notebookId }
-                    let archivedOtherNotebooks = state.archivedNotebooksList.filter { $0.id != experience.notebookId }
-                    let hasOtherNotebooks = !activeOtherNotebooks.isEmpty || !archivedOtherNotebooks.isEmpty
 
                     if !hasOtherNotebooks {
                         Text("No other notebooks found. Create another notebook first.")

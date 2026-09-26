@@ -169,5 +169,9 @@ final class TekyidaTests: XCTestCase {
 
         XCTAssertEqual(activeTargets.map(\.id), ["nb2"])
         XCTAssertEqual(archivedTargets.map(\.id), ["nb3"])
+
+        let sheet = TransferExperienceSheet(experience: exp, onTransfer: { _ in })
+            .environmentObject(state)
+        XCTAssertNotNil(sheet.body)
     }
 }
