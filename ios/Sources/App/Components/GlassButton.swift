@@ -56,10 +56,7 @@ public struct GlassButton: View {
     }
 
     public var body: some View {
-        Button(action: {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            action()
-        }) {
+        Button(action: action) {
             HStack(spacing: 8) {
                 if let systemImage = systemImage {
                     Image(systemName: systemImage)
@@ -87,5 +84,10 @@ public struct ScaleTouchStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
             .animation(.spring(response: 0.22, dampingFraction: 0.7), value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { _, isPressed in
+                if isPressed {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                }
+            }
     }
 }

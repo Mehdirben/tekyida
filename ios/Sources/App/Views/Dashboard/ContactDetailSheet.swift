@@ -189,6 +189,7 @@ public struct ContactDetailView: View {
         lastTransactionDate: Date?
     ) -> some View {
         Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
             selectedExperience = experience
         } label: {
             HStack(spacing: 12) {

@@ -73,7 +73,6 @@ public struct NotebookManagerSheet: View {
                         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
                     } else {
                         Button(action: {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             isCreating = true
                         }) {
                             HStack(spacing: 8) {
@@ -130,8 +129,11 @@ public struct NotebookManagerSheet: View {
             .liquidGlassSheet(detents: [.fraction(0.94)])
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                        .font(.body.bold())
+                    Button("Done") {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    }
+                    .font(.body.bold())
                 }
             }
             .sheet(item: $editingNotebook) { notebook in
@@ -146,8 +148,12 @@ public struct NotebookManagerSheet: View {
                     set: { if !$0 { deleteConfirmNotebook = nil } }
                 ),
                 actions: {
-                    Button("Cancel", role: .cancel) { deleteConfirmNotebook = nil }
+                    Button("Cancel", role: .cancel) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        deleteConfirmNotebook = nil
+                    }
                     Button("Delete", role: .destructive) {
+                        UINotificationFeedbackGenerator().notificationOccurred(.warning)
                         if let nb = deleteConfirmNotebook {
                             Task { await state.deleteNotebook(id: nb.id) }
                             deleteConfirmNotebook = nil
@@ -168,6 +174,7 @@ public struct NotebookManagerSheet: View {
         return HStack(spacing: 12) {
             Button {
                 if !isArchived {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     state.selectNotebook(notebook.id)
                     dismiss()
                 }
@@ -199,6 +206,7 @@ public struct NotebookManagerSheet: View {
 
             HStack(spacing: 6) {
                 Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     editingNotebook = notebook
                 } label: {
                     Image(systemName: "pencil")
@@ -209,6 +217,7 @@ public struct NotebookManagerSheet: View {
                 }
 
                 Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     Task { await state.archiveNotebook(id: notebook.id, archived: !isArchived) }
                 } label: {
                     Image(systemName: isArchived ? "tray.and.arrow.up" : "archivebox")
@@ -219,6 +228,7 @@ public struct NotebookManagerSheet: View {
                 }
 
                 Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     deleteConfirmNotebook = notebook
                 } label: {
                     Image(systemName: "trash")
@@ -272,6 +282,7 @@ private struct EditNotebookPopup: View {
                 Button {
                     let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmed.isEmpty else { return }
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     onSave(trimmed)
                     dismiss()
                 } label: {
@@ -289,7 +300,10 @@ private struct EditNotebookPopup: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    }
                 }
             }
             .liquidGlassSheet(detents: [.fraction(0.38)])

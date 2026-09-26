@@ -20,7 +20,13 @@ public struct NotebookHeaderButton: View {
 
     public var body: some View {
         Menu {
-            Picker("Notebook", selection: $activeNotebookId) {
+            Picker("Notebook", selection: Binding(
+                get: { activeNotebookId },
+                set: { newValue in
+                    UISelectionFeedbackGenerator().selectionChanged()
+                    activeNotebookId = newValue
+                }
+            )) {
                 ForEach(notebooks) { notebook in
                     Text(notebook.name).tag(notebook.id as String?)
                 }

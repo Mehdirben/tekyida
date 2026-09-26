@@ -61,7 +61,13 @@ public struct TransferExperienceSheet: View {
                                 .font(.subheadline.bold())
                                 .foregroundColor(.primary)
 
-                            Picker("Notebook", selection: $selectedNotebookId) {
+                            Picker("Notebook", selection: Binding(
+                                get: { selectedNotebookId },
+                                set: { newValue in
+                                    UISelectionFeedbackGenerator().selectionChanged()
+                                    selectedNotebookId = newValue
+                                }
+                            )) {
                                 Text("Select Destination").tag("")
                                 ForEach(otherNotebooks) { nb in
                                     Text(nb.name).tag(nb.id)
@@ -102,12 +108,16 @@ public struct TransferExperienceSheet: View {
             .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Transfer") {
                         guard !selectedNotebookId.isEmpty else { return }
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         onTransfer(selectedNotebookId)
                         dismiss()
                     }

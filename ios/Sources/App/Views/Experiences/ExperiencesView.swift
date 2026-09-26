@@ -84,8 +84,12 @@ public struct ExperiencesView: View {
                 get: { deletingExperience != nil },
                 set: { if !$0 { deletingExperience = nil } }
             )) {
-                Button("Cancel", role: .cancel) { deletingExperience = nil }
+                Button("Cancel", role: .cancel) {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    deletingExperience = nil
+                }
                 Button("Delete", role: .destructive) {
+                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
                     if let exp = deletingExperience {
                         state.deleteExperience(id: exp.id)
                         deletingExperience = nil
@@ -132,7 +136,13 @@ public struct ExperiencesView: View {
     }
 
     private var filterSegmentedControl: some View {
-        Picker("Filter", selection: $filterMode) {
+        Picker("Filter", selection: Binding(
+            get: { filterMode },
+            set: { newValue in
+                UISelectionFeedbackGenerator().selectionChanged()
+                filterMode = newValue
+            }
+        )) {
             ForEach(ExperienceFilter.allCases, id: \.self) { filter in
                 Text(filter.rawValue).tag(filter)
             }

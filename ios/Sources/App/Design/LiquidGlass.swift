@@ -186,13 +186,21 @@ public struct LiquidGlassButtonStyle: ButtonStyle {
     public func makeBody(configuration: Configuration) -> some View {
         #if compiler(>=6.2)
         if #available(iOS 26.0, *) {
-            nativeBody(configuration: configuration)
+            pressHaptics(nativeBody(configuration: configuration), configuration: configuration)
         } else {
-            fallbackBody(configuration: configuration)
+            pressHaptics(fallbackBody(configuration: configuration), configuration: configuration)
         }
         #else
-        fallbackBody(configuration: configuration)
+        pressHaptics(fallbackBody(configuration: configuration), configuration: configuration)
         #endif
+    }
+
+    private func pressHaptics<V: View>(_ view: V, configuration: Configuration) -> some View {
+        view.onChange(of: configuration.isPressed) { _, isPressed in
+            if isPressed {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+        }
     }
 
     /// iOS 26+: native Liquid Glass via `glassEffect` (tinted `.regular` for prominent,

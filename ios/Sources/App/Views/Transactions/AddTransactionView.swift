@@ -24,7 +24,13 @@ public struct AddTransactionView: View {
                 VStack(spacing: 14) {
                     // Row 1: Direction & Amount Field
                     VStack(spacing: 10) {
-                        Picker("Direction", selection: $isPositive) {
+                        Picker("Direction", selection: Binding(
+                            get: { isPositive },
+                            set: { newValue in
+                                UISelectionFeedbackGenerator().selectionChanged()
+                                isPositive = newValue
+                            }
+                        )) {
                             Text("They owe you").tag(true)
                             Text("You owe them").tag(false)
                         }
@@ -50,7 +56,6 @@ public struct AddTransactionView: View {
                     // Row 4: Action Buttons (Liquid Glass Styled)
                     HStack(spacing: 10) {
                         Button(action: {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             resetFields()
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                                 isAdding = false
@@ -113,7 +118,6 @@ public struct AddTransactionView: View {
 
     private func submit() {
         guard let rawVal = Double(amountString.replacingOccurrences(of: ",", with: ".")), rawVal > 0 else { return }
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         let finalAmount = isPositive ? rawVal : -rawVal
         onAdd(finalAmount, description.isEmpty ? nil : description, date)
         resetFields()

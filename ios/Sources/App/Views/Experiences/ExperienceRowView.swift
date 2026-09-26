@@ -41,7 +41,6 @@ public struct ExperienceRowView: View {
         // The whole card surface is tappable; action buttons are nested inside
         // and take precedence for their own taps
         Button(action: {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
             onTap()
         }) {
             VStack(spacing: 10) {
@@ -104,7 +103,6 @@ public struct ExperienceRowView: View {
                 HStack(spacing: 8) {
                     // Lock / Unlock status toggle button
                     Button(action: {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         onToggleClosed()
                     }) {
                         HStack(spacing: 5) {

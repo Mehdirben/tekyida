@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import Network
 
 @MainActor
 public final class AppState: ObservableObject {
@@ -21,8 +22,17 @@ public final class AppState: ObservableObject {
     @Published public var isAwaitingEmailVerification = false
     @Published public var authError: String?
     @Published public var appError: String?
+    @Published public private(set) var isOnline = true
+    @Published public private(set) var isSyncing = false
+    @Published public private(set) var pendingSyncCount = 0
 
     private let backend = ConvexBackend.shared
+    private let offlineCache = OfflineCache()
+    private var pendingMutations: [QueuedMutation] = []
+    private var localToServerIds: [String: String] = [:]
+    private let pathMonitor = NWPathMonitor()
+    private let pathMonitorQueue = DispatchQueue(label: "com.tekyida.network-monitor")
+    private var retryTask: Task<Void, Never>?
     private let activeNotebookKey = "tekyida_active_notebook_id"
     private let themeKey = "tekyida_theme_mode"
     private let languageKey = "tekyida_language"
@@ -33,12 +43,26 @@ public final class AppState: ObservableObject {
         ["tekyida_lock_enabled", "tekyida_lock_hash", "tekyida_lock_salt"]
             .forEach { UserDefaults.standard.removeObject(forKey: $0) }
         loadSettings()
+        if let snapshot = offlineCache.load() {
+            restoreLocalSnapshot(snapshot)
+            if backend.hasSession { isLoading = false }
+        }
         isAuthenticated = backend.hasSession
+        startConnectivityMonitoring()
         guard isAuthenticated else {
             isLoading = false
             return
         }
         Task { await restoreSession() }
+    }
+
+    deinit {
+        pathMonitor.cancel()
+        retryTask?.cancel()
+    }
+
+    public var shouldShowSyncStatus: Bool {
+        !isOnline || isSyncing || pendingSyncCount > 0
     }
 
     public var activeNotebook: Notebook? {
@@ -126,6 +150,11 @@ public final class AppState: ObservableObject {
 
     public func signIn(email: String, password: String, name: String? = nil, isRegistration: Bool = false) async {
         authError = nil
+        let account = normalizedEmail(email)
+        if let owner = pendingMutations.first?.accountEmail, normalizedEmail(owner) != account {
+            authError = "There are offline changes waiting for another account. Sign in with that account and sync first."
+            return
+        }
         do {
             let signedIn = try await backend.signIn(
                 email: email.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -135,7 +164,7 @@ public final class AppState: ObservableObject {
             )
             if signedIn {
                 isAwaitingEmailVerification = false
-                await finishSignIn()
+                await finishSignIn(accountEmail: account)
             } else {
                 isAwaitingEmailVerification = true
             }
@@ -146,15 +175,20 @@ public final class AppState: ObservableObject {
 
     public func verifyEmail(email: String, code: String) async {
         authError = nil
+        let account = normalizedEmail(email)
+        if let owner = pendingMutations.first?.accountEmail, normalizedEmail(owner) != account {
+            authError = "There are offline changes waiting for another account. Sign in with that account and sync first."
+            return
+        }
         do {
             guard try await backend.verifyEmail(
-            email: email.trimmingCharacters(in: .whitespacesAndNewlines),
-            code: code.trimmingCharacters(in: .whitespacesAndNewlines)
-        ) else {
+                email: email.trimmingCharacters(in: .whitespacesAndNewlines),
+                code: code.trimmingCharacters(in: .whitespacesAndNewlines)
+            ) else {
                 throw BackendError.message("The verification code was not accepted.")
             }
             isAwaitingEmailVerification = false
-            await finishSignIn()
+            await finishSignIn(accountEmail: account)
         } catch {
             authError = error.localizedDescription
         }
@@ -172,39 +206,32 @@ public final class AppState: ObservableObject {
     }
 
     public func signOut() async {
+        guard pendingMutations.isEmpty else {
+            appError = "Reconnect and let pending offline changes sync before signing out."
+            return
+        }
         await backend.signOut()
         isAuthenticated = false
         isAwaitingEmailVerification = false
-        userEmail = ""
         authError = nil
         appError = nil
-        notebooks = []
-        contacts = []
-        experiences = []
-        transactions = []
-        activeNotebookId = nil
-        UserDefaults.standard.removeObject(forKey: activeNotebookKey)
+        clearCachedAccountData()
     }
 
     public func refresh() async {
-        guard isAuthenticated else { return }
-        do {
-            try await refreshData()
-        } catch {
-            if !backend.hasSession {
-                isAuthenticated = false
-                authError = error.localizedDescription
-            } else {
-                appError = error.localizedDescription
-            }
-        }
+        guard isAuthenticated, isOnline else { return }
+        await syncAndRefresh()
     }
 
     public func changeEmail(to email: String) async throws {
-        let normalizedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
-        try await backend.actionVoid("users:changeEmail", args: ["newEmail": normalizedEmail])
+        guard pendingMutations.isEmpty else {
+            throw BackendError.message("Sync pending offline changes before changing the account email.")
+        }
+        let requestedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        try await backend.actionVoid("users:changeEmail", args: ["newEmail": requestedEmail])
         let updatedEmail: String? = try await backend.query("users:currentEmail")
-        userEmail = updatedEmail ?? normalizedEmail
+        userEmail = normalizedEmail(updatedEmail ?? requestedEmail)
+        persistOfflineSnapshot()
     }
 
     public func changePassword(current: String, new: String) async throws {
@@ -214,7 +241,11 @@ public final class AppState: ObservableObject {
         )
     }
 
-    private func finishSignIn() async {
+    private func finishSignIn(accountEmail: String) async {
+        if !userEmail.isEmpty && normalizedEmail(userEmail) != accountEmail && pendingMutations.isEmpty {
+            clearCachedAccountData()
+        }
+        userEmail = accountEmail
         isAuthenticated = true
         isLoading = true
         await restoreSession()
@@ -224,27 +255,103 @@ public final class AppState: ObservableObject {
         do {
             try await refreshData()
             isAuthenticated = true
+            appError = nil
+            if !pendingMutations.isEmpty { await syncPendingMutations() }
         } catch {
-            if backend.hasSession {
+            if BackendError.isRetryable(error) {
+                if BackendError.isConnectivityFailure(error) { isOnline = false }
+                isAuthenticated = true
+                appError = nil
+            } else if backend.hasSession {
                 isAuthenticated = true
                 appError = error.localizedDescription
             } else {
                 isAuthenticated = false
                 authError = error.localizedDescription
-                await backend.signOut()
+                // Keep local data and queued writes so this account can recover them later.
             }
         }
         isLoading = false
     }
 
+    private func startConnectivityMonitoring() {
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            let online = path.status == .satisfied
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let wasOnline = self.isOnline
+                self.isOnline = online
+                if !online && self.isLoading { self.isLoading = false }
+                if online && !wasOnline && self.isAuthenticated { await self.syncAndRefresh() }
+            }
+        }
+        pathMonitor.start(queue: pathMonitorQueue)
+        retryTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                guard let self else { return }
+                if self.isOnline && self.isAuthenticated && !self.pendingMutations.isEmpty {
+                    await self.syncPendingMutations()
+                }
+            }
+        }
+    }
+
+    private func restoreLocalSnapshot(_ snapshot: OfflineSnapshot) {
+        userEmail = snapshot.accountEmail
+        pendingMutations = snapshot.pendingMutations
+        localToServerIds = snapshot.localToServerIds
+        pendingSyncCount = pendingMutations.count
+        guard backend.hasSession else { return }
+        notebooks = snapshot.notebooks
+        contacts = snapshot.contacts
+        experiences = snapshot.experiences
+        transactions = snapshot.transactions
+        activeNotebookId = snapshot.activeNotebookId ?? activeNotebookId
+    }
+
+    private func makeOfflineSnapshot() -> OfflineSnapshot {
+        OfflineSnapshot(
+            accountEmail: normalizedEmail(userEmail),
+            notebooks: notebooks,
+            contacts: contacts,
+            experiences: experiences,
+            transactions: transactions,
+            pendingMutations: pendingMutations,
+            localToServerIds: localToServerIds,
+            activeNotebookId: activeNotebookId
+        )
+    }
+
+    private func persistOfflineSnapshot() {
+        guard !normalizedEmail(userEmail).isEmpty else { return }
+        do {
+            try offlineCache.save(makeOfflineSnapshot())
+        } catch {
+            appError = "Could not save offline data: \(error.localizedDescription)"
+        }
+    }
+
+    private func clearCachedAccountData() {
+        notebooks = []
+        contacts = []
+        experiences = []
+        transactions = []
+        activeNotebookId = nil
+        localToServerIds = [:]
+        pendingMutations = []
+        pendingSyncCount = 0
+        userEmail = ""
+        UserDefaults.standard.removeObject(forKey: activeNotebookKey)
+        offlineCache.clear()
+    }
+
+    private func normalizedEmail(_ value: String) -> String {
+        value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
     private func refreshData() async throws {
         let loadedNotebooks: [Notebook] = try await backend.query("notebooks:list")
-        notebooks = loadedNotebooks
-
-        if activeNotebookId == nil || !loadedNotebooks.contains(where: { $0.id == activeNotebookId }) {
-            activeNotebookId = loadedNotebooks.first(where: { !$0.archived })?.id
-        }
-
         var loadedContacts: [Contact] = []
         var loadedExperiences: [Experience] = []
         var loadedTransactions: [Transaction] = []
@@ -254,40 +361,323 @@ public final class AppState: ObservableObject {
             let notebookExperiences: [Experience] = try await backend.query("experiences:list", args: args)
             loadedContacts += notebookContacts
             loadedExperiences += notebookExperiences
-
             for contact in notebookContacts {
                 let contactTransactions: [Transaction] = try await backend.query(
-                    "transactions:list",
-                    args: ["contactId": contact.id]
+                    "transactions:list", args: ["contactId": contact.id]
                 )
                 loadedTransactions += contactTransactions
             }
             for experience in notebookExperiences {
                 let experienceTransactions: [Transaction] = try await backend.query(
-                    "transactions:list",
-                    args: ["experienceId": experience.id]
+                    "transactions:list", args: ["experienceId": experience.id]
                 )
                 loadedTransactions += experienceTransactions
             }
         }
+
+        let email: String? = try await backend.query("users:currentEmail")
+        let loadedEmail = normalizedEmail(email ?? userEmail)
+        if pendingMutations.contains(where: { normalizedEmail($0.accountEmail) != loadedEmail }) {
+            throw BackendError.message("Pending offline changes belong to another account. Sign in to that account to sync them.")
+        }
+
+        notebooks = loadedNotebooks
         contacts = loadedContacts
         experiences = loadedExperiences
         transactions = loadedTransactions
-        let email: String? = try await backend.query("users:currentEmail")
-        userEmail = email ?? ""
+        userEmail = loadedEmail
+        if let activeNotebookId, let serverId = localToServerIds[activeNotebookId] {
+            self.activeNotebookId = serverId
+        }
+        let activeNotebookIsPendingCreate = pendingMutations.contains {
+            $0.functionPath == "notebooks:create" && $0.localCreatedId == activeNotebookId
+        }
+        if activeNotebookId == nil ||
+            (!loadedNotebooks.contains(where: { $0.id == activeNotebookId }) && !activeNotebookIsPendingCreate) {
+            activeNotebookId = loadedNotebooks.first(where: { !$0.archived })?.id
+        }
+        applyPendingMutationsOptimistically()
+        persistOfflineSnapshot()
     }
 
-    private func runMutation(_ path: String, args: [String: Any] = [:]) async throws -> Data {
-        try await backend.mutation(path, args: args)
+    private func applyPendingMutationsOptimistically() {
+        for mutation in pendingMutations {
+            guard let raw = try? JSONSerialization.jsonObject(with: mutation.arguments),
+                  let args = raw as? [String: Any] else { continue }
+            let resolved = replaceLocalIds(in: args) as? [String: Any] ?? args
+            applyOfflineMutation(mutation.functionPath, args: resolved, localCreatedId: mutation.localCreatedId)
+        }
     }
 
-    private func refreshAfterMutation() async {
+    private func replaceLocalIds(in value: Any) -> Any {
+        if let string = value as? String { return localToServerIds[string] ?? string }
+        if let dictionary = value as? [String: Any] {
+            return dictionary.mapValues { replaceLocalIds(in: $0) }
+        }
+        if let array = value as? [Any] { return array.map { replaceLocalIds(in: $0) } }
+        return value
+    }
+
+    private func applyOfflineMutation(_ path: String, args: [String: Any], localCreatedId: String?) {
+        switch path {
+        case "notebooks:create":
+            guard let id = localCreatedId, let name = args["name"] as? String else { return }
+            notebooks.insert(Notebook(id: id, name: name), at: 0)
+            if activeNotebookId == nil { activeNotebookId = id }
+        case "notebooks:update":
+            guard let id = args["id"] as? String, let index = notebooks.firstIndex(where: { $0.id == id }),
+                  let name = args["name"] as? String else { return }
+            notebooks[index].name = name
+        case "notebooks:archive":
+            guard let id = args["id"] as? String, let index = notebooks.firstIndex(where: { $0.id == id }),
+                  let archived = args["archived"] as? Bool else { return }
+            notebooks[index].archived = archived
+            if archived && activeNotebookId == id {
+                activeNotebookId = activeNotebooksList.first(where: { $0.id != id })?.id
+            }
+        case "notebooks:remove":
+            guard let id = args["id"] as? String else { return }
+            notebooks.removeAll { $0.id == id }
+            contacts.removeAll { $0.notebookId == id }
+            experiences.removeAll { $0.notebookId == id }
+            transactions.removeAll { $0.notebookId == id }
+            if activeNotebookId == id { activeNotebookId = activeNotebooksList.first?.id }
+        case "notebooks:reorder":
+            guard let ids = args["ids"] as? [String] else { return }
+            for index in notebooks.indices {
+                if let order = ids.firstIndex(of: notebooks[index].id) { notebooks[index].order = order }
+            }
+        case "contacts:create":
+            guard let id = localCreatedId, let notebookId = args["notebookId"] as? String,
+                  let name = args["name"] as? String else { return }
+            contacts.insert(Contact(id: id, notebookId: notebookId, name: name, phone: args["phone"] as? String), at: 0)
+        case "contacts:update":
+            guard let id = args["id"] as? String, let index = contacts.firstIndex(where: { $0.id == id }),
+                  let name = args["name"] as? String else { return }
+            contacts[index].name = name
+            contacts[index].phone = args["phone"] as? String
+        case "contacts:remove":
+            guard let id = args["id"] as? String else { return }
+            contacts.removeAll { $0.id == id }
+            transactions.removeAll { $0.contactId == id }
+            for index in experiences.indices where experiences[index].contactId == id {
+                experiences[index].contactId = nil
+            }
+        case "experiences:create":
+            guard let id = localCreatedId, let notebookId = args["notebookId"] as? String,
+                  let name = args["name"] as? String else { return }
+            experiences.insert(Experience(
+                id: id, notebookId: notebookId, contactId: args["contactId"] as? String, name: name
+            ), at: 0)
+        case "experiences:update":
+            guard let id = args["id"] as? String, let index = experiences.firstIndex(where: { $0.id == id }),
+                  let name = args["name"] as? String else { return }
+            experiences[index].name = name
+            experiences[index].contactId = args["contactId"] as? String
+        case "experiences:close", "experiences:reopen":
+            guard let id = args["id"] as? String, let index = experiences.firstIndex(where: { $0.id == id }) else { return }
+            experiences[index].closed = path == "experiences:close"
+        case "experiences:transfer":
+            guard let id = args["id"] as? String, let target = args["targetNotebookId"] as? String,
+                  let index = experiences.firstIndex(where: { $0.id == id }) else { return }
+            experiences[index].notebookId = target
+            experiences[index].contactId = nil
+            for txIndex in transactions.indices where transactions[txIndex].experienceId == id {
+                transactions[txIndex].notebookId = target
+                transactions[txIndex].contactId = nil
+            }
+        case "experiences:remove":
+            guard let id = args["id"] as? String else { return }
+            experiences.removeAll { $0.id == id }
+            transactions.removeAll { $0.experienceId == id }
+        case "transactions:create":
+            guard let id = localCreatedId, let notebookId = args["notebookId"] as? String,
+                  let amount = args["amount"] as? Double else { return }
+            let ms = args["date"] as? Double ?? Date().timeIntervalSince1970 * 1000
+            transactions.insert(Transaction(
+                id: id, notebookId: notebookId, contactId: args["contactId"] as? String,
+                experienceId: args["experienceId"] as? String, amount: amount,
+                description: args["description"] as? String,
+                date: Date(timeIntervalSince1970: ms / 1000)
+            ), at: 0)
+        case "transactions:update":
+            guard let id = args["id"] as? String, let index = transactions.firstIndex(where: { $0.id == id }),
+                  let amount = args["amount"] as? Double else { return }
+            transactions[index].amount = amount
+            transactions[index].description = args["description"] as? String
+            if let milliseconds = args["date"] as? Double {
+                transactions[index].date = Date(timeIntervalSince1970: milliseconds / 1000)
+            }
+        case "transactions:remove":
+            guard let id = args["id"] as? String else { return }
+            transactions.removeAll { $0.id == id }
+        default:
+            break
+        }
+    }
+
+    private func validateOfflineMutation(_ path: String, args: [String: Any]) throws {
+        let experienceId: String?
+        if path == "transactions:create" {
+            experienceId = args["experienceId"] as? String
+        } else if path == "transactions:update" || path == "transactions:remove" {
+            guard let transactionId = args["id"] as? String,
+                  let transaction = transactions.first(where: { $0.id == transactionId }) else { return }
+            experienceId = transaction.experienceId
+        } else {
+            return
+        }
+        guard let experienceId,
+              experiences.first(where: { $0.id == experienceId })?.closed == true else { return }
+        throw BackendError.message("Transactions in a closed experience cannot be changed.")
+    }
+
+    private func enqueueOfflineMutation(_ path: String, args: [String: Any]) throws -> Data {
+        try validateOfflineMutation(path, args: args)
+        let account = normalizedEmail(userEmail)
+        guard !account.isEmpty else {
+            throw BackendError.message("Sign in once while online before making offline changes.")
+        }
+        if let owner = pendingMutations.first?.accountEmail, normalizedEmail(owner) != account {
+            throw BackendError.message("Reconnect using the account that owns the pending offline changes.")
+        }
+
+        let createPaths = ["notebooks:create", "contacts:create", "experiences:create", "transactions:create"]
+        let localId = createPaths.contains(path) ? "offline_\(UUID().uuidString)" : nil
+        let encodedArgs = try JSONSerialization.data(withJSONObject: args, options: [.sortedKeys])
+        pendingMutations.append(QueuedMutation(
+            functionPath: path,
+            arguments: encodedArgs,
+            localCreatedId: localId,
+            accountEmail: account
+        ))
+        pendingSyncCount = pendingMutations.count
+        applyOfflineMutation(path, args: args, localCreatedId: localId)
+        persistOfflineSnapshot()
+        if isOnline { Task { await self.syncPendingMutations() } }
+        if let localId {
+            return try JSONSerialization.data(withJSONObject: localId, options: [.fragmentsAllowed])
+        }
+        return Data("null".utf8)
+    }
+
+    private func refreshDataAndReportError() async {
         do {
             try await refreshData()
             appError = nil
         } catch {
-            appError = error.localizedDescription
+            if BackendError.isConnectivityFailure(error) {
+                isOnline = false
+            } else if !backend.hasSession {
+                isAuthenticated = false
+                authError = error.localizedDescription
+            } else {
+                appError = error.localizedDescription
+            }
         }
+    }
+
+    private func syncAndRefresh() async {
+        guard isAuthenticated, isOnline else { return }
+        if pendingMutations.isEmpty {
+            await refreshDataAndReportError()
+        } else {
+            await syncPendingMutations()
+        }
+    }
+
+    private func syncPendingMutations() async {
+        guard isAuthenticated, isOnline, !isSyncing, !pendingMutations.isEmpty else { return }
+        isSyncing = true
+        var completedAny = false
+        var syncError: String?
+        while isOnline && !pendingMutations.isEmpty {
+            let queued = pendingMutations[0]
+            guard normalizedEmail(queued.accountEmail) == normalizedEmail(userEmail) else {
+                appError = "Pending offline changes belong to another account. Sign in to that account to sync them."
+                break
+            }
+            guard let raw = try? JSONSerialization.jsonObject(with: queued.arguments),
+                  let args = raw as? [String: Any] else {
+                pendingMutations.removeFirst()
+                pendingSyncCount = pendingMutations.count
+                syncError = "An offline change could not be read and was removed."
+                completedAny = true
+                persistOfflineSnapshot()
+                continue
+            }
+            let resolvedArgs = replaceLocalIds(in: args) as? [String: Any] ?? args
+            do {
+                let result = try await backend.mutation(queued.functionPath, args: resolvedArgs)
+                if let localId = queued.localCreatedId {
+                    guard let serverId = (try? JSONSerialization.jsonObject(with: result)) as? String else {
+                        throw BackendError.message("The server did not return an ID for a newly created item.")
+                    }
+                    localToServerIds[localId] = serverId
+                    if activeNotebookId == localId { activeNotebookId = serverId }
+                }
+                pendingMutations.removeFirst()
+                pendingSyncCount = pendingMutations.count
+                completedAny = true
+                persistOfflineSnapshot()
+            } catch {
+                if BackendError.isAuthenticationFailure(error) {
+                    isAuthenticated = false
+                    authError = error.localizedDescription
+                    break
+                }
+                if BackendError.isRetryable(error) {
+                    if BackendError.isConnectivityFailure(error) { isOnline = false }
+                    break
+                }
+                pendingMutations.removeFirst()
+                pendingSyncCount = pendingMutations.count
+                syncError = "An offline change could not be synced: \(error.localizedDescription)"
+                completedAny = true
+                persistOfflineSnapshot()
+            }
+        }
+        isSyncing = false
+        if completedAny && isOnline {
+            await refreshDataAndReportError()
+        } else {
+            persistOfflineSnapshot()
+        }
+        if let syncError { appError = syncError }
+    }
+
+    private func runMutation(_ path: String, args: [String: Any] = [:]) async throws -> Data {
+        guard isAuthenticated else { throw BackendError.message("Sign in to change your data.") }
+        if !pendingMutations.isEmpty || !isOnline {
+            return try enqueueOfflineMutation(path, args: args)
+        }
+        do {
+            let result = try await backend.mutation(path, args: args)
+            let createPaths = ["notebooks:create", "contacts:create", "experiences:create", "transactions:create"]
+            let createdId = createPaths.contains(path)
+                ? (try? JSONSerialization.jsonObject(with: result)) as? String
+                : nil
+            applyOfflineMutation(path, args: args, localCreatedId: createdId)
+            persistOfflineSnapshot()
+            return result
+        } catch {
+            if BackendError.isAuthenticationFailure(error) {
+                isAuthenticated = false
+                authError = error.localizedDescription
+                throw error
+            }
+            guard BackendError.isRetryable(error) else { throw error }
+            if BackendError.isConnectivityFailure(error) { isOnline = false }
+            return try enqueueOfflineMutation(path, args: args)
+        }
+    }
+
+    private func refreshAfterMutation() async {
+        guard pendingMutations.isEmpty && isOnline else {
+            persistOfflineSnapshot()
+            return
+        }
+        await refreshDataAndReportError()
     }
 
     // Synchronous view callbacks forward work to the async backend operations below.
@@ -339,11 +729,11 @@ public final class AppState: ObservableObject {
         let trimmed = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(20))
         guard !trimmed.isEmpty else { return }
         do {
-            let data = try await backend.mutation("notebooks:create", args: ["name": trimmed])
+            let data = try await runMutation("notebooks:create", args: ["name": trimmed])
             let id = try JSONDecoder().decode(String.self, from: data)
-            try await refreshData()
             activeNotebookId = id
             UserDefaults.standard.set(id, forKey: activeNotebookKey)
+            await refreshAfterMutation()
         } catch {
             appError = error.localizedDescription
         }
@@ -582,6 +972,7 @@ public final class AppState: ObservableObject {
     public func selectNotebook(_ id: String) {
         activeNotebookId = id
         UserDefaults.standard.set(id, forKey: activeNotebookKey)
+        persistOfflineSnapshot()
     }
 
     public func clearAppError() {

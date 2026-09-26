@@ -42,16 +42,19 @@ struct AccountAccessView: View {
                                 .textContentType(.oneTimeCode)
                                 .textFieldStyle(.roundedBorder)
                             Button("Verify email") {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                 submit { await state.verifyEmail(email: email, code: verificationCode) }
                             }
                             .buttonStyle(.borderedProminent)
                             .tint(AppTheme.primary)
                             .disabled(isSubmitting || verificationCode.isEmpty)
                             Button("Resend code") {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 submit { await state.resendVerification(email: email) }
                             }
                             .buttonStyle(.plain)
                             Button("Back to sign in") {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 state.isAwaitingEmailVerification = false
                                 state.authError = nil
                             }
@@ -87,6 +90,7 @@ struct AccountAccessView: View {
                                     return
                                 }
                                 localError = nil
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                 submit {
                                     await state.signIn(
                                         email: email,
@@ -101,6 +105,7 @@ struct AccountAccessView: View {
                             .disabled(isSubmitting || email.isEmpty || password.isEmpty)
 
                             Button(isRegistration ? "I already have an account" : "Create an account") {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 isRegistration.toggle()
                                 localError = nil
                                 state.authError = nil

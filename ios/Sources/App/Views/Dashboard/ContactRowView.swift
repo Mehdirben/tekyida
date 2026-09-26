@@ -29,7 +29,6 @@ public struct ContactRowView: View {
         // The whole card surface is tappable; action buttons are nested inside
         // and take precedence for their own taps
         Button(action: {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
             onTap()
         }) {
             HStack(spacing: 12) {

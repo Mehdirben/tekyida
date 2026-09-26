@@ -36,8 +36,11 @@ public struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .alert("Sign Out?", isPresented: $showSignOutConfirm) {
-                Button("Cancel", role: .cancel) {}
+                Button("Cancel", role: .cancel) {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                }
                 Button("Sign Out", role: .destructive) {
+                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
                     Task { await state.signOut() }
                 }
             } message: {
@@ -75,6 +78,7 @@ public struct SettingsView: View {
             }
 
             Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 Task { await updateEmail() }
             } label: {
                 if isChangingEmail {
@@ -115,6 +119,7 @@ public struct SettingsView: View {
             }
 
             Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 Task { await updatePassword() }
             } label: {
                 if isChangingPassword {
@@ -143,7 +148,10 @@ public struct SettingsView: View {
                 Spacer()
                 Picker("Theme", selection: Binding(
                     get: { state.themeMode },
-                    set: { state.updateTheme($0) }
+                    set: { newValue in
+                        UISelectionFeedbackGenerator().selectionChanged()
+                        state.updateTheme(newValue)
+                    }
                 )) {
                     ForEach(AppThemeMode.allCases, id: .self) { mode in
                         Text(mode.title).tag(mode)
@@ -163,7 +171,10 @@ public struct SettingsView: View {
                 Menu {
                     Picker("Language", selection: Binding(
                         get: { state.language },
-                        set: { state.updateLanguage($0) }
+                        set: { newValue in
+                            UISelectionFeedbackGenerator().selectionChanged()
+                            state.updateLanguage(newValue)
+                        }
                     )) {
                         ForEach(AppLanguage.allCases, id: .self) { language in
                             Text(language.title).tag(language)
@@ -185,7 +196,10 @@ public struct SettingsView: View {
 
             Toggle(isOn: Binding(
                 get: { state.amountsHiddenByDefault },
-                set: { state.updateAmountsHiddenDefault($0) }
+                set: { newValue in
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    state.updateAmountsHiddenDefault(newValue)
+                }
             )) {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {
@@ -203,7 +217,10 @@ public struct SettingsView: View {
 
             Toggle(isOn: Binding(
                 get: { state.transferRedirect },
-                set: { state.updateTransferRedirect($0) }
+                set: { newValue in
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    state.updateTransferRedirect(newValue)
+                }
             )) {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {

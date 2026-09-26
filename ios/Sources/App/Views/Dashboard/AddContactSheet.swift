@@ -77,12 +77,18 @@ public struct AddContactSheet: View {
             .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(initialContact == nil ? "Add" : "Done") { save() }
-                        .font(.body.bold())
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Button(initialContact == nil ? "Add" : "Done") {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        save()
+                    }
+                    .font(.body.bold())
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
         }

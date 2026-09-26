@@ -30,7 +30,13 @@ public struct EditTransactionSheet: View {
                     // Transaction Form Fields
                     VStack(spacing: 16) {
                         // Direction Selector
-                        Picker("Direction", selection: $isPositive) {
+                        Picker("Direction", selection: Binding(
+                            get: { isPositive },
+                            set: { newValue in
+                                UISelectionFeedbackGenerator().selectionChanged()
+                                isPositive = newValue
+                            }
+                        )) {
                             Text("They owe you").tag(true)
                             Text("You owe them").tag(false)
                         }
@@ -88,13 +94,19 @@ public struct EditTransactionSheet: View {
             .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { save() }
-                        .font(.body.bold())
-                        .disabled(invalidAmount)
+                    Button("Done") {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        save()
+                    }
+                    .font(.body.bold())
+                    .disabled(invalidAmount)
                 }
             }
         }

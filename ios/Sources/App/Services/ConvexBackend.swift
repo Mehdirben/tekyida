@@ -107,11 +107,23 @@ final class ConvexBackend {
             request.setValue("Bearer " + accessToken, forHTTPHeaderField: "Authorization")
         }
 
-        let (data, response) = try await session.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch let error as URLError {
+            if BackendError.isConnectivityCode(error.code) {
+                throw BackendError.networkUnavailable(error.localizedDescription)
+            }
+            throw error
+        }
         guard let http = response as? HTTPURLResponse else {
-            throw BackendError.message("Invalid response from the server.")
+            throw BackendError.networkUnavailable("No response from the server.")
         }
         guard (200..<300).contains(http.statusCode) else {
+            if (500..<600).contains(http.statusCode) || http.statusCode == 408 || http.statusCode == 429 {
+                throw BackendError.temporaryServerFailure(http.statusCode)
+            }
             if http.statusCode == 401, authenticated {
                 if allowRefresh, refreshToken != nil {
                     try await renewSession()
@@ -125,6 +137,7 @@ final class ConvexBackend {
                 }
                 deleteKeychain("accessToken")
                 deleteKeychain("refreshToken")
+                throw BackendError.authenticationRequired("Your session expired. Please sign in again.")
             }
             throw BackendError.message("The server returned HTTP " + String(http.statusCode) + ".")
         }
@@ -149,6 +162,7 @@ final class ConvexBackend {
                 }
                 deleteKeychain("accessToken")
                 deleteKeychain("refreshToken")
+                throw BackendError.authenticationRequired(message)
             }
             throw BackendError.message(message)
         }
@@ -176,8 +190,11 @@ final class ConvexBackend {
                 throw BackendError.message("Your session expired. Please sign in again.")
             }
         } catch {
-            deleteKeychain("accessToken")
-            deleteKeychain("refreshToken")
+            if !BackendError.isRetryable(error) {
+                deleteKeychain("accessToken")
+                deleteKeychain("refreshToken")
+                throw BackendError.authenticationRequired(error.localizedDescription)
+            }
             throw error
         }
     }
@@ -236,8 +253,58 @@ private struct AuthTokens: Decodable {
 
 enum BackendError: LocalizedError {
     case message(String)
+    case authenticationRequired(String)
+    case networkUnavailable(String)
+    case temporaryServerFailure(Int)
+
     var errorDescription: String? {
-        if case let .message(message) = self { return message }
-        return nil
+        switch self {
+        case let .message(message), let .authenticationRequired(message):
+            return message
+        case let .networkUnavailable(message):
+            return message
+        case let .temporaryServerFailure(status):
+            return "The server is temporarily unavailable (HTTP \(status))."
+        }
+    }
+
+    static func isAuthenticationFailure(_ error: Error) -> Bool {
+        if let backendError = error as? BackendError, case .authenticationRequired = backendError {
+            return true
+        }
+        return false
+    }
+
+    static func isConnectivityCode(_ code: URLError.Code) -> Bool {
+        switch code {
+        case .notConnectedToInternet, .networkConnectionLost, .timedOut,
+             .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed,
+             .dataNotAllowed, .internationalRoamingOff, .resourceUnavailable:
+            return true
+        default:
+            return false
+        }
+    }
+
+    static func isConnectivityFailure(_ error: Error) -> Bool {
+        if let backendError = error as? BackendError, case .networkUnavailable = backendError {
+            return true
+        }
+        if let urlError = error as? URLError {
+            return isConnectivityCode(urlError.code)
+        }
+        return false
+    }
+
+    static func isRetryable(_ error: Error) -> Bool {
+        if let backendError = error as? BackendError {
+            switch backendError {
+            case .networkUnavailable, .temporaryServerFailure:
+                return true
+            case .message, .authenticationRequired:
+                return false
+            }
+        }
+        return isConnectivityFailure(error)
     }
 }

@@ -5,14 +5,13 @@ public struct SearchView: View {
     @EnvironmentObject private var state: AppState
 
     public enum FilterScope: String, CaseIterable {
-        case all = "All"
         case contacts = "Contacts"
         case experiences = "Experiences"
         case transactions = "Transactions"
     }
 
     @State private var query: String = ""
-    @State private var scope: FilterScope = .all
+    @State private var scope: FilterScope = .contacts
     @State private var isSearchPresented: Bool = false
     @State private var selectedContact: Contact?
     @State private var selectedExperience: Experience?
@@ -35,6 +34,7 @@ public struct SearchView: View {
                         }
                     }
                     .padding(.horizontal, 16)
+                    .padding(.top, 16)
                     .padding(.bottom, 96)
                 }
                 .scrollDismissesKeyboard(.immediately)
@@ -56,7 +56,14 @@ public struct SearchView: View {
                 placement: .automatic,
                 prompt: Text("Contacts, experiences, amounts...")
             )
-            .searchScopes($scope) {
+            .searchScopes(Binding(
+                get: { scope },
+                set: { newValue in
+                    guard newValue != scope else { return }
+                    UISelectionFeedbackGenerator().selectionChanged()
+                    scope = newValue
+                }
+            )) {
                 ForEach(FilterScope.allCases, id: \.self) { item in
                     Text(item.rawValue).tag(item)
                 }
@@ -95,16 +102,16 @@ public struct SearchView: View {
         let results = state.search(query: query)
 
         return VStack(spacing: 18) {
-            if results.isEmpty {
+            if isScopeEmpty(results) {
                 GlassEmptyStateView(
-                    systemImage: "magnifyingglass",
-                    title: "No Matches Found",
-                    subtitle: "Try searching for a different name, trip, or amount."
+                    systemImage: scopeIcon,
+                    title: "No \(scope.rawValue) Found",
+                    subtitle: "Try a different search or switch the filter."
                 )
                 .padding(.top, 24)
             } else {
                 // Contacts
-                if (scope == .all || scope == .contacts) && !results.contacts.isEmpty {
+                if scope == .contacts && !results.contacts.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Contacts (\(results.contacts.count))")
                             .font(.headline)
@@ -157,7 +164,7 @@ public struct SearchView: View {
                 }
 
                 // Experiences
-                if (scope == .all || scope == .experiences) && !results.experiences.isEmpty {
+                if scope == .experiences && !results.experiences.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Experiences (\(results.experiences.count))")
                             .font(.headline)
@@ -219,7 +226,7 @@ public struct SearchView: View {
                 }
 
                 // Transactions
-                if (scope == .all || scope == .transactions) && !results.transactions.isEmpty {
+                if scope == .transactions && !results.transactions.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Transactions (\(results.transactions.count))")
                             .font(.headline)
@@ -237,6 +244,22 @@ public struct SearchView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func isScopeEmpty(_ results: AppState.SearchResults) -> Bool {
+        switch scope {
+        case .contacts: return results.contacts.isEmpty
+        case .experiences: return results.experiences.isEmpty
+        case .transactions: return results.transactions.isEmpty
+        }
+    }
+
+    private var scopeIcon: String {
+        switch scope {
+        case .contacts: return "person.slash"
+        case .experiences: return "safari"
+        case .transactions: return "tray"
         }
     }
 

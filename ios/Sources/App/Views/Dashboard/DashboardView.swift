@@ -74,8 +74,12 @@ public struct DashboardView: View {
                 get: { deletingContact != nil },
                 set: { if !$0 { deletingContact = nil } }
             )) {
-                Button("Cancel", role: .cancel) { deletingContact = nil }
+                Button("Cancel", role: .cancel) {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    deletingContact = nil
+                }
                 Button("Delete", role: .destructive) {
+                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
                     if let contact = deletingContact {
                         state.deleteContact(id: contact.id)
                         deletingContact = nil

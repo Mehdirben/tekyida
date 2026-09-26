@@ -128,6 +128,7 @@ public struct ExperienceDetailView: View {
 
                 HStack(spacing: 6) {
                     Button(action: {
+                        UIImpactFeedbackGenerator(style: isClosed ? .light : .medium).impactOccurred()
                         state.toggleExperienceClosed(id: experience.id)
                     }) {
                         StatusBadge(

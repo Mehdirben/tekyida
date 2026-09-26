@@ -18,8 +18,12 @@ public struct TransactionModalsModifier: ViewModifier {
                 get: { deletingTransaction != nil },
                 set: { if !$0 { deletingTransaction = nil } }
             )) {
-                Button("Cancel", role: .cancel) { deletingTransaction = nil }
+                Button("Cancel", role: .cancel) {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    deletingTransaction = nil
+                }
                 Button("Delete", role: .destructive) {
+                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
                     if let tx = deletingTransaction {
                         onDelete(tx.id)
                         deletingTransaction = nil

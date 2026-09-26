@@ -52,7 +52,13 @@ public struct AddExperienceSheet: View {
                                 .font(.subheadline.bold())
                                 .foregroundColor(.primary)
 
-                            Picker("Assign to Contact", selection: $selectedContactId) {
+                            Picker("Assign to Contact", selection: Binding(
+                                get: { selectedContactId },
+                                set: { newValue in
+                                    UISelectionFeedbackGenerator().selectionChanged()
+                                    selectedContactId = newValue
+                                }
+                            )) {
                                 Text("None (Standalone Experience)").tag("")
                                 ForEach(contacts) { c in
                                     Text(c.name).tag(c.id)
@@ -89,12 +95,18 @@ public struct AddExperienceSheet: View {
             .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(initialExperience == nil ? "Create" : "Done") { save() }
-                        .font(.body.bold())
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Button(initialExperience == nil ? "Create" : "Done") {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        save()
+                    }
+                    .font(.body.bold())
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
         }
