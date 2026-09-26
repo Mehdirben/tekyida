@@ -55,9 +55,11 @@ public struct AddContactSheet: View {
                         .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                     }
 
+                    Spacer(minLength: 0)
+
                     saveButton
 
-                    Spacer(minLength: 24)
+                    Color.clear.frame(height: 24)
                 }
                 .padding(20)
             }

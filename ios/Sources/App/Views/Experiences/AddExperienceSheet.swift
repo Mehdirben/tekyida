@@ -73,6 +73,8 @@ public struct AddExperienceSheet: View {
                         }
                     }
 
+                    Spacer(minLength: 0)
+
                     // Bottom Save Button
                     GlassButton(
                         initialExperience == nil ? tr("experience.save") : tr("experience.update"),
@@ -86,7 +88,7 @@ public struct AddExperienceSheet: View {
                     .opacity(name.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
                     .padding(.top, 4)
 
-                    Spacer(minLength: 24)
+                    Color.clear.frame(height: 24)
                 }
                 .padding(20)
             }
