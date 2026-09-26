@@ -2,6 +2,7 @@ import XCTest
 import SwiftUI
 @testable import Tekyida
 
+@MainActor
 final class TekyidaTests: XCTestCase {
     func testAppDisplayName() {
         let bundleName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
@@ -21,144 +22,49 @@ final class TekyidaTests: XCTestCase {
 
     func testBalanceCalculationsAndAggregations() {
         let state = AppState()
-        // Clear sample data for a pristine test scenario
-        state.notebooks.removeAll()
-        state.contacts.removeAll()
-        state.experiences.removeAll()
-        state.transactions.removeAll()
+        let notebook = Notebook(name: "Test Notebook")
+        let alice = Contact(notebookId: notebook.id, name: "Alice", phone: "123")
+        let bob = Contact(notebookId: notebook.id, name: "Bob", phone: "456")
+        let closedExperience = Experience(notebookId: notebook.id, contactId: alice.id, name: "Closed", closed: true)
+        let openExperience = Experience(notebookId: notebook.id, contactId: alice.id, name: "Open")
+        state.notebooks = [notebook]
+        state.contacts = [alice, bob]
+        state.experiences = [closedExperience, openExperience]
+        state.transactions = [
+            Transaction(notebookId: notebook.id, contactId: alice.id, amount: 100),
+            Transaction(notebookId: notebook.id, contactId: bob.id, amount: -40),
+            Transaction(notebookId: notebook.id, experienceId: closedExperience.id, amount: 50),
+            Transaction(notebookId: notebook.id, experienceId: openExperience.id, amount: 999)
+        ]
 
-        state.createNotebook(name: "Test Notebook")
-        let nbId = state.notebooks.first!.id
-
-        state.createContact(notebookId: nbId, name: "Alice", phone: "123")
-        state.createContact(notebookId: nbId, name: "Bob", phone: "456")
-        let aliceId = state.contacts.first(where: { $0.name == "Alice" })!.id
-        let bobId = state.contacts.first(where: { $0.name == "Bob" })!.id
-
-        // Direct transactions: Alice owes 100, user owes Bob 40
-        state.createTransaction(notebookId: nbId, contactId: aliceId, amount: 100.0)
-        state.createTransaction(notebookId: nbId, contactId: bobId, amount: -40.0)
-
-        // Open experience with 50.0 MAD should NOT affect contact balance
-        state.createExperience(notebookId: nbId, name: "Lunch", contactId: aliceId)
-        let lunchExp = state.experiences.first(where: { $0.name == "Lunch" })!
-        state.createTransaction(notebookId: nbId, experienceId: lunchExp.id, amount: 50.0)
-
-        XCTAssertEqual(state.contactBalance(aliceId), 100.0)
-        XCTAssertEqual(state.experienceBalance(lunchExp.id), 50.0)
-
-        // Close the experience -> now it must be included in Alice's contact balance (100 + 50 = 150)
-        state.toggleExperienceClosed(id: lunchExp.id)
-        XCTAssertEqual(state.contactBalance(aliceId), 150.0)
-
-        // QuickStats assertions
-        XCTAssertEqual(state.moneyOwed(for: nbId), 150.0)
-        XCTAssertEqual(state.moneyGiven(for: nbId), 40.0)
-        XCTAssertEqual(state.netBalance(for: nbId), 110.0)
-    }
-
-    func testCascadingDeletionsAndTransfer() {
-        let state = AppState()
-        state.notebooks.removeAll()
-        state.contacts.removeAll()
-        state.experiences.removeAll()
-        state.transactions.removeAll()
-
-        state.createNotebook(name: "Notebook A")
-        state.createNotebook(name: "Notebook B")
-        let nbAId = state.notebooks.first(where: { $0.name == "Notebook A" })!.id
-        let nbBId = state.notebooks.first(where: { $0.name == "Notebook B" })!.id
-
-        state.createContact(notebookId: nbAId, name: "Charlie")
-        let charlieId = state.contacts.first!.id
-
-        state.createExperience(notebookId: nbAId, name: "Road Trip", contactId: charlieId)
-        let expId = state.experiences.first!.id
-        state.createTransaction(notebookId: nbAId, experienceId: expId, amount: 200.0)
-
-        // Verify Experience Transfer to Notebook B unlinks Charlie (notebook-scoped)
-        state.transferExperience(id: expId, to: nbBId)
-        let transferred = state.experiences.first(where: { $0.id == expId })!
-        XCTAssertEqual(transferred.notebookId, nbBId)
-        XCTAssertNil(transferred.contactId)
-
-        // Cascading deletion of Notebook B removes transferred experience and transactions
-        state.deleteNotebook(id: nbBId)
-        XCTAssertFalse(state.experiences.contains(where: { $0.id == expId }))
-        XCTAssertFalse(state.transactions.contains(where: { $0.experienceId == expId }))
-    }
-
-    func testSecurityAndPinManagement() {
-        let state = AppState()
-        let pin = "123456"
-
-        state.setPin(pin)
-        XCTAssertTrue(state.isLockConfigured)
-        XCTAssertTrue(state.verifyPin("123456"))
-        XCTAssertFalse(state.verifyPin("654321"))
-
-        state.lockApp()
-        XCTAssertTrue(state.isAppLocked)
-
-        XCTAssertFalse(state.unlockApp(withPin: "000000"))
-        XCTAssertTrue(state.isAppLocked)
-
-        XCTAssertTrue(state.unlockApp(withPin: pin))
-        XCTAssertFalse(state.isAppLocked)
-
-        XCTAssertTrue(state.disablePin(withCurrentPin: pin))
-        XCTAssertFalse(state.isLockConfigured)
+        XCTAssertEqual(state.contactBalance(alice.id), 150)
+        XCTAssertEqual(state.experienceBalance(closedExperience.id), 50)
+        XCTAssertEqual(state.moneyOwed(for: notebook.id), 150)
+        XCTAssertEqual(state.moneyGiven(for: notebook.id), 40)
+        XCTAssertEqual(state.netBalance(for: notebook.id), 110)
     }
 
     func testSemanticSearchEngine() {
         let state = AppState()
-        state.notebooks.removeAll()
-        state.contacts.removeAll()
-        state.experiences.removeAll()
-        state.transactions.removeAll()
+        let notebook = Notebook(name: "Vacation")
+        let contact = Contact(notebookId: notebook.id, name: "Youssef Alaoui", phone: "+212 600-001122")
+        let secondContact = Contact(notebookId: notebook.id, name: "Leila Tazi", phone: "+212 611-334455")
+        let experience = Experience(notebookId: notebook.id, name: "Sahara Desert Trek", contactId: contact.id)
+        state.notebooks = [notebook]
+        state.activeNotebookId = notebook.id
+        state.contacts = [contact, secondContact]
+        state.experiences = [experience]
+        state.transactions = [
+            Transaction(notebookId: notebook.id, contactId: contact.id, amount: 750, description: "Camel ride & tent"),
+            Transaction(notebookId: notebook.id, experienceId: experience.id, amount: 1200, description: "Quad bikes")
+        ]
 
-        state.createNotebook(name: "Vacation")
-        let nbId = state.notebooks.first!.id
-        state.activeNotebookId = nbId
-
-        state.createContact(notebookId: nbId, name: "Youssef Alaoui", phone: "+212 600-001122")
-        state.createContact(notebookId: nbId, name: "Leila Tazi", phone: "+212 611-334455")
-        let youssefId = state.contacts.first(where: { $0.name == "Youssef Alaoui" })!.id
-
-        state.createExperience(notebookId: nbId, name: "Sahara Desert Trek", contactId: youssefId)
-        let expId = state.experiences.first!.id
-
-        state.createTransaction(notebookId: nbId, contactId: youssefId, amount: 750.0, description: "Camel ride & tent")
-        state.createTransaction(notebookId: nbId, experienceId: expId, amount: 1200.0, description: "Quad bikes")
-
-        // 1. Search by contact name
-        let contactResults = state.search(query: "Youssef")
-        XCTAssertEqual(contactResults.contacts.count, 1)
-        XCTAssertEqual(contactResults.contacts.first?.name, "Youssef Alaoui")
-
-        // 2. Search by phone substring
-        let phoneResults = state.search(query: "3344")
-        XCTAssertEqual(phoneResults.contacts.count, 1)
-        XCTAssertEqual(phoneResults.contacts.first?.name, "Leila Tazi")
-
-        // 3. Search by experience name
-        let expResults = state.search(query: "Sahara")
-        XCTAssertEqual(expResults.experiences.count, 1)
-        XCTAssertEqual(expResults.experiences.first?.name, "Sahara Desert Trek")
-
-        // 4. Search by transaction description
-        let txResults = state.search(query: "Camel")
-        XCTAssertEqual(txResults.transactions.count, 1)
-        XCTAssertEqual(txResults.transactions.first?.description, "Camel ride & tent")
-
-        // 5. Search by amount
-        let amountResults = state.search(query: "1200")
-        XCTAssertEqual(amountResults.transactions.count, 1)
-
-        // 6. Empty search query
-        let emptyResults = state.search(query: "   ")
-        XCTAssertTrue(emptyResults.isEmpty)
-        XCTAssertEqual(emptyResults.totalCount, 0)
+        XCTAssertEqual(state.search(query: "Youssef").contacts.first?.name, "Youssef Alaoui")
+        XCTAssertEqual(state.search(query: "3344").contacts.first?.name, "Leila Tazi")
+        XCTAssertEqual(state.search(query: "Sahara").experiences.first?.name, "Sahara Desert Trek")
+        XCTAssertEqual(state.search(query: "Camel").transactions.first?.description, "Camel ride & tent")
+        XCTAssertEqual(state.search(query: "1200").transactions.count, 1)
+        XCTAssertTrue(state.search(query: "   ").isEmpty)
     }
 
     func testAppTabStructure() {

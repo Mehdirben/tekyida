@@ -27,7 +27,7 @@ public struct EditTransactionSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Apple Liquid Glass Card Form
+                    // Transaction Form Fields
                     VStack(spacing: 16) {
                         // Direction Selector
                         Picker("Direction", selection: $isPositive) {
@@ -65,8 +65,6 @@ public struct EditTransactionSheet: View {
                             .padding(.vertical, 10)
                             .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
                     }
-                    .padding(16)
-                    .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
 
                     // Bottom Save Button
                     GlassButton(

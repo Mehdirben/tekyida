@@ -88,7 +88,7 @@ public struct LiquidGlassModifier: ViewModifier {
                     content.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
                 }
             case .prominent:
-                content.glassEffect(.regular.tint(Color.accentColor), in: .rect(cornerRadius: cornerRadius))
+                content.glassEffect(.regular.tint(AppTheme.primary), in: .rect(cornerRadius: cornerRadius))
             case .surface, .button, .bar, .floating:
                 content.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
             case .input:
@@ -121,7 +121,7 @@ public struct LiquidGlassModifier: ViewModifier {
         case .button:
             ConcentricRectangle(cornerRadius: cornerRadius).fill(.thinMaterial)
         case .prominent:
-            ConcentricRectangle(cornerRadius: cornerRadius).fill(Color.accentColor)
+            ConcentricRectangle(cornerRadius: cornerRadius).fill(AppTheme.primary)
         case .input:
             ConcentricRectangle(cornerRadius: cornerRadius).fill(Color(uiColor: .secondarySystemFill))
         case .bar, .floating:
@@ -212,7 +212,7 @@ public struct LiquidGlassButtonStyle: ButtonStyle {
     @available(iOS 26.0, *)
     private var glassVariant: Glass {
         switch variant {
-        case .prominent: return .regular.tint(Color.accentColor).interactive()
+        case .prominent: return .regular.tint(AppTheme.primary).interactive()
         case .danger: return .regular.tint(AppTheme.danger).interactive()
         case .glass: return .regular.interactive()
         case .clear: return .clear.interactive()
@@ -243,7 +243,7 @@ public struct LiquidGlassButtonStyle: ButtonStyle {
     private var fallbackBackground: AnyShapeStyle {
         switch variant {
         case .prominent:
-            return AnyShapeStyle(Color.accentColor)
+            return AnyShapeStyle(AppTheme.primary)
         case .danger:
             return AnyShapeStyle(AppTheme.danger)
         case .glass:

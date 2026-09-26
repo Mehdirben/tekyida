@@ -29,7 +29,10 @@ public struct ExperiencesView: View {
                     VStack(spacing: 20) {
                         TekyidaScrollHeader(
                             notebooks: state.activeNotebooksList,
-                            activeNotebookId: $state.activeNotebookId,
+                            activeNotebookId: Binding(
+                                get: { state.activeNotebookId },
+                                set: { id in if let id { state.selectNotebook(id) } else { state.activeNotebookId = nil } }
+                            ),
                             onManageNotebooks: { showNotebookManager = true }
                         )
 

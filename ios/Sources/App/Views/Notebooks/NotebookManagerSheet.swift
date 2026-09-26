@@ -7,8 +7,7 @@ public struct NotebookManagerSheet: View {
 
     @State private var newNotebookName: String = ""
     @State private var isCreating: Bool = false
-    @State private var editingNotebookId: String?
-    @State private var editingNotebookName: String = ""
+    @State private var editingNotebook: Notebook?
     @State private var showArchived: Bool = false
     @State private var deleteConfirmNotebook: Notebook?
 
@@ -135,6 +134,11 @@ public struct NotebookManagerSheet: View {
                         .font(.body.bold())
                 }
             }
+            .sheet(item: $editingNotebook) { notebook in
+                EditNotebookPopup(notebook: notebook) { name in
+                    Task { await state.updateNotebook(id: notebook.id, name: name) }
+                }
+            }
             .alert(
                 "Delete Notebook?",
                 isPresented: Binding(
@@ -145,7 +149,7 @@ public struct NotebookManagerSheet: View {
                     Button("Cancel", role: .cancel) { deleteConfirmNotebook = nil }
                     Button("Delete", role: .destructive) {
                         if let nb = deleteConfirmNotebook {
-                            state.deleteNotebook(id: nb.id)
+                            Task { await state.deleteNotebook(id: nb.id) }
                             deleteConfirmNotebook = nil
                         }
                     }
@@ -160,71 +164,53 @@ public struct NotebookManagerSheet: View {
     private func notebookRow(_ notebook: Notebook, isArchived: Bool) -> some View {
         let isSelected = state.activeNotebookId == notebook.id
         let balance = state.notebookBalance(notebook.id)
-        let isEditing = editingNotebookId == notebook.id
 
-        // The whole card surface is tappable; action buttons are nested inside
-        // and take precedence for their own taps. Disabled while renaming so
-        // the text field keeps the taps.
-        return Button(action: {
-            if !isArchived {
-                state.activeNotebookId = notebook.id
-                dismiss()
-            }
-        }) {
-            HStack(spacing: 12) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "book.closed")
-                    .font(.title3)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundColor(isSelected ? Color.accentColor : .secondary)
+        return HStack(spacing: 12) {
+            Button {
+                if !isArchived {
+                    state.selectNotebook(notebook.id)
+                    dismiss()
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "book.closed")
+                        .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundColor(isSelected ? AppTheme.primary : .secondary)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    if isEditing {
-                        TextField("Name", text: $editingNotebookName)
-                            .textFieldStyle(.plain)
-                            .font(.headline)
-                            .onSubmit { saveEdit(notebook.id) }
-                    } else {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(notebook.name)
                             .font(.headline)
                             .foregroundColor(.primary)
-                    }
 
-                    AmountView(
-                        amount: balance,
-                        isHidden: state.isAmountsHidden,
-                        font: .caption,
-                        fontWeight: .semibold
-                    )
+                        AmountView(
+                            amount: balance,
+                            isHidden: state.isAmountsHidden,
+                            font: .caption,
+                            fontWeight: .semibold
+                        )
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .disabled(isArchived)
+
+            HStack(spacing: 6) {
+                Button {
+                    editingNotebook = notebook
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 30, height: 30)
+                        .liquidGlassPill()
                 }
 
-                Spacer()
-
-                // Actions
-                HStack(spacing: 6) {
-                    if isEditing {
-                        Button(action: { saveEdit(notebook.id) }) {
-                            Image(systemName: "checkmark")
-                                .font(.caption.bold())
-                                .foregroundColor(AppTheme.accent)
-                                .frame(width: 30, height: 30)
-                                .liquidGlassPill()
-                        }
-                    } else {
-                        Button(action: {
-                            editingNotebookId = notebook.id
-                            editingNotebookName = notebook.name
-                        }) {
-                            Image(systemName: "pencil")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.secondary)
-                                .frame(width: 30, height: 30)
-                                .liquidGlassPill()
-                        }
-                    }
-
-                Button(action: {
-                    state.archiveNotebook(id: notebook.id, archived: !isArchived)
-                }) {
+                Button {
+                    Task { await state.archiveNotebook(id: notebook.id, archived: !isArchived) }
+                } label: {
                     Image(systemName: isArchived ? "tray.and.arrow.up" : "archivebox")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
@@ -232,33 +218,81 @@ public struct NotebookManagerSheet: View {
                         .liquidGlassPill()
                 }
 
-                Button(action: {
+                Button {
                     deleteConfirmNotebook = notebook
-                }) {
+                } label: {
                     Image(systemName: "trash")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(AppTheme.danger.opacity(0.85))
                         .frame(width: 30, height: 30)
                         .liquidGlassPill()
                 }
-                }
             }
-            .padding(14)
-            .contentShape(.rect)
         }
-        .buttonStyle(ScaleTouchStyle())
-        .disabled(isEditing)
+        .padding(14)
         .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
     }
 
     private func createNotebook() {
-        state.createNotebook(name: newNotebookName)
-        newNotebookName = ""
-        isCreating = false
+        let name = newNotebookName
+        Task {
+            await state.createNotebook(name: name)
+            newNotebookName = ""
+            isCreating = false
+        }
+    }
+}
+
+private struct EditNotebookPopup: View {
+    @Environment(\.dismiss) private var dismiss
+    let notebook: Notebook
+    let onSave: (String) -> Void
+    @State private var name: String
+
+    init(notebook: Notebook, onSave: @escaping (String) -> Void) {
+        self.notebook = notebook
+        self.onSave = onSave
+        _name = State(initialValue: notebook.name)
     }
 
-    private func saveEdit(_ id: String) {
-        state.updateNotebook(id: id, name: editingNotebookName)
-        editingNotebookId = nil
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 18) {
+                TextField("Notebook name", text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .onChange(of: name) { _, value in
+                        if value.count > 20 { name = String(value.prefix(20)) }
+                    }
+
+                Text("Notebook names can be up to 20 characters.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button {
+                    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return }
+                    onSave(trimmed)
+                    dismiss()
+                } label: {
+                    Text("Save Changes")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(AppTheme.primary)
+                .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+                Spacer(minLength: 0)
+            }
+            .padding(20)
+            .navigationTitle("Edit Notebook")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+            .liquidGlassSheet(detents: [.fraction(0.38)])
+        }
     }
 }

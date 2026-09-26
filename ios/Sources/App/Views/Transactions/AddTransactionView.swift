@@ -82,8 +82,6 @@ public struct AddTransactionView: View {
                         .opacity(invalidAmount ? 0.45 : 1.0)
                     }
                 }
-                .padding(16)
-                .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
                 .transition(
                     .asymmetric(
                         insertion: .opacity.combined(with: .move(edge: .bottom)),

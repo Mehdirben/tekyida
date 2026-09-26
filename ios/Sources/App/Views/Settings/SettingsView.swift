@@ -1,13 +1,18 @@
 import SwiftUI
 
-// MARK: - Settings View (Modern Liquid Glass HIG)
 public struct SettingsView: View {
     @EnvironmentObject private var state: AppState
 
-    @State private var pinSetupMode: PinSetupSheet.Mode?
-    @State private var showChangeEmail: Bool = false
-    @State private var newEmailText: String = ""
-    @State private var showSignOutConfirm: Bool = false
+    @State private var newEmail = ""
+    @State private var confirmEmail = ""
+    @State private var currentPassword = ""
+    @State private var newPassword = ""
+    @State private var confirmPassword = ""
+    @State private var isChangingEmail = false
+    @State private var isChangingPassword = false
+    @State private var emailMessage: String?
+    @State private var passwordMessage: String?
+    @State private var showSignOutConfirm = false
 
     public init() {}
 
@@ -15,19 +20,11 @@ public struct SettingsView: View {
         NavigationStack {
             ZStack {
                 MeshGradientBackground()
-
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Profile & Account
-                        profileSection
-
-                        // Security & App Lock
-                        securitySection
-
-                        // Preferences & Controls
+                        accountSection
+                        passwordSection
                         preferencesSection
-
-                        // Sign Out
                         signOutSection
                     }
                     .padding(.horizontal, 16)
@@ -38,137 +35,98 @@ public struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
-            .sheet(item: Binding(
-                get: { pinSetupMode.map { IdentifiablePinMode(mode: $0) } },
-                set: { pinSetupMode = $0?.mode }
-            )) { identifiable in
-                PinSetupSheet(mode: identifiable.mode)
-            }
-            .alert("Change Email", isPresented: $showChangeEmail) {
-                TextField("New email address", text: $newEmailText)
-                    .textInputAutocapitalization(.never)
-                Button("Cancel", role: .cancel) { newEmailText = "" }
-                Button("Save") {
-                    if !newEmailText.isEmpty {
-                        state.userEmail = newEmailText
-                        newEmailText = ""
-                    }
-                }
-            }
             .alert("Sign Out?", isPresented: $showSignOutConfirm) {
                 Button("Cancel", role: .cancel) {}
                 Button("Sign Out", role: .destructive) {
-                    state.lockApp()
+                    Task { await state.signOut() }
                 }
             } message: {
-                Text("Are you sure you want to sign out?")
+                Text("You can sign back in to sync your notebooks.")
             }
         }
     }
 
-    private var profileSection: some View {
+    private var accountSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("Account")
+            sectionHeader("Email")
 
-            HStack(spacing: 14) {
-                ZStack {
-                    ConcentricRectangle(cornerRadius: 14)
-                        .fill(AppTheme.primary.opacity(0.14))
-                        .frame(width: 48, height: 48)
+            Label(state.userEmail.isEmpty ? "Tekyida Account" : state.userEmail, systemImage: "envelope")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.title)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundColor(AppTheme.primary)
-                }
+            TextField("New email address", text: $newEmail)
+                .textContentType(.emailAddress)
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .textFieldStyle(.roundedBorder)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Tekyida Account")
-                        .font(.headline)
-                        .foregroundColor(.primary)
+            TextField("Confirm new email", text: $confirmEmail)
+                .textContentType(.emailAddress)
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .textFieldStyle(.roundedBorder)
 
-                    Text(state.userEmail)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                Button("Change") {
-                    newEmailText = state.userEmail
-                    showChangeEmail = true
-                }
-                .font(.caption.bold())
-                .buttonStyle(.bordered)
-                .buttonBorderShape(.capsule)
-                .controlSize(.small)
+            if let emailMessage {
+                Text(emailMessage)
+                    .font(.caption)
+                    .foregroundStyle(emailMessage.hasPrefix("Email updated") ? AppTheme.accent : AppTheme.danger)
             }
+
+            Button {
+                Task { await updateEmail() }
+            } label: {
+                if isChangingEmail {
+                    ProgressView().tint(.white)
+                } else {
+                    Text("Change Email")
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(AppTheme.primary)
+            .disabled(isChangingEmail || newEmail.isEmpty || confirmEmail.isEmpty)
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
 
-    private var securitySection: some View {
+    private var passwordSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("Security & Privacy")
+            sectionHeader("Password")
 
-            // App Lock Toggle Row
-            HStack {
-                HStack(spacing: 12) {
-                    Image(systemName: "lock.shield.fill")
-                        .foregroundColor(AppTheme.primary)
-                        .symbolRenderingMode(.hierarchical)
-                        .frame(width: 24)
+            SecureField("Current password", text: $currentPassword)
+                .textContentType(.password)
+                .textFieldStyle(.roundedBorder)
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("App Lock PIN")
-                            .font(.subheadline.bold())
-                            .foregroundColor(.primary)
+            SecureField("New password (at least 8 characters)", text: $newPassword)
+                .textContentType(.newPassword)
+                .textFieldStyle(.roundedBorder)
 
-                        Text("Require 6-digit PIN on launch & resume")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                }
+            SecureField("Confirm new password", text: $confirmPassword)
+                .textContentType(.newPassword)
+                .textFieldStyle(.roundedBorder)
 
-                Spacer()
-
-                Toggle("", isOn: Binding(
-                    get: { state.isLockConfigured },
-                    set: { willEnable in
-                        if willEnable {
-                            pinSetupMode = .setup
-                        } else {
-                            pinSetupMode = .disable
-                        }
-                    }
-                ))
-                .labelsHidden()
+            if let passwordMessage {
+                Text(passwordMessage)
+                    .font(.caption)
+                    .foregroundStyle(passwordMessage.hasPrefix("Password updated") ? AppTheme.accent : AppTheme.danger)
             }
 
-            if state.isLockConfigured {
-                Divider()
-
-                HStack {
-                    Button(action: { pinSetupMode = .change }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "key.fill")
-                            Text("Change PIN")
-                        }
-                        .font(.subheadline.bold())
-                        .foregroundColor(.primary)
-                    }
-                    .buttonStyle(ScaleTouchStyle())
-
-                    Spacer()
-
-                    Button("Lock Now", action: { state.lockApp() })
-                        .font(.caption.bold())
-                        .buttonStyle(.bordered)
-                        .buttonBorderShape(.capsule)
-                        .controlSize(.small)
+            Button {
+                Task { await updatePassword() }
+            } label: {
+                if isChangingPassword {
+                    ProgressView().tint(.white)
+                } else {
+                    Text("Change Password")
+                        .frame(maxWidth: .infinity)
                 }
             }
+            .buttonStyle(.borderedProminent)
+            .tint(AppTheme.primary)
+            .disabled(isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty)
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
@@ -178,25 +136,16 @@ public struct SettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             sectionHeader("Preferences")
 
-            // Appearance Theme Mode
             HStack {
-                HStack(spacing: 12) {
-                    Image(systemName: "circle.lefthalf.filled")
-                        .foregroundColor(.secondary)
-                        .frame(width: 24)
-
-                    Text("Appearance")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                }
-
+                Label("Appearance", systemImage: "circle.lefthalf.filled")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 Spacer()
-
                 Picker("Theme", selection: Binding(
                     get: { state.themeMode },
                     set: { state.updateTheme($0) }
                 )) {
-                    ForEach(AppThemeMode.allCases, id: \.self) { mode in
+                    ForEach(AppThemeMode.allCases, id: .self) { mode in
                         Text(mode.title).tag(mode)
                     }
                 }
@@ -206,38 +155,26 @@ public struct SettingsView: View {
 
             Divider()
 
-            // Language Selector
             HStack {
-                HStack(spacing: 12) {
-                    Image(systemName: "globe")
-                        .foregroundColor(.secondary)
-                        .frame(width: 24)
-
-                    Text("Language")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                }
-
+                Label("Language", systemImage: "globe")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 Spacer()
-
                 Menu {
                     Picker("Language", selection: Binding(
                         get: { state.language },
                         set: { state.updateLanguage($0) }
                     )) {
-                        ForEach(AppLanguage.allCases, id: \.self) { lang in
-                            Text(lang.title).tag(lang)
+                        ForEach(AppLanguage.allCases, id: .self) { language in
+                            Text(language.title).tag(language)
                         }
                     }
                 } label: {
                     HStack(spacing: 6) {
-                        Text(state.language.title)
-                            .font(.subheadline.bold())
-                            .foregroundColor(.primary)
-                        Image(systemName: "chevron.down")
-                            .font(.caption2.bold())
-                            .foregroundColor(.secondary)
+                        Text(state.language.title).font(.subheadline.bold())
+                        Image(systemName: "chevron.down").font(.caption2.bold())
                     }
+                    .foregroundStyle(.primary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
                     .liquidGlassPill()
@@ -246,52 +183,41 @@ public struct SettingsView: View {
 
             Divider()
 
-            // Hide Amounts on Launch
             Toggle(isOn: Binding(
                 get: { state.amountsHiddenByDefault },
                 set: { state.updateAmountsHiddenDefault($0) }
             )) {
-                HStack(spacing: 12) {
-                    Image(systemName: "eye.slash.fill")
-                        .foregroundColor(.secondary)
-                        .frame(width: 24)
-
+                Label {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Hide Amounts on Launch")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-
                         Text("Mask currency figures by default")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
+                } icon: {
+                    Image(systemName: "eye.slash.fill").foregroundStyle(.secondary)
                 }
             }
 
             Divider()
 
-            // Transfer Redirect Toggle
             Toggle(isOn: Binding(
                 get: { state.transferRedirect },
                 set: { state.updateTransferRedirect($0) }
             )) {
-                HStack(spacing: 12) {
-                    Image(systemName: "arrow.right.arrow.left")
-                        .foregroundColor(.secondary)
-                        .frame(width: 24)
-
+                Label {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Navigate on Transfer")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-
-                        Text("Switch active notebook when moving an experience")
+                        Text("Switch notebook when moving an experience")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
+                } icon: {
+                    Image(systemName: "arrow.right.arrow.left").foregroundStyle(.secondary)
                 }
             }
         }
+        .tint(AppTheme.primary)
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
@@ -306,12 +232,53 @@ public struct SettingsView: View {
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
             .font(.subheadline.bold())
-            .foregroundColor(.primary)
+            .foregroundStyle(.primary)
     }
-}
 
-// MARK: - Identifiable Pin Mode Wrapper
-private struct IdentifiablePinMode: Identifiable {
-    let id = UUID()
-    let mode: PinSetupSheet.Mode
+    @MainActor
+    private func updateEmail() async {
+        emailMessage = nil
+        guard newEmail.range(of: #"^[^\s@]+@[^\s@]+\.[^\s@]+$"#, options: .regularExpression) != nil else {
+            emailMessage = "Enter a valid email address."
+            return
+        }
+        guard newEmail == confirmEmail else {
+            emailMessage = "Email addresses do not match."
+            return
+        }
+        isChangingEmail = true
+        defer { isChangingEmail = false }
+        do {
+            try await state.changeEmail(to: newEmail)
+            newEmail = ""
+            confirmEmail = ""
+            emailMessage = "Email updated successfully."
+        } catch {
+            emailMessage = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    private func updatePassword() async {
+        passwordMessage = nil
+        guard newPassword.count >= 8 else {
+            passwordMessage = "Password must be at least 8 characters."
+            return
+        }
+        guard newPassword == confirmPassword else {
+            passwordMessage = "Passwords do not match."
+            return
+        }
+        isChangingPassword = true
+        defer { isChangingPassword = false }
+        do {
+            try await state.changePassword(current: currentPassword, new: newPassword)
+            currentPassword = ""
+            newPassword = ""
+            confirmPassword = ""
+            passwordMessage = "Password updated successfully."
+        } catch {
+            passwordMessage = error.localizedDescription
+        }
+    }
 }

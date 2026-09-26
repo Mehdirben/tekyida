@@ -21,7 +21,10 @@ public struct DashboardView: View {
                     VStack(spacing: 20) {
                         TekyidaScrollHeader(
                             notebooks: state.activeNotebooksList,
-                            activeNotebookId: $state.activeNotebookId,
+                            activeNotebookId: Binding(
+                                get: { state.activeNotebookId },
+                                set: { id in if let id { state.selectNotebook(id) } else { state.activeNotebookId = nil } }
+                            ),
                             onManageNotebooks: { showNotebookManager = true }
                         )
 
@@ -94,7 +97,12 @@ public struct DashboardView: View {
             if (b1 > 0) != (b2 > 0) {
                 return b1 > 0
             }
-            return c1.name.localizedCaseInsensitiveCompare(c2.name) == .orderedAscending
+            let date1 = state.lastTransactionDate(for: c1.id) ?? .distantPast
+            let date2 = state.lastTransactionDate(for: c2.id) ?? .distantPast
+            if date1 != date2 {
+                return date1 > date2
+            }
+            return c1.createdAt > c2.createdAt
         }
 
         return VStack(spacing: 12) {

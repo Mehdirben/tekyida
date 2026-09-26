@@ -32,7 +32,12 @@ public struct NotebookHeaderButton: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 onManage()
             } label: {
-                Label("Manage Notebooks", systemImage: "slider.horizontal.3")
+                HStack(spacing: 5) {
+                    Image(systemName: "slider.horizontal.3")
+                    Text("Manage Notebooks")
+                }
+                .font(.subheadline)
+                .fixedSize()
             }
         } label: {
             HStack(spacing: 8) {
@@ -49,7 +54,7 @@ public struct NotebookHeaderButton: View {
                     .font(.caption2.bold())
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 6)
             .padding(.vertical, 7)
             .liquidGlassPill()
         }

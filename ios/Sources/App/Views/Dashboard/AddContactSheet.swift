@@ -24,17 +24,10 @@ public struct AddContactSheet: View {
             ScrollView {
                 VStack(spacing: 20) {
                     // Contact Avatar Header
-                    ZStack {
-                        ConcentricRectangle(cornerRadius: 22)
-                            .fill(AppTheme.primary.opacity(0.14))
-                            .frame(width: 72, height: 72)
-
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(.system(size: 44))
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundColor(AppTheme.primary)
-                    }
-                    .padding(.top, 12)
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(AppTheme.primary)
+                        .padding(.top, 12)
 
                     // Modern Liquid Glass Form Group
                     VStack(spacing: 14) {
@@ -61,8 +54,6 @@ public struct AddContactSheet: View {
                         }
                         .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                     }
-                    .padding(16)
-                    .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
 
                     // Bottom Save Button
                     GlassButton(

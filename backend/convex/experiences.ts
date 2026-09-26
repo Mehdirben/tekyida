@@ -8,6 +8,9 @@ export const list = query({
         const userId = await getAuthUserId(ctx);
         if (!userId) return [];
 
+        const notebook = await ctx.db.get(args.notebookId);
+        if (!notebook || notebook.userId !== userId) return [];
+
         const experiences = await ctx.db
             .query("experiences")
             .withIndex("by_notebook", (q) => q.eq("notebookId", args.notebookId))
@@ -18,10 +21,10 @@ export const list = query({
             experiences
                 .filter((e) => e.userId === userId)
                 .map(async (experience) => {
-                    const transactions = await ctx.db
+                    const transactions = (await ctx.db
                         .query("transactions")
                         .withIndex("by_experience", (q) => q.eq("experienceId", experience._id))
-                        .collect();
+                        .collect()).filter((t) => t.userId === userId);
 
                     const balance = transactions.reduce((sum, t) => sum + t.amount, 0);
 
@@ -67,7 +70,7 @@ export const create = mutation({
 
         if (args.contactId) {
             const contact = await ctx.db.get(args.contactId);
-            if (!contact || contact.notebookId !== args.notebookId) {
+            if (!contact || contact.userId !== userId || contact.notebookId !== args.notebookId) {
                 throw new Error("Contact not found");
             }
         }
@@ -103,7 +106,7 @@ export const update = mutation({
 
         if (args.contactId) {
             const contact = await ctx.db.get(args.contactId);
-            if (!contact || contact.notebookId !== experience.notebookId) {
+            if (!contact || contact.userId !== userId || contact.notebookId !== experience.notebookId) {
                 throw new Error("Contact not found");
             }
         }

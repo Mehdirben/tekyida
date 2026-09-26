@@ -27,19 +27,12 @@ public struct AddExperienceSheet: View {
             ScrollView {
                 VStack(spacing: 20) {
                     // Experience Icon Banner
-                    ZStack {
-                        ConcentricRectangle(cornerRadius: 22)
-                            .fill(AppTheme.primary.opacity(0.14))
-                            .frame(width: 72, height: 72)
+                    Image(systemName: "flag.fill")
+                        .font(.system(size: 38))
+                        .foregroundColor(AppTheme.primary)
+                        .padding(.top, 12)
 
-                        Image(systemName: "safari.fill")
-                            .font(.system(size: 38))
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundColor(AppTheme.primary)
-                    }
-                    .padding(.top, 12)
-
-                    // Experience Details Card
+                    // Experience Details Fields
                     VStack(alignment: .leading, spacing: 14) {
                         HStack(spacing: 12) {
                             Image(systemName: "flag.fill")
@@ -72,13 +65,11 @@ public struct AddExperienceSheet: View {
                             .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
                         }
                     }
-                    .padding(16)
-                    .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
 
                     // Bottom Save Button
                     GlassButton(
                         initialExperience == nil ? "Save Experience" : "Update Experience",
-                        systemImage: initialExperience == nil ? "plus.circle.fill" : "checkmark",
+                        systemImage: initialExperience == nil ? "plus" : "checkmark",
                         style: .primary,
                         size: .large
                     ) {
@@ -92,6 +83,7 @@ public struct AddExperienceSheet: View {
                 }
                 .padding(20)
             }
+            .safeAreaPadding(.bottom, 24)
             .navigationTitle(initialExperience == nil ? "New Experience" : "Edit Experience")
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])

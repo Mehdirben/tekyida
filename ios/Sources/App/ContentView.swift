@@ -39,23 +39,33 @@ struct ContentView: View {
     }
 
     var body: some View {
-        ZStack {
-            nativeTabView
-
-            // Fullscreen App Lock Screen if configured & active
-            if state.isAppLocked && state.isLockConfigured {
-                AppLockView()
-                    .transition(.opacity)
-                    .zIndex(100)
+        Group {
+            if state.isLoading {
+                ZStack {
+                    MeshGradientBackground()
+                    ProgressView("Connecting to Tekyida…")
+                        .tint(AppTheme.primary)
+                }
+            } else if state.isAuthenticated {
+                nativeTabView
+            } else {
+                AccountAccessView()
             }
         }
         .preferredColorScheme(resolvedColorScheme)
         .environmentObject(state)
         .tint(AppTheme.primary)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: state.isAppLocked)
-        .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .background {
-                state.lockApp()
+        .alert("Could not sync", isPresented: Binding(
+            get: { state.appError != nil },
+            set: { if !$0 { state.clearAppError() } }
+        )) {
+            Button("OK") { state.clearAppError() }
+        } message: {
+            Text(state.appError ?? "")
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active, state.isAuthenticated {
+                Task { await state.refresh() }
             }
         }
     }
