@@ -51,6 +51,7 @@ struct ContentView: View {
         }
         .preferredColorScheme(resolvedColorScheme)
         .environmentObject(state)
+        .tint(AppTheme.primary)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: state.isAppLocked)
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background {

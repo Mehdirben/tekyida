@@ -22,8 +22,7 @@ public struct BrandLogoHeader: View {
 
 // MARK: - Shared Tekyida Navigation Bar Modifier
 // Custom top line: brand (plain, no glass) left + notebook menu right.
-// Built with safeAreaInset over the native bar material, since iOS 26+
-// toolbars put Liquid Glass chrome on every toolbar item.
+// The inset stays transparent so the screen's background continues behind it.
 public struct TekyidaNavigationBarModifier: ViewModifier {
     let notebooks: [Notebook]
     @Binding var activeNotebookId: String?
@@ -57,7 +56,7 @@ public struct TekyidaNavigationBarModifier: ViewModifier {
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .padding(.bottom, 10)
-                .background(.bar)
+                .background(.clear)
             }
     }
 }
