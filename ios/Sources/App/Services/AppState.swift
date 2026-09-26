@@ -84,22 +84,24 @@ public final class AppState: ObservableObject {
     }
 
     public var activeNotebooksList: [Notebook] {
-        notebooks.filter { !$0.archived }.sorted { first, second in
-            switch (first.order, second.order) {
-            case let (a?, b?) where a != b:
-                return a < b
-            case (_?, nil):
-                return true
-            case (nil, _?):
-                return false
-            default:
-                return first.createdAt > second.createdAt
-            }
-        }
+        notebooks.filter { !$0.archived }.sorted(by: notebookOrderSort)
     }
 
     public var archivedNotebooksList: [Notebook] {
-        notebooks.filter { $0.archived }
+        notebooks.filter { $0.archived }.sorted(by: notebookOrderSort)
+    }
+
+    private func notebookOrderSort(_ first: Notebook, _ second: Notebook) -> Bool {
+        switch (first.order, second.order) {
+        case let (a?, b?) where a != b:
+            return a < b
+        case (_?, nil):
+            return true
+        case (nil, _?):
+            return false
+        default:
+            return first.createdAt > second.createdAt
+        }
     }
 
     public func directTransactions(for contactId: String) -> [Transaction] {

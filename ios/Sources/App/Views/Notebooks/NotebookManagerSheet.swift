@@ -12,6 +12,7 @@ public struct NotebookManagerSheet: View {
     @State private var deleteConfirmNotebook: Notebook?
     @State private var isReordering: Bool = false
     @State private var reorderedNotebooks: [Notebook] = []
+    @State private var reorderedArchivedNotebooks: [Notebook] = []
 
     public init() {}
 
@@ -30,7 +31,7 @@ public struct NotebookManagerSheet: View {
                             LazyVStack(spacing: 10) {
                                 if isReordering {
                                     ForEach(reorderedNotebooks) { notebook in
-                                        reorderRow(notebook)
+                                        reorderRow(notebook, in: $reorderedNotebooks)
                                     }
                                 } else {
                                     ForEach(state.activeNotebooksList) { notebook in
@@ -98,9 +99,27 @@ public struct NotebookManagerSheet: View {
                         }
                         .buttonStyle(ScaleTouchStyle())
                     }
+                    }
 
                     // Archived Notebooks Section
-                    if !state.archivedNotebooksList.isEmpty {
+                    if isReordering {
+                        if !reorderedArchivedNotebooks.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text(tr("notebooks.archivedSection"))
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                    .padding(.horizontal, 4)
+
+                                GlassEffectContainer {
+                                    LazyVStack(spacing: 10) {
+                                        ForEach(reorderedArchivedNotebooks) { notebook in
+                                            reorderRow(notebook, in: $reorderedArchivedNotebooks)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else if !state.archivedNotebooksList.isEmpty {
                         VStack(alignment: .leading, spacing: 10) {
                             Button(action: {
                                 withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
@@ -134,7 +153,6 @@ public struct NotebookManagerSheet: View {
                             }
                         }
                     }
-                    }
                 }
                 .padding(20)
             }
@@ -156,10 +174,11 @@ public struct NotebookManagerSheet: View {
                     }
                 } else {
                     ToolbarItemGroup(placement: .topBarTrailing) {
-                        if state.activeNotebooksList.count > 1 {
+                        if state.activeNotebooksList.count + state.archivedNotebooksList.count > 1 {
                             Button(tr("notebook.reorder")) {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 reorderedNotebooks = state.activeNotebooksList
+                                reorderedArchivedNotebooks = state.archivedNotebooksList
                                 isReordering = true
                             }
                         }
@@ -290,7 +309,7 @@ public struct NotebookManagerSheet: View {
         .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
     }
 
-    private func reorderRow(_ notebook: Notebook) -> some View {
+    private func reorderRow(_ notebook: Notebook, in list: Binding<[Notebook]>) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "line.3.horizontal")
                 .font(.system(size: 14, weight: .semibold))
@@ -316,24 +335,24 @@ public struct NotebookManagerSheet: View {
         .draggable(notebook.id)
         .dropDestination(for: String.self) { items, _ in
             guard let draggedId = items.first else { return false }
-            return moveNotebook(draggedId: draggedId, onto: notebook.id)
+            return moveNotebook(draggedId: draggedId, onto: notebook.id, in: list)
         }
     }
 
-    private func moveNotebook(draggedId: String, onto targetId: String) -> Bool {
+    private func moveNotebook(draggedId: String, onto targetId: String, in list: Binding<[Notebook]>) -> Bool {
         guard draggedId != targetId,
-              let fromIndex = reorderedNotebooks.firstIndex(where: { $0.id == draggedId }),
-              let toIndex = reorderedNotebooks.firstIndex(where: { $0.id == targetId })
+              let fromIndex = list.wrappedValue.firstIndex(where: { $0.id == draggedId }),
+              let toIndex = list.wrappedValue.firstIndex(where: { $0.id == targetId })
         else { return false }
 
         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            reorderedNotebooks.move(
+            list.wrappedValue.move(
                 fromOffsets: IndexSet(integer: fromIndex),
                 toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex
             )
         }
         UISelectionFeedbackGenerator().selectionChanged()
-        state.reorderNotebooks(orderedIds: reorderedNotebooks.map(\.id))
+        state.reorderNotebooks(orderedIds: reorderedNotebooks.map(\.id) + reorderedArchivedNotebooks.map(\.id))
         return true
     }
 
