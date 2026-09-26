@@ -380,7 +380,7 @@ public extension View {
     @ViewBuilder
     func topScrollEdgeDisabled() -> some View {
         if #available(iOS 26.0, *) {
-            self.scrollEdgeEffectDisabled(for: .top)
+            self.scrollEdgeEffectHidden(for: .top)
         } else {
             self
         }
