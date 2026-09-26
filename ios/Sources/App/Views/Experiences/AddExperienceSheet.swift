@@ -24,7 +24,7 @@ public struct AddExperienceSheet: View {
 
     public var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            GeometryReader { proxy in
                 ScrollView {
                     VStack(spacing: 20) {
                         // Experience Icon Banner
@@ -73,27 +73,30 @@ public struct AddExperienceSheet: View {
                                 .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
                             }
                         }
+
+                        Spacer(minLength: 0)
+
+                        // Bottom Save Button
+                        GlassButton(
+                            initialExperience == nil ? tr("experience.save") : tr("experience.update"),
+                            systemImage: initialExperience == nil ? "plus" : "checkmark",
+                            style: .primary,
+                            size: .large
+                        ) {
+                            save()
+                        }
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .opacity(name.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
+                        .padding(.top, 4)
+
+                        Color.clear.frame(height: 24)
                     }
                     .padding(20)
+                    .frame(minHeight: proxy.size.height)
                 }
                 .scrollDismissesKeyboard(.immediately)
-
-                // Bottom Save Button pinned above the sheet's bottom safe area
-                GlassButton(
-                    initialExperience == nil ? tr("experience.save") : tr("experience.update"),
-                    systemImage: initialExperience == nil ? "plus" : "checkmark",
-                    style: .primary,
-                    size: .large
-                ) {
-                    save()
-                }
-                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                .opacity(name.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
-                .padding(.horizontal, 20)
-                .padding(.top, 4)
-                .padding(.bottom, 20)
+                .dismissKeyboardOnTap()
             }
-            .dismissKeyboardOnTap()
             .navigationTitle(initialExperience == nil ? tr("experience.new") : tr("experience.edit"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])

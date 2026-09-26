@@ -21,7 +21,7 @@ public struct AddContactSheet: View {
 
     public var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            GeometryReader { proxy in
                 ScrollView {
                     VStack(spacing: 20) {
                         // Contact Avatar Header
@@ -55,18 +55,19 @@ public struct AddContactSheet: View {
                             }
                             .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                         }
+
+                        Spacer(minLength: 0)
+
+                        saveButton
+
+                        Color.clear.frame(height: 24)
                     }
                     .padding(20)
+                    .frame(minHeight: proxy.size.height)
                 }
                 .scrollDismissesKeyboard(.immediately)
-
-                // Bottom Save Button pinned above the sheet's bottom safe area
-                saveButton
-                    .padding(.horizontal, 20)
-                    .padding(.top, 4)
-                    .padding(.bottom, 20)
+                .dismissKeyboardOnTap()
             }
-            .dismissKeyboardOnTap()
             .navigationTitle(initialContact == nil ? tr("contact.new") : tr("contact.edit"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])
