@@ -390,7 +390,6 @@ public extension View {
 // MARK: - Content-Fitted Liquid Glass Sheet
 public struct FittedLiquidGlassSheetModifier: ViewModifier {
     @State private var contentHeight: CGFloat = 370
-    @State private var hasMeasured = false
     let chrome: CGFloat
 
     public init(chrome: CGFloat) {
@@ -403,20 +402,27 @@ public struct FittedLiquidGlassSheetModifier: ViewModifier {
             .background(
                 GeometryReader { proxy in
                     Color.clear
-                        .onAppear {
-                            if !hasMeasured, proxy.size.height > 0 {
-                                hasMeasured = true
-                                var transaction = SwiftUI.Transaction()
-                                transaction.disablesAnimations = true
-                                withTransaction(transaction) {
-                                    contentHeight = proxy.size.height
-                                }
-                            }
+                        .onAppear { sync(proxy.size.height) }
+                        .onChange(of: proxy.size.height) { _, newHeight in
+                            sync(newHeight)
                         }
                 }
             )
             .presentationDetents([.height(contentHeight + chrome)])
             .presentationDragIndicator(.visible)
+    }
+
+    /// Keeps the detent in sync with the intrinsic (fixed-size) content height.
+    /// Updates are transaction-animated-free so they can never interfere with
+    /// presentation or dismissal transitions, and the measured height is
+    /// independent of the sheet size (fixedSize) so there is no feedback loop.
+    private func sync(_ height: CGFloat) {
+        guard height > 0, abs(height - contentHeight) > 0.5 else { return }
+        var transaction = SwiftUI.Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            contentHeight = height
+        }
     }
 }
 
