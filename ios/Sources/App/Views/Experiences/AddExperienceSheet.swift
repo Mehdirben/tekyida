@@ -91,7 +91,6 @@ public struct AddExperienceSheet: View {
                 .padding(20)
             }
             .scrollDismissesKeyboard(.immediately)
-            .ignoresSafeArea(.keyboard, edges: .bottom)
             .dismissKeyboardOnTap()
             .navigationTitle(initialExperience == nil ? tr("experience.new") : tr("experience.edit"))
             .navigationBarTitleDisplayMode(.inline)

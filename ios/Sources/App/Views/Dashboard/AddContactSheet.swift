@@ -62,7 +62,6 @@ public struct AddContactSheet: View {
                 .padding(20)
             }
             .scrollDismissesKeyboard(.immediately)
-            .ignoresSafeArea(.keyboard, edges: .bottom)
             .dismissKeyboardOnTap()
             .navigationTitle(initialContact == nil ? tr("contact.new") : tr("contact.edit"))
             .navigationBarTitleDisplayMode(.inline)

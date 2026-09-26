@@ -90,7 +90,6 @@ public struct EditTransactionSheet: View {
                 .padding(20)
             }
             .scrollDismissesKeyboard(.immediately)
-            .ignoresSafeArea(.keyboard, edges: .bottom)
             .dismissKeyboardOnTap()
             .navigationTitle(tr("transaction.edit"))
             .navigationBarTitleDisplayMode(.inline)

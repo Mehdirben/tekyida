@@ -313,7 +313,6 @@ private struct EditNotebookPopup: View {
                 Spacer(minLength: 0)
             }
             .padding(20)
-            .ignoresSafeArea(.keyboard, edges: .bottom)
             .dismissKeyboardOnTap()
             .navigationTitle(tr("notebook.editTitle"))
             .navigationBarTitleDisplayMode(.inline)
