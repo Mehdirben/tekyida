@@ -84,6 +84,7 @@ public struct NotebookManagerSheet: View {
                             .foregroundColor(.primary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
+                            .contentShape(Rectangle())
                             .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
                         }
                         .buttonStyle(ScaleTouchStyle())
@@ -107,6 +108,7 @@ public struct NotebookManagerSheet: View {
                                 }
                                 .foregroundColor(.secondary)
                                 .padding(.horizontal, 4)
+                                .contentShape(Rectangle())
                             }
                             .buttonStyle(ScaleTouchStyle())
 
@@ -124,6 +126,8 @@ public struct NotebookManagerSheet: View {
                 }
                 .padding(20)
             }
+            .scrollDismissesKeyboard(.immediately)
+            .dismissKeyboardOnTap()
             .navigationTitle("Notebooks")
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.fraction(0.94)])
@@ -221,8 +225,10 @@ public struct NotebookManagerSheet: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
                         .frame(width: 30, height: 30)
+                        .contentShape(Circle())
                         .liquidGlassPill()
                 }
+                .buttonStyle(.plain)
 
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -232,8 +238,10 @@ public struct NotebookManagerSheet: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
                         .frame(width: 30, height: 30)
+                        .contentShape(Circle())
                         .liquidGlassPill()
                 }
+                .buttonStyle(.plain)
 
                 Button {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -243,8 +251,10 @@ public struct NotebookManagerSheet: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(AppTheme.danger.opacity(0.85))
                         .frame(width: 30, height: 30)
+                        .contentShape(Circle())
                         .liquidGlassPill()
                 }
+                .buttonStyle(.plain)
             }
         }
         .padding(14)
@@ -304,6 +314,7 @@ private struct EditNotebookPopup: View {
                 Spacer(minLength: 0)
             }
             .padding(20)
+            .dismissKeyboardOnTap()
             .navigationTitle("Edit Notebook")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -17,7 +17,9 @@ public struct MaskToggleButton: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .frame(width: 36, height: 36)
+                .contentShape(Circle())
                 .liquidGlassPill()
         }
+        .buttonStyle(.plain)
     }
 }

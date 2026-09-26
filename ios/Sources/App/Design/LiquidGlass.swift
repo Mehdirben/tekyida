@@ -213,6 +213,7 @@ public struct LiquidGlassButtonStyle: ButtonStyle {
             .font(size.font)
             .padding(.vertical, size.verticalPadding)
             .padding(.horizontal, size.horizontalPadding)
+            .contentShape(ConcentricRectangle(cornerRadius: cornerRadius))
             .foregroundStyle(foregroundStyle)
             .glassEffect(glassVariant, in: ConcentricRectangle(cornerRadius: cornerRadius))
     }
@@ -235,6 +236,7 @@ public struct LiquidGlassButtonStyle: ButtonStyle {
             .font(size.font)
             .padding(.vertical, size.verticalPadding)
             .padding(.horizontal, size.horizontalPadding)
+            .contentShape(ConcentricRectangle(cornerRadius: cornerRadius))
             .foregroundStyle(foregroundStyle)
             .background(fallbackBackground, in: ConcentricRectangle(cornerRadius: cornerRadius))
     }
@@ -319,11 +321,11 @@ public extension View {
     }
 
     func tapFeedback() -> some View {
-        self.simultaneousGesture(
-            TapGesture().onEnded {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            }
-        )
+        self.modifier(TouchFeedbackModifier())
+    }
+
+    func dismissKeyboardOnTap() -> some View {
+        self.modifier(DismissKeyboardOnTapModifier())
     }
 
     func glassInputStyle(cornerRadius: CGFloat = AppTheme.radiusInput) -> some View {
@@ -358,5 +360,124 @@ public extension View {
         #else
         self
         #endif
+    }
+}
+
+// MARK: - Touch Feedback (Haptics on Touch Down for Menus, Buttons, and Inputs)
+public struct TouchFeedbackModifier: ViewModifier {
+    public init() {}
+
+    public func body(content: Content) -> some View {
+        content
+            .overlay(TouchFeedbackOverlay())
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                }
+            )
+    }
+}
+
+private struct TouchFeedbackOverlay: UIViewRepresentable {
+    func makeUIView(context: Context) -> TouchFeedbackTrackingView {
+        let view = TouchFeedbackTrackingView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = true
+        return view
+    }
+
+    func updateUIView(_ uiView: TouchFeedbackTrackingView, context: Context) {}
+}
+
+private final class TouchFeedbackTrackingView: UIView {
+    private static var lastFeedbackTime: TimeInterval = 0
+
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        if self.bounds.contains(point) {
+            let now = CACurrentMediaTime()
+            if now - Self.lastFeedbackTime > 0.25 {
+                Self.lastFeedbackTime = now
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+        }
+        return nil
+    }
+}
+
+// MARK: - Keyboard Dismiss On Screen Tap (All Inputs)
+public struct DismissKeyboardOnTapModifier: ViewModifier {
+    public init() {}
+
+    public func body(content: Content) -> some View {
+        content
+            .background(KeyboardDismissTrackingViewRepresentable())
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+            )
+    }
+}
+
+private struct KeyboardDismissTrackingViewRepresentable: UIViewRepresentable {
+    func makeUIView(context: Context) -> KeyboardDismissTrackingUIView {
+        let view = KeyboardDismissTrackingUIView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ uiView: KeyboardDismissTrackingUIView, context: Context) {}
+}
+
+private final class KeyboardDismissTrackingUIView: UIView, UIGestureRecognizerDelegate {
+    private weak var activeWindow: UIWindow?
+    private var tapRecognizer: UITapGestureRecognizer?
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        cleanup()
+        guard let window = self.window else { return }
+        self.activeWindow = window
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        tap.cancelsTouchesInView = false
+        tap.requiresExclusiveTouchType = false
+        tap.delegate = self
+        window.addGestureRecognizer(tap)
+        self.tapRecognizer = tap
+    }
+
+    override func willMove(toWindow newWindow: UIWindow?) {
+        super.willMove(toWindow: newWindow)
+        if newWindow == nil {
+            cleanup()
+        }
+    }
+
+    private func cleanup() {
+        if let tap = tapRecognizer, let win = activeWindow ?? tap.view {
+            win.removeGestureRecognizer(tap)
+        }
+        tapRecognizer = nil
+        activeWindow = nil
+    }
+
+    @objc private func handleTap() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        var view: UIView? = touch.view
+        while let current = view {
+            if current is UITextField || current is UITextView || current is UISearchBar {
+                return false
+            }
+            view = current.superview
+        }
+        return true
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        return true
     }
 }

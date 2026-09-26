@@ -174,4 +174,14 @@ final class TekyidaTests: XCTestCase {
             .environmentObject(state)
         XCTAssertNotNil(sheet.body)
     }
+
+    func testTouchAndKeyboardModifiers() {
+        let button = GlassButton("Test", systemImage: "star", style: .primary, size: .large, action: {})
+        XCTAssertNotNil(button.body)
+
+        let modifiedView = Text("Hello")
+            .tapFeedback()
+            .dismissKeyboardOnTap()
+        XCTAssertNotNil(modifiedView)
+    }
 }

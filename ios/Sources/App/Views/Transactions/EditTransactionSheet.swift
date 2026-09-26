@@ -89,6 +89,8 @@ public struct EditTransactionSheet: View {
                 }
                 .padding(20)
             }
+            .scrollDismissesKeyboard(.immediately)
+            .dismissKeyboardOnTap()
             .navigationTitle("Edit Transaction")
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])

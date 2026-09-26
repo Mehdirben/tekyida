@@ -123,6 +123,7 @@ public struct ExperienceRowView: View {
                         .foregroundColor(experience.closed ? AppTheme.warning : AppTheme.accent)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
+                        .contentShape(Capsule())
                         .liquidGlassPill()
                     }
                     .buttonStyle(ScaleTouchStyle())

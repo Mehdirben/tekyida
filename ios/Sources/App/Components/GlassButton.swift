@@ -66,6 +66,7 @@ public struct GlassButton: View {
                     .lineLimit(1)
             }
             .frame(maxWidth: isFullWidth ? .infinity : nil)
+            .contentShape(Rectangle())
         }
         .buttonStyle(
             .liquidGlass(
@@ -74,6 +75,7 @@ public struct GlassButton: View {
                 cornerRadius: AppTheme.radiusButton
             )
         )
+        .contentShape(ConcentricRectangle(cornerRadius: AppTheme.radiusButton))
     }
 }
 
@@ -82,6 +84,7 @@ public struct ScaleTouchStyle: ButtonStyle {
     public init() {}
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .contentShape(Rectangle())
             .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
             .animation(.spring(response: 0.22, dampingFraction: 0.7), value: configuration.isPressed)
             .onChange(of: configuration.isPressed) { _, isPressed in

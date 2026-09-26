@@ -68,6 +68,7 @@ public struct AddExperienceSheet: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
+                            .contentShape(Rectangle())
                             .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
                         }
                     }
@@ -89,6 +90,8 @@ public struct AddExperienceSheet: View {
                 }
                 .padding(20)
             }
+            .scrollDismissesKeyboard(.immediately)
+            .dismissKeyboardOnTap()
             .safeAreaPadding(.bottom, 24)
             .navigationTitle(initialExperience == nil ? "New Experience" : "Edit Experience")
             .navigationBarTitleDisplayMode(.inline)

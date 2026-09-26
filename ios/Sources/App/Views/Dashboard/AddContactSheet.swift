@@ -55,23 +55,14 @@ public struct AddContactSheet: View {
                         .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                     }
 
-                    // Bottom Save Button
-                    GlassButton(
-                        initialContact == nil ? "Save Contact" : "Update Contact",
-                        systemImage: initialContact == nil ? "person.badge.plus" : "checkmark",
-                        style: .primary,
-                        size: .large
-                    ) {
-                        save()
-                    }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                    .opacity(name.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
-                    .padding(.top, 4)
+                    saveButton
 
                     Spacer(minLength: 24)
                 }
                 .padding(20)
             }
+            .scrollDismissesKeyboard(.immediately)
+            .dismissKeyboardOnTap()
             .navigationTitle(initialContact == nil ? "New Contact" : "Edit Contact")
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])
@@ -92,6 +83,20 @@ public struct AddContactSheet: View {
                 }
             }
         }
+    }
+
+    private var saveButton: some View {
+        let isNameEmpty = name.trimmingCharacters(in: .whitespaces).isEmpty
+        return GlassButton(
+            initialContact == nil ? "Save Contact" : "Update Contact",
+            systemImage: initialContact == nil ? "person.badge.plus" : "checkmark",
+            style: .primary,
+            size: .large,
+            action: save
+        )
+        .disabled(isNameEmpty)
+        .opacity(isNameEmpty ? 0.45 : 1.0)
+        .padding(.top, 4)
     }
 
     private func save() {

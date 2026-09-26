@@ -63,6 +63,7 @@ public struct AddTransactionView: View {
                         }) {
                             Text("Cancel")
                                 .frame(maxWidth: .infinity)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(
                             .liquidGlass(
@@ -71,10 +72,12 @@ public struct AddTransactionView: View {
                                 cornerRadius: AppTheme.radiusButton
                             )
                         )
+                        .contentShape(ConcentricRectangle(cornerRadius: AppTheme.radiusButton))
 
                         Button(action: submit) {
                             Text("Add Transaction")
                                 .frame(maxWidth: .infinity)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(
                             .liquidGlass(
@@ -83,10 +86,12 @@ public struct AddTransactionView: View {
                                 cornerRadius: AppTheme.radiusButton
                             )
                         )
+                        .contentShape(ConcentricRectangle(cornerRadius: AppTheme.radiusButton))
                         .disabled(invalidAmount)
                         .opacity(invalidAmount ? 0.45 : 1.0)
                     }
                 }
+                .dismissKeyboardOnTap()
                 .transition(
                     .asymmetric(
                         insertion: .opacity.combined(with: .move(edge: .bottom)),

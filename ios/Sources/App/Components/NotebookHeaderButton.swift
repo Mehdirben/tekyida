@@ -60,11 +60,13 @@ public struct NotebookHeaderButton: View {
                     .font(.caption2.bold())
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 6)
+            .padding(.horizontal, 10)
             .padding(.vertical, 7)
+            .contentShape(Capsule())
             .liquidGlassPill()
-            .tapFeedback()
         }
+        .contentShape(Capsule())
+        .tapFeedback()
     }
 
     private var currentName: String {

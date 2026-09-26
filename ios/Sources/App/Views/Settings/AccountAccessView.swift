@@ -53,15 +53,30 @@ struct AccountAccessView: View {
                             .disabled(isSubmitting || verificationCode.isEmpty)
                             .opacity((isSubmitting || verificationCode.isEmpty) ? 0.45 : 1.0)
 
-                            Button("Resend code") {
+                            Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 submit { await state.resendVerification(email: email) }
+                            } label: {
+                                Text("Resend code")
+                                    .font(.subheadline)
+                                    .foregroundStyle(AppTheme.primary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            Button("Back to sign in") {
+
+                            Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 state.isAwaitingEmailVerification = false
                                 state.authError = nil
+                            } label: {
+                                Text("Back to sign in")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                         } else {
@@ -135,11 +150,18 @@ struct AccountAccessView: View {
                             .disabled(isSubmitting || email.isEmpty || password.isEmpty)
                             .opacity((isSubmitting || email.isEmpty || password.isEmpty) ? 0.45 : 1.0)
 
-                            Button(isRegistration ? "I already have an account" : "Create an account") {
+                            Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 isRegistration.toggle()
                                 localError = nil
                                 state.authError = nil
+                            } label: {
+                                Text(isRegistration ? "I already have an account" : "Create an account")
+                                    .font(.subheadline)
+                                    .foregroundStyle(AppTheme.primary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                         }
@@ -160,6 +182,8 @@ struct AccountAccessView: View {
                 .frame(maxWidth: 520)
                 .frame(maxWidth: .infinity)
             }
+            .scrollDismissesKeyboard(.immediately)
+            .dismissKeyboardOnTap()
         }
     }
 

@@ -47,15 +47,37 @@ public struct SearchView: View {
                     }
                 )
                 .tabBarMinimizeBehaviorOnScroll()
+                .dismissKeyboardOnTap()
             }
             .navigationTitle("Search")
             .navigationBarTitleDisplayMode(.large)
             .searchable(
-                text: $query,
-                isPresented: $isSearchPresented,
+                text: Binding(
+                    get: { query },
+                    set: { newValue in
+                        if !query.isEmpty && newValue.isEmpty {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        }
+                        query = newValue
+                    }
+                ),
+                isPresented: Binding(
+                    get: { isSearchPresented },
+                    set: { newValue in
+                        if isSearchPresented != newValue {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
+                        isSearchPresented = newValue
+                    }
+                ),
                 placement: .automatic,
                 prompt: Text("Contacts, experiences, amounts...")
             )
+            .onChange(of: query) { oldValue, newValue in
+                if !oldValue.isEmpty && newValue.isEmpty {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                }
+            }
             .searchScopes(Binding(
                 get: { scope },
                 set: { newValue in
@@ -153,18 +175,10 @@ public struct SearchView: View {
 
                                         Spacer()
 
-                                        AmountView(
-                                            amount: state.contactBalance(contact.id),
-                                            isHidden: state.isAmountsHidden,
-                                            font: .subheadline,
-                                            fontWeight: .bold
-                                        )
-
-                                        Image(systemName: "chevron.right")
-                                            .font(.caption2.bold())
-                                            .foregroundColor(.secondary.opacity(0.6))
+                                        searchRowTrailing(balance: state.contactBalance(contact.id))
                                     }
                                     .padding(12)
+                                    .contentShape(Rectangle())
                                     .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
                                 }
                                 .buttonStyle(ScaleTouchStyle())
@@ -223,18 +237,10 @@ public struct SearchView: View {
 
                                         Spacer()
 
-                                        AmountView(
-                                            amount: state.experienceBalance(exp.id),
-                                            isHidden: state.isAmountsHidden,
-                                            font: .subheadline,
-                                            fontWeight: .bold
-                                        )
-
-                                        Image(systemName: "chevron.right")
-                                            .font(.caption2.bold())
-                                            .foregroundColor(.secondary.opacity(0.6))
+                                        searchRowTrailing(balance: state.experienceBalance(exp.id))
                                     }
                                     .padding(12)
+                                    .contentShape(Rectangle())
                                     .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
                                 }
                                 .buttonStyle(ScaleTouchStyle())
@@ -300,6 +306,20 @@ public struct SearchView: View {
                 subtitle: "Search contacts, shared experiences, descriptions, or transaction amounts."
             )
             .padding(.top, 16)
+        }
+    }
+
+    private func searchRowTrailing(balance: Double) -> some View {
+        HStack(spacing: 8) {
+            AmountView(
+                amount: balance,
+                isHidden: state.isAmountsHidden,
+                font: .subheadline,
+                fontWeight: .bold
+            )
+            Image(systemName: "chevron.right")
+                .font(.caption2.bold())
+                .foregroundColor(.secondary.opacity(0.6))
         }
     }
 }

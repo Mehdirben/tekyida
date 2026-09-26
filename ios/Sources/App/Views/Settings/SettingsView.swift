@@ -31,6 +31,8 @@ public struct SettingsView: View {
                     .padding(.top, 12)
                     .padding(.bottom, 96)
                 }
+                .scrollDismissesKeyboard(.immediately)
+                .dismissKeyboardOnTap()
                 .tabBarMinimizeBehaviorOnScroll()
             }
             .navigationTitle("Settings")
@@ -198,10 +200,12 @@ public struct SettingsView: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
+                    .contentShape(Capsule())
                     .liquidGlassPill()
-                    .tapFeedback()
                 }
                 .tint(.primary)
+                .contentShape(Capsule())
+                .tapFeedback()
             }
 
             Divider()

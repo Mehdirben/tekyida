@@ -80,8 +80,10 @@ public struct QuickStatsView: View {
                             .font(.subheadline.bold())
                             .foregroundColor(.secondary)
                             .frame(width: 36, height: 36)
+                            .contentShape(Circle())
                             .liquidGlassPill()
                     }
+                    .buttonStyle(.plain)
                 }
                 .padding(16)
                 .liquidGlassCard(cornerRadius: AppTheme.radiusCard)

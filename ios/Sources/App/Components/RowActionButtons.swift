@@ -28,8 +28,10 @@ public struct RowActionButtons: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.secondary)
                     .frame(width: 30, height: 30)
+                    .contentShape(Circle())
                     .liquidGlassPill()
             }
+            .buttonStyle(.plain)
 
             if let onTransfer = onTransfer {
                 Button(action: {
@@ -40,8 +42,10 @@ public struct RowActionButtons: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
                         .frame(width: 30, height: 30)
+                        .contentShape(Circle())
                         .liquidGlassPill()
                 }
+                .buttonStyle(.plain)
             }
 
             Button(action: {
@@ -52,8 +56,10 @@ public struct RowActionButtons: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(AppTheme.danger.opacity(0.85))
                     .frame(width: 30, height: 30)
+                    .contentShape(Circle())
                     .liquidGlassPill()
             }
+            .buttonStyle(.plain)
 
             if showsChevron {
                 Image(systemName: "chevron.right")

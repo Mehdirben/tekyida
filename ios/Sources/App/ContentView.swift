@@ -55,6 +55,7 @@ struct ContentView: View {
         .preferredColorScheme(resolvedColorScheme)
         .environmentObject(state)
         .tint(AppTheme.primary)
+        .dismissKeyboardOnTap()
         .alert("Could not sync", isPresented: Binding(
             get: { state.appError != nil },
             set: { if !$0 { state.clearAppError() } }

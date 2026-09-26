@@ -98,6 +98,7 @@ public struct TransferExperienceSheet: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
+                            .contentShape(Rectangle())
                             .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
                         }
                         .padding(.top, 4)
@@ -124,6 +125,7 @@ public struct TransferExperienceSheet: View {
                 Spacer()
             }
             .padding(20)
+            .dismissKeyboardOnTap()
             .navigationTitle("Transfer Experience")
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])
