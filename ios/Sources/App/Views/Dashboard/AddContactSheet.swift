@@ -60,13 +60,13 @@ public struct AddContactSheet: View {
                     Spacer(minLength: 24)
                 }
                 .padding(20)
+                .fittedLiquidGlassSheet(chrome: 60)
             }
+            .scrollBounceBehavior(.basedOnSize)
             .scrollDismissesKeyboard(.immediately)
             .dismissKeyboardOnTap()
-            .ignoresSafeArea(.keyboard)
             .navigationTitle(initialContact == nil ? tr("contact.new") : tr("contact.edit"))
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(tr("common.cancel")) {

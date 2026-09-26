@@ -89,13 +89,13 @@ public struct AddExperienceSheet: View {
                     Spacer(minLength: 24)
                 }
                 .padding(20)
+                .fittedLiquidGlassSheet(chrome: 60)
             }
+            .scrollBounceBehavior(.basedOnSize)
             .scrollDismissesKeyboard(.immediately)
             .dismissKeyboardOnTap()
-            .ignoresSafeArea(.keyboard)
             .navigationTitle(initialExperience == nil ? tr("experience.new") : tr("experience.edit"))
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(tr("common.cancel")) {

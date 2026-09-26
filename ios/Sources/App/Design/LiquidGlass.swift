@@ -348,6 +348,17 @@ public extension View {
             .presentationDragIndicator(.visible)
     }
 
+    /// Content-fitted modal presentation: measures the (fixed-size) content once
+    /// and sizes the sheet to wrap it exactly — no dead space below the content,
+    /// and a shorter sheet gives the keyboard room so it lifts instead of
+    /// growing to full height. Still a partial detent, so the native Liquid
+    /// Glass floating treatment is preserved on iOS 26+.
+    ///
+    /// - Parameter chrome: Extra points for the navigation bar and grabber area.
+    func fittedLiquidGlassSheet(chrome: CGFloat = 60) -> some View {
+        modifier(FittedLiquidGlassSheetModifier(chrome: chrome))
+    }
+
     /// Adopts tab bar minimize behavior on scroll down where available
     @ViewBuilder
     func tabBarMinimizeBehaviorOnScroll() -> some View {
@@ -360,6 +371,33 @@ public extension View {
         #else
         self
         #endif
+    }
+}
+
+// MARK: - Content-Fitted Liquid Glass Sheet
+public struct FittedLiquidGlassSheetModifier: ViewModifier {
+    @State private var contentHeight: CGFloat = 320
+    let chrome: CGFloat
+
+    public init(chrome: CGFloat) {
+        self.chrome = chrome
+    }
+
+    public func body(content: Content) -> some View {
+        content
+            .fixedSize(horizontal: false, vertical: true)
+            .background(
+                GeometryReader { proxy -> Color in
+                    DispatchQueue.main.async {
+                        if abs(proxy.size.height - contentHeight) > 0.5 {
+                            contentHeight = proxy.size.height
+                        }
+                    }
+                    return Color.clear
+                }
+            )
+            .presentationDetents([.height(contentHeight + chrome)])
+            .presentationDragIndicator(.visible)
     }
 }
 
