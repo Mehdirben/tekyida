@@ -184,32 +184,34 @@ public struct ExperiencesView: View {
                     subtitle: "Group expenses and split bills with friends using experiences."
                 )
             } else {
-                ForEach(filtered) { exp in
-                    let cName = exp.contactId.flatMap { cid in state.contacts.first(where: { $0.id == cid })?.name }
-                    let txCount = state.experienceTransactions(exp.id).count
+                LazyVStack(spacing: 12) {
+                    ForEach(filtered) { exp in
+                        let cName = exp.contactId.flatMap { cid in state.contacts.first(where: { $0.id == cid })?.name }
+                        let txCount = state.experienceTransactions(exp.id).count
 
-                    ExperienceRowView(
-                        experience: exp,
-                        contactName: cName,
-                        balance: state.experienceBalance(exp.id),
-                        transactionCount: txCount,
-                        isMasked: state.isAmountsHidden,
-                        onTap: {
-                            navigatedExperience = exp
-                        },
-                        onToggleClosed: {
-                            state.toggleExperienceClosed(id: exp.id)
-                        },
-                        onEdit: {
-                            editingExperience = exp
-                        },
-                        onTransfer: {
-                            transferringExperience = exp
-                        },
-                        onDelete: {
-                            deletingExperience = exp
-                        }
-                    )
+                        ExperienceRowView(
+                            experience: exp,
+                            contactName: cName,
+                            balance: state.experienceBalance(exp.id),
+                            transactionCount: txCount,
+                            isMasked: state.isAmountsHidden,
+                            onTap: {
+                                navigatedExperience = exp
+                            },
+                            onToggleClosed: {
+                                state.toggleExperienceClosed(id: exp.id)
+                            },
+                            onEdit: {
+                                editingExperience = exp
+                            },
+                            onTransfer: {
+                                transferringExperience = exp
+                            },
+                            onDelete: {
+                                deletingExperience = exp
+                            }
+                        )
+                    }
                 }
             }
 

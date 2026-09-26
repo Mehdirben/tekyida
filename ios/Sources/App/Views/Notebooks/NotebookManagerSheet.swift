@@ -25,7 +25,7 @@ public struct NotebookManagerSheet: View {
                             .padding(.horizontal, 4)
 
                         GlassEffectContainer {
-                            VStack(spacing: 10) {
+                            LazyVStack(spacing: 10) {
                                 ForEach(state.activeNotebooksList) { notebook in
                                     notebookRow(notebook, isArchived: false)
                                 }
@@ -112,7 +112,7 @@ public struct NotebookManagerSheet: View {
 
                             if showArchived {
                                 GlassEffectContainer {
-                                    VStack(spacing: 10) {
+                                    LazyVStack(spacing: 10) {
                                         ForEach(state.archivedNotebooksList) { notebook in
                                             notebookRow(notebook, isArchived: true)
                                         }
@@ -186,9 +186,17 @@ public struct NotebookManagerSheet: View {
                         .foregroundColor(isSelected ? AppTheme.primary : .secondary)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(notebook.name)
-                            .font(.headline)
-                            .foregroundColor(.primary)
+                        HStack(spacing: 4) {
+                            Text(notebook.name)
+                                .font(.headline)
+                                .foregroundColor(.primary)
+
+                            if state.isItemPendingSync(id: notebook.id) {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .font(.caption2.bold())
+                                    .foregroundColor(AppTheme.warning)
+                            }
+                        }
 
                         AmountView(
                             amount: balance,
@@ -268,30 +276,30 @@ private struct EditNotebookPopup: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 18) {
-                TextField("Notebook name", text: $name)
-                    .textFieldStyle(.roundedBorder)
-                    .onChange(of: name) { _, value in
-                        if value.count > 20 { name = String(value.prefix(20)) }
-                    }
+                HStack(spacing: 12) {
+                    Image(systemName: "book.closed")
+                        .foregroundColor(.secondary)
+                        .frame(width: 20)
+                    TextField("Notebook name", text: $name)
+                        .onChange(of: name) { _, value in
+                            if value.count > 20 { name = String(value.prefix(20)) }
+                        }
+                }
+                .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
                 Text("Notebook names can be up to 20 characters.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                Button {
+                GlassButton("Save Changes", systemImage: "checkmark", style: .primary, size: .large) {
                     let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmed.isEmpty else { return }
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     onSave(trimmed)
                     dismiss()
-                } label: {
-                    Text("Save Changes")
-                        .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(AppTheme.primary)
                 .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .opacity(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1.0)
 
                 Spacer(minLength: 0)
             }

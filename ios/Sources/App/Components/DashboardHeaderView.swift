@@ -2,6 +2,8 @@ import SwiftUI
 
 // MARK: - Scrolling Brand Header (plain, no glass)
 public struct BrandLogoHeader: View {
+    @EnvironmentObject private var state: AppState
+
     public init() {}
 
     public var body: some View {
@@ -15,8 +17,49 @@ public struct BrandLogoHeader: View {
             Text("Tekyida")
                 .font(.system(size: 17, weight: .semibold, design: .rounded))
                 .foregroundColor(.primary)
+
+            if state.shouldShowSyncStatus {
+                syncStatusBadge
+            }
         }
         .fixedSize()
+    }
+
+    @ViewBuilder
+    private var syncStatusBadge: some View {
+        HStack(spacing: 4) {
+            if state.isSyncing {
+                ProgressView()
+                    .controlSize(.mini)
+            } else if !state.isOnline {
+                Image(systemName: "wifi.slash")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(AppTheme.warning)
+            } else if state.pendingSyncCount > 0 {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(AppTheme.warning)
+                if state.pendingSyncCount > 1 {
+                    Text("\(state.pendingSyncCount)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(AppTheme.warning)
+                }
+            }
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(
+            Capsule()
+                .fill(AppTheme.warningBg.opacity(0.85))
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(syncStatusLabel)
+    }
+
+    private var syncStatusLabel: String {
+        if state.isSyncing { return "Syncing" }
+        if !state.isOnline { return "Offline" }
+        return "\(state.pendingSyncCount) pending sync"
     }
 }
 

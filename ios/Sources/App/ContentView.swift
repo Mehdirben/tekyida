@@ -55,9 +55,6 @@ struct ContentView: View {
         .preferredColorScheme(resolvedColorScheme)
         .environmentObject(state)
         .tint(AppTheme.primary)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            OfflineSyncBanner()
-        }
         .alert("Could not sync", isPresented: Binding(
             get: { state.appError != nil },
             set: { if !$0 { state.clearAppError() } }
@@ -65,6 +62,9 @@ struct ContentView: View {
             Button("OK") { state.clearAppError() }
         } message: {
             Text(state.appError ?? "")
+        }
+        .onChange(of: selectedTab) { _, _ in
+            UISelectionFeedbackGenerator().selectionChanged()
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, state.isAuthenticated {

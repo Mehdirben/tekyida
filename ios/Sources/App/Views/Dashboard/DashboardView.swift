@@ -130,21 +130,23 @@ public struct DashboardView: View {
                     subtitle: "Add your first contact to track money owed or lent."
                 )
             } else {
-                ForEach(sortedContacts) { contact in
-                    ContactRowView(
-                        contact: contact,
-                        balance: state.contactBalance(contact.id),
-                        isMasked: state.isAmountsHidden,
-                        onTap: {
-                            navigatedContact = contact
-                        },
-                        onEdit: {
-                            editingContact = contact
-                        },
-                        onDelete: {
-                            deletingContact = contact
-                        }
-                    )
+                LazyVStack(spacing: 12) {
+                    ForEach(sortedContacts) { contact in
+                        ContactRowView(
+                            contact: contact,
+                            balance: state.contactBalance(contact.id),
+                            isMasked: state.isAmountsHidden,
+                            onTap: {
+                                navigatedContact = contact
+                            },
+                            onEdit: {
+                                editingContact = contact
+                            },
+                            onDelete: {
+                                deletingContact = contact
+                            }
+                        )
+                    }
                 }
             }
 

@@ -2,6 +2,7 @@ import SwiftUI
 
 // MARK: - Reusable Transaction Row View (Modern Liquid Glass HIG)
 public struct TransactionRowView: View {
+    @EnvironmentObject private var state: AppState
     let transaction: Transaction
     let isMasked: Bool
     let showsActions: Bool
@@ -37,9 +38,17 @@ public struct TransactionRowView: View {
 
             // Description & Date
             VStack(alignment: .leading, spacing: 3) {
-                Text(formattedDate(transaction.date))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                HStack(spacing: 4) {
+                    Text(formattedDate(transaction.date))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+
+                    if state.isItemPendingSync(id: transaction.id) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(AppTheme.warning)
+                    }
+                }
 
                 if let desc = transaction.description, !desc.isEmpty {
                     Text(desc)

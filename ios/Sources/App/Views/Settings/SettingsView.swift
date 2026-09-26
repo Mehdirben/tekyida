@@ -57,19 +57,29 @@ public struct SettingsView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            TextField("New email address", text: $newEmail)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .textFieldStyle(.roundedBorder)
+            HStack(spacing: 12) {
+                Image(systemName: "envelope")
+                    .foregroundColor(.secondary)
+                    .frame(width: 20)
+                TextField("New email address", text: $newEmail)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            }
+            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
-            TextField("Confirm new email", text: $confirmEmail)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .textFieldStyle(.roundedBorder)
+            HStack(spacing: 12) {
+                Image(systemName: "envelope.badge")
+                    .foregroundColor(.secondary)
+                    .frame(width: 20)
+                TextField("Confirm new email", text: $confirmEmail)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            }
+            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
             if let emailMessage {
                 Text(emailMessage)
@@ -77,20 +87,11 @@ public struct SettingsView: View {
                     .foregroundStyle(emailMessage.hasPrefix("Email updated") ? AppTheme.accent : AppTheme.danger)
             }
 
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            GlassButton("Change Email", systemImage: "envelope.badge", style: .primary, size: .large) {
                 Task { await updateEmail() }
-            } label: {
-                if isChangingEmail {
-                    ProgressView().tint(.white)
-                } else {
-                    Text("Change Email")
-                        .frame(maxWidth: .infinity)
-                }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(AppTheme.primary)
             .disabled(isChangingEmail || newEmail.isEmpty || confirmEmail.isEmpty)
+            .opacity((isChangingEmail || newEmail.isEmpty || confirmEmail.isEmpty) ? 0.45 : 1.0)
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
@@ -100,17 +101,32 @@ public struct SettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             sectionHeader("Password")
 
-            SecureField("Current password", text: $currentPassword)
-                .textContentType(.password)
-                .textFieldStyle(.roundedBorder)
+            HStack(spacing: 12) {
+                Image(systemName: "lock")
+                    .foregroundColor(.secondary)
+                    .frame(width: 20)
+                SecureField("Current password", text: $currentPassword)
+                    .textContentType(.password)
+            }
+            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
-            SecureField("New password (at least 8 characters)", text: $newPassword)
-                .textContentType(.newPassword)
-                .textFieldStyle(.roundedBorder)
+            HStack(spacing: 12) {
+                Image(systemName: "key")
+                    .foregroundColor(.secondary)
+                    .frame(width: 20)
+                SecureField("New password (at least 8 characters)", text: $newPassword)
+                    .textContentType(.newPassword)
+            }
+            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
-            SecureField("Confirm new password", text: $confirmPassword)
-                .textContentType(.newPassword)
-                .textFieldStyle(.roundedBorder)
+            HStack(spacing: 12) {
+                Image(systemName: "key.fill")
+                    .foregroundColor(.secondary)
+                    .frame(width: 20)
+                SecureField("Confirm new password", text: $confirmPassword)
+                    .textContentType(.newPassword)
+            }
+            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
             if let passwordMessage {
                 Text(passwordMessage)
@@ -118,20 +134,11 @@ public struct SettingsView: View {
                     .foregroundStyle(passwordMessage.hasPrefix("Password updated") ? AppTheme.accent : AppTheme.danger)
             }
 
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            GlassButton("Change Password", systemImage: "key.fill", style: .primary, size: .large) {
                 Task { await updatePassword() }
-            } label: {
-                if isChangingPassword {
-                    ProgressView().tint(.white)
-                } else {
-                    Text("Change Password")
-                        .frame(maxWidth: .infinity)
-                }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(AppTheme.primary)
             .disabled(isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty)
+            .opacity((isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) ? 0.45 : 1.0)
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
@@ -182,14 +189,19 @@ public struct SettingsView: View {
                     }
                 } label: {
                     HStack(spacing: 6) {
-                        Text(state.language.title).font(.subheadline.bold())
-                        Image(systemName: "chevron.down").font(.caption2.bold())
+                        Text(state.language.title)
+                            .font(.subheadline.bold())
+                            .foregroundColor(.primary)
+                        Image(systemName: "chevron.down")
+                            .font(.caption2.bold())
+                            .foregroundColor(.secondary)
                     }
-                    .foregroundStyle(.primary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 7)
                     .liquidGlassPill()
+                    .tapFeedback()
                 }
+                .tint(.primary)
             }
 
             Divider()

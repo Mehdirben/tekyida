@@ -117,48 +117,58 @@ public struct SearchView: View {
                             .font(.headline)
                             .foregroundColor(.primary)
 
-                        ForEach(results.contacts) { contact in
-                            Button(action: {
-                                selectedContact = contact
-                            }) {
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(AppTheme.primary.opacity(0.15))
-                                            .frame(width: 40, height: 40)
-                                        Image(systemName: "person.fill")
-                                            .foregroundColor(AppTheme.primary)
-                                    }
-
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(contact.name)
-                                            .font(.subheadline.bold())
-                                            .foregroundColor(.primary)
-
-                                        if let phone = contact.phone, !phone.isEmpty {
-                                            Text(phone)
-                                                .font(.caption2)
-                                                .foregroundColor(.secondary)
+                        LazyVStack(spacing: 10) {
+                            ForEach(results.contacts) { contact in
+                                Button(action: {
+                                    selectedContact = contact
+                                }) {
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(AppTheme.primary.opacity(0.15))
+                                                .frame(width: 40, height: 40)
+                                            Image(systemName: "person.fill")
+                                                .foregroundColor(AppTheme.primary)
                                         }
+
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            HStack(spacing: 4) {
+                                                Text(contact.name)
+                                                    .font(.subheadline.bold())
+                                                    .foregroundColor(.primary)
+
+                                                if state.isItemPendingSync(id: contact.id) {
+                                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                                        .font(.system(size: 10, weight: .bold))
+                                                        .foregroundColor(AppTheme.warning)
+                                                }
+                                            }
+
+                                            if let phone = contact.phone, !phone.isEmpty {
+                                                Text(phone)
+                                                    .font(.caption2)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+
+                                        Spacer()
+
+                                        AmountView(
+                                            amount: state.contactBalance(contact.id),
+                                            isHidden: state.isAmountsHidden,
+                                            font: .subheadline,
+                                            fontWeight: .bold
+                                        )
+
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption2.bold())
+                                            .foregroundColor(.secondary.opacity(0.6))
                                     }
-
-                                    Spacer()
-
-                                    AmountView(
-                                        amount: state.contactBalance(contact.id),
-                                        isHidden: state.isAmountsHidden,
-                                        font: .subheadline,
-                                        fontWeight: .bold
-                                    )
-
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption2.bold())
-                                        .foregroundColor(.secondary.opacity(0.6))
+                                    .padding(12)
+                                    .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
                                 }
-                                .padding(12)
-                                .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
+                                .buttonStyle(ScaleTouchStyle())
                             }
-                            .buttonStyle(ScaleTouchStyle())
                         }
                     }
                 }
@@ -170,57 +180,65 @@ public struct SearchView: View {
                             .font(.headline)
                             .foregroundColor(.primary)
 
-                        ForEach(results.experiences) { exp in
-                            Button(action: {
-                                selectedExperience = exp
-                            }) {
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(AppTheme.primary.opacity(0.15))
-                                            .frame(width: 40, height: 40)
-                                        Image(systemName: "safari.fill")
-                                            .foregroundColor(AppTheme.primary)
-                                    }
-
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        HStack(spacing: 6) {
-                                            Text(exp.name)
-                                                .font(.subheadline.bold())
-                                                .foregroundColor(.primary)
-
-                                            if exp.closed {
-                                                StatusBadge(
-                                                    title: "Closed",
-                                                    color: AppTheme.warning,
-                                                    backgroundColor: AppTheme.warningBg
-                                                )
-                                            }
+                        LazyVStack(spacing: 10) {
+                            ForEach(results.experiences) { exp in
+                                Button(action: {
+                                    selectedExperience = exp
+                                }) {
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(AppTheme.primary.opacity(0.15))
+                                                .frame(width: 40, height: 40)
+                                            Image(systemName: "safari.fill")
+                                                .foregroundColor(AppTheme.primary)
                                         }
 
-                                        let txCount = state.experienceTransactions(exp.id).count
-                                        Text("\(txCount) transaction\(txCount == 1 ? "" : "s")")
-                                            .font(.caption2)
-                                            .foregroundColor(.secondary)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            HStack(spacing: 6) {
+                                                Text(exp.name)
+                                                    .font(.subheadline.bold())
+                                                    .foregroundColor(.primary)
+
+                                                if state.isItemPendingSync(id: exp.id) {
+                                                    Image(systemName: "arrow.triangle.2.circlepath")
+                                                        .font(.system(size: 10, weight: .bold))
+                                                        .foregroundColor(AppTheme.warning)
+                                                }
+
+                                                if exp.closed {
+                                                    StatusBadge(
+                                                        title: "Closed",
+                                                        color: AppTheme.warning,
+                                                        backgroundColor: AppTheme.warningBg
+                                                    )
+                                                }
+                                            }
+
+                                            let txCount = state.experienceTransactions(exp.id).count
+                                            Text("\(txCount) transaction\(txCount == 1 ? "" : "s")")
+                                                .font(.caption2)
+                                                .foregroundColor(.secondary)
+                                        }
+
+                                        Spacer()
+
+                                        AmountView(
+                                            amount: state.experienceBalance(exp.id),
+                                            isHidden: state.isAmountsHidden,
+                                            font: .subheadline,
+                                            fontWeight: .bold
+                                        )
+
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption2.bold())
+                                            .foregroundColor(.secondary.opacity(0.6))
                                     }
-
-                                    Spacer()
-
-                                    AmountView(
-                                        amount: state.experienceBalance(exp.id),
-                                        isHidden: state.isAmountsHidden,
-                                        font: .subheadline,
-                                        fontWeight: .bold
-                                    )
-
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption2.bold())
-                                        .foregroundColor(.secondary.opacity(0.6))
+                                    .padding(12)
+                                    .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
                                 }
-                                .padding(12)
-                                .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
+                                .buttonStyle(ScaleTouchStyle())
                             }
-                            .buttonStyle(ScaleTouchStyle())
                         }
                     }
                 }
@@ -232,14 +250,16 @@ public struct SearchView: View {
                             .font(.headline)
                             .foregroundColor(.primary)
 
-                        ForEach(results.transactions) { tx in
-                            TransactionRowView(
-                                transaction: tx,
-                                isMasked: state.isAmountsHidden,
-                                showsActions: canManageTransaction(tx),
-                                onEdit: { editingTransaction = tx },
-                                onDelete: { deletingTransaction = tx }
-                            )
+                        LazyVStack(spacing: 10) {
+                            ForEach(results.transactions) { tx in
+                                TransactionRowView(
+                                    transaction: tx,
+                                    isMasked: state.isAmountsHidden,
+                                    showsActions: canManageTransaction(tx),
+                                    onEdit: { editingTransaction = tx },
+                                    onDelete: { deletingTransaction = tx }
+                                )
+                            }
                         }
                     }
                 }

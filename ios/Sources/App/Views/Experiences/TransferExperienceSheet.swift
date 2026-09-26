@@ -48,9 +48,11 @@ public struct TransferExperienceSheet: View {
                         .font(.footnote)
                         .foregroundColor(.secondary)
 
-                    let otherNotebooks = state.notebooks.filter { $0.id != experience.notebookId }
+                    let activeOtherNotebooks = state.activeNotebooksList.filter { $0.id != experience.notebookId }
+                    let archivedOtherNotebooks = state.archivedNotebooksList.filter { $0.id != experience.notebookId }
+                    let hasOtherNotebooks = !activeOtherNotebooks.isEmpty || !archivedOtherNotebooks.isEmpty
 
-                    if otherNotebooks.isEmpty {
+                    if !hasOtherNotebooks {
                         Text("No other notebooks found. Create another notebook first.")
                             .font(.caption)
                             .foregroundColor(AppTheme.warning)
@@ -69,8 +71,19 @@ public struct TransferExperienceSheet: View {
                                 }
                             )) {
                                 Text("Select Destination").tag("")
-                                ForEach(otherNotebooks) { nb in
-                                    Text(nb.name).tag(nb.id)
+                                if !activeOtherNotebooks.isEmpty {
+                                    Section("Active Notebooks") {
+                                        ForEach(activeOtherNotebooks) { nb in
+                                            Text(nb.name).tag(nb.id)
+                                        }
+                                    }
+                                }
+                                if !archivedOtherNotebooks.isEmpty {
+                                    Section("Archived Notebooks") {
+                                        ForEach(archivedOtherNotebooks) { nb in
+                                            Text("\(nb.name) (Archived)").tag(nb.id)
+                                        }
+                                    }
                                 }
                             }
                             .pickerStyle(.menu)
@@ -85,7 +98,7 @@ public struct TransferExperienceSheet: View {
                 .padding(16)
                 .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
 
-                if !state.notebooks.filter({ $0.id != experience.notebookId }).isEmpty {
+                if hasOtherNotebooks {
                     GlassButton(
                         "Confirm Transfer",
                         systemImage: "arrow.right.arrow.left",

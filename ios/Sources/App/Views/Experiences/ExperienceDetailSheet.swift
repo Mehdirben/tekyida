@@ -65,7 +65,7 @@ public struct ExperienceDetailView: View {
                             subtitle: "Tap the button below to add expenses or payments to this experience."
                         )
                     } else {
-                        VStack(spacing: 10) {
+                        LazyVStack(spacing: 10) {
                             ForEach(txs) { tx in
                                 TransactionRowView(
                                     transaction: tx,

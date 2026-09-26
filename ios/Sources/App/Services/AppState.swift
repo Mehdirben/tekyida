@@ -65,6 +65,17 @@ public final class AppState: ObservableObject {
         !isOnline || isSyncing || pendingSyncCount > 0
     }
 
+    public func isItemPendingSync(id: String) -> Bool {
+        if id.hasPrefix("offline_") { return true }
+        return pendingMutations.contains { mutation in
+            if mutation.localCreatedId == id { return true }
+            guard let raw = try? JSONSerialization.jsonObject(with: mutation.arguments),
+                  let dict = raw as? [String: Any] else { return false }
+            if let targetId = dict["id"] as? String, targetId == id { return true }
+            return false
+        }
+    }
+
     public var activeNotebook: Notebook? {
         if let id = activeNotebookId, let found = notebooks.first(where: { $0.id == id && !$0.archived }) {
             return found
@@ -542,6 +553,32 @@ public final class AppState: ObservableObject {
             throw BackendError.message("Reconnect using the account that owns the pending offline changes.")
         }
 
+        if path.hasSuffix(":remove"), let targetId = args["id"] as? String {
+            if targetId.hasPrefix("offline_") {
+                pendingMutations.removeAll { queued in
+                    if queued.localCreatedId == targetId { return true }
+                    guard let raw = try? JSONSerialization.jsonObject(with: queued.arguments),
+                          let dict = raw as? [String: Any] else { return false }
+                    if let itemId = dict["id"] as? String, itemId == targetId { return true }
+                    if path == "notebooks:remove", let nbId = dict["notebookId"] as? String, nbId == targetId { return true }
+                    if path == "experiences:remove", let expId = dict["experienceId"] as? String, expId == targetId { return true }
+                    if path == "contacts:remove", let cId = dict["contactId"] as? String, cId == targetId { return true }
+                    return false
+                }
+                pendingSyncCount = pendingMutations.count
+                applyOfflineMutation(path, args: args, localCreatedId: nil)
+                persistOfflineSnapshot()
+                return Data("null".utf8)
+            } else {
+                pendingMutations.removeAll { queued in
+                    guard queued.functionPath.hasSuffix(":update"),
+                          let raw = try? JSONSerialization.jsonObject(with: queued.arguments),
+                          let dict = raw as? [String: Any] else { return false }
+                    return dict["id"] as? String == targetId
+                }
+            }
+        }
+
         let createPaths = ["notebooks:create", "contacts:create", "experiences:create", "transactions:create"]
         let localId = createPaths.contains(path) ? "offline_\(UUID().uuidString)" : nil
         let encodedArgs = try JSONSerialization.data(withJSONObject: args, options: [.sortedKeys])
@@ -607,10 +644,19 @@ public final class AppState: ObservableObject {
                 continue
             }
             let resolvedArgs = replaceLocalIds(in: args) as? [String: Any] ?? args
+            if let itemId = resolvedArgs["id"] as? String, itemId.hasPrefix("offline_") {
+                pendingMutations.removeFirst()
+                pendingSyncCount = pendingMutations.count
+                completedAny = true
+                persistOfflineSnapshot()
+                continue
+            }
             do {
                 let result = try await backend.mutation(queued.functionPath, args: resolvedArgs)
                 if let localId = queued.localCreatedId {
-                    guard let serverId = (try? JSONSerialization.jsonObject(with: result)) as? String else {
+                    let decodedServerId = (try? JSONSerialization.jsonObject(with: result, options: [.fragmentsAllowed])) as? String
+                        ?? (try? JSONDecoder().decode(String.self, from: result))
+                    guard let serverId = decodedServerId else {
                         throw BackendError.message("The server did not return an ID for a newly created item.")
                     }
                     localToServerIds[localId] = serverId
@@ -654,9 +700,13 @@ public final class AppState: ObservableObject {
         do {
             let result = try await backend.mutation(path, args: args)
             let createPaths = ["notebooks:create", "contacts:create", "experiences:create", "transactions:create"]
-            let createdId = createPaths.contains(path)
-                ? (try? JSONSerialization.jsonObject(with: result)) as? String
-                : nil
+            let createdId: String?
+            if createPaths.contains(path) {
+                createdId = (try? JSONSerialization.jsonObject(with: result, options: [.fragmentsAllowed])) as? String
+                    ?? (try? JSONDecoder().decode(String.self, from: result))
+            } else {
+                createdId = nil
+            }
             applyOfflineMutation(path, args: args, localCreatedId: createdId)
             persistOfflineSnapshot()
             return result

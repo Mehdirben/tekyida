@@ -141,8 +141,33 @@ final class TekyidaTests: XCTestCase {
             .environmentObject(state)
         XCTAssertNotNil(header.body)
 
+        let brand = BrandLogoHeader()
+            .environmentObject(state)
+        XCTAssertNotNil(brand.body)
+
         let banner = OfflineSyncBanner()
             .environmentObject(state)
         XCTAssertNotNil(banner.body)
+    }
+
+    func testPendingSyncDetection() {
+        let state = AppState()
+        XCTAssertTrue(state.isItemPendingSync(id: "offline_abc123"))
+        XCTAssertFalse(state.isItemPendingSync(id: "server_xyz789"))
+    }
+
+    func testTransferNotebookFiltering() {
+        let state = AppState()
+        let nb1 = Notebook(id: "nb1", name: "Current")
+        let nb2 = Notebook(id: "nb2", name: "Active Other")
+        let nb3 = Notebook(id: "nb3", name: "Archived Other", archived: true)
+        state.notebooks = [nb1, nb2, nb3]
+
+        let exp = Experience(notebookId: nb1.id, name: "Dinner")
+        let activeTargets = state.activeNotebooksList.filter { $0.id != exp.notebookId }
+        let archivedTargets = state.archivedNotebooksList.filter { $0.id != exp.notebookId }
+
+        XCTAssertEqual(activeTargets.map(\.id), ["nb2"])
+        XCTAssertEqual(archivedTargets.map(\.id), ["nb3"])
     }
 }

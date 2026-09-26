@@ -2,6 +2,7 @@ import SwiftUI
 
 // MARK: - Experience Row View (Modern Liquid Glass HIG)
 public struct ExperienceRowView: View {
+    @EnvironmentObject private var state: AppState
     let experience: Experience
     let contactName: String?
     let balance: Double
@@ -57,10 +58,18 @@ public struct ExperienceRowView: View {
                                 .foregroundColor(AppTheme.primary)
                         }
 
-                        Text(experience.name)
-                            .font(.subheadline.bold())
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
+                        HStack(spacing: 5) {
+                            Text(experience.name)
+                                .font(.subheadline.bold())
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+
+                            if state.isItemPendingSync(id: experience.id) {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(AppTheme.warning)
+                            }
+                        }
 
                         Spacer()
 

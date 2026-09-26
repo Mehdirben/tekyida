@@ -63,6 +63,7 @@ public struct NotebookHeaderButton: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 7)
             .liquidGlassPill()
+            .tapFeedback()
         }
     }
 

@@ -318,11 +318,20 @@ public extension View {
         liquidGlass(style: .pill, cornerRadius: AppTheme.radiusPill)
     }
 
+    func tapFeedback() -> some View {
+        self.simultaneousGesture(
+            TapGesture().onEnded {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+        )
+    }
+
     func glassInputStyle(cornerRadius: CGFloat = AppTheme.radiusInput) -> some View {
         self
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .liquidGlass(style: .input, cornerRadius: cornerRadius)
+            .tapFeedback()
     }
 
     /// Native modal presentation: system sheet with detents and drag indicator.

@@ -2,6 +2,7 @@ import SwiftUI
 
 // MARK: - Contact Row View (Modern Liquid Glass HIG)
 public struct ContactRowView: View {
+    @EnvironmentObject private var state: AppState
     let contact: Contact
     let balance: Double
     let isMasked: Bool
@@ -45,10 +46,18 @@ public struct ContactRowView: View {
 
                 // Contact Info: name with amount below
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(contact.name)
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
+                    HStack(spacing: 4) {
+                        Text(contact.name)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+
+                        if state.isItemPendingSync(id: contact.id) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(AppTheme.warning)
+                        }
+                    }
 
                     AmountView(
                         amount: balance,

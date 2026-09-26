@@ -85,7 +85,7 @@ public struct ContactDetailView: View {
                             subtitle: "Tap the button below to add your first transaction."
                         )
                     } else {
-                        VStack(spacing: 10) {
+                        LazyVStack(spacing: 10) {
                             ForEach(activityItems) { item in
                                 switch item {
                                 case let .experience(experience, balance, transactionCount, lastTransactionDate):
@@ -204,9 +204,17 @@ public struct ContactDetailView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(experience.name)
-                        .font(.subheadline.bold())
-                        .foregroundColor(.primary)
+                    HStack(spacing: 5) {
+                        Text(experience.name)
+                            .font(.subheadline.bold())
+                            .foregroundColor(.primary)
+
+                        if state.isItemPendingSync(id: experience.id) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(AppTheme.warning)
+                        }
+                    }
 
                     HStack(spacing: 6) {
                         Text("\(transactionCount) \(transactionCount == 1 ? "transaction" : "transactions")")

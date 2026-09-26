@@ -37,17 +37,22 @@ struct AccountAccessView: View {
 
                     VStack(spacing: 14) {
                         if state.isAwaitingEmailVerification {
-                            TextField("6-digit verification code", text: $verificationCode)
-                                .keyboardType(.numberPad)
-                                .textContentType(.oneTimeCode)
-                                .textFieldStyle(.roundedBorder)
-                            Button("Verify email") {
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            HStack(spacing: 12) {
+                                Image(systemName: "number")
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 20)
+                                TextField("6-digit verification code", text: $verificationCode)
+                                    .keyboardType(.numberPad)
+                                    .textContentType(.oneTimeCode)
+                            }
+                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+
+                            GlassButton("Verify email", systemImage: "checkmark.circle", style: .primary, size: .large) {
                                 submit { await state.verifyEmail(email: email, code: verificationCode) }
                             }
-                            .buttonStyle(.borderedProminent)
-                            .tint(AppTheme.primary)
                             .disabled(isSubmitting || verificationCode.isEmpty)
+                            .opacity((isSubmitting || verificationCode.isEmpty) ? 0.45 : 1.0)
+
                             Button("Resend code") {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 submit { await state.resendVerification(email: email) }
@@ -61,26 +66,54 @@ struct AccountAccessView: View {
                             .buttonStyle(.plain)
                         } else {
                             if isRegistration {
-                                TextField("Name", text: $name)
-                                    .textContentType(.name)
-                                    .textFieldStyle(.roundedBorder)
-                            }
-                            TextField("Email", text: $email)
-                                .textContentType(.emailAddress)
-                                .keyboardType(.emailAddress)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .textFieldStyle(.roundedBorder)
-                            SecureField("Password", text: $password)
-                                .textContentType(isRegistration ? .newPassword : .password)
-                                .textFieldStyle(.roundedBorder)
-                            if isRegistration {
-                                SecureField("Confirm password", text: $confirmation)
-                                    .textContentType(.newPassword)
-                                    .textFieldStyle(.roundedBorder)
+                                HStack(spacing: 12) {
+                                    Image(systemName: "person.fill")
+                                        .foregroundColor(.secondary)
+                                        .frame(width: 20)
+                                    TextField("Name", text: $name)
+                                        .textContentType(.name)
+                                }
+                                .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                             }
 
-                            Button(isRegistration ? "Create account" : "Sign in") {
+                            HStack(spacing: 12) {
+                                Image(systemName: "envelope.fill")
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 20)
+                                TextField("Email", text: $email)
+                                    .textContentType(.emailAddress)
+                                    .keyboardType(.emailAddress)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                            }
+                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+
+                            HStack(spacing: 12) {
+                                Image(systemName: "lock.fill")
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 20)
+                                SecureField("Password", text: $password)
+                                    .textContentType(isRegistration ? .newPassword : .password)
+                            }
+                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+
+                            if isRegistration {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "lock.shield.fill")
+                                        .foregroundColor(.secondary)
+                                        .frame(width: 20)
+                                    SecureField("Confirm password", text: $confirmation)
+                                        .textContentType(.newPassword)
+                                }
+                                .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                            }
+
+                            GlassButton(
+                                isRegistration ? "Create account" : "Sign in",
+                                systemImage: isRegistration ? "person.badge.plus" : "arrow.right",
+                                style: .primary,
+                                size: .large
+                            ) {
                                 guard !isRegistration || password == confirmation else {
                                     localError = "Passwords do not match."
                                     return
@@ -90,7 +123,6 @@ struct AccountAccessView: View {
                                     return
                                 }
                                 localError = nil
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                 submit {
                                     await state.signIn(
                                         email: email,
@@ -100,9 +132,8 @@ struct AccountAccessView: View {
                                     )
                                 }
                             }
-                            .buttonStyle(.borderedProminent)
-                            .tint(AppTheme.primary)
                             .disabled(isSubmitting || email.isEmpty || password.isEmpty)
+                            .opacity((isSubmitting || email.isEmpty || password.isEmpty) ? 0.45 : 1.0)
 
                             Button(isRegistration ? "I already have an account" : "Create an account") {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
