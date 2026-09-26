@@ -309,10 +309,12 @@ private struct EditNotebookPopup: View {
                 }
                 .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 .opacity(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1.0)
+                .padding(.top, 4)
 
-                Spacer(minLength: 0)
+                Spacer(minLength: 24)
             }
             .padding(20)
+            .fittedLiquidGlassSheet(chrome: 60)
             .dismissKeyboardOnTap()
             .navigationTitle(tr("notebook.editTitle"))
             .navigationBarTitleDisplayMode(.inline)
@@ -324,7 +326,6 @@ private struct EditNotebookPopup: View {
                     }
                 }
             }
-            .liquidGlassSheet(detents: [.fraction(0.38)])
         }
     }
 }

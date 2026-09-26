@@ -62,8 +62,7 @@ public struct AddContactSheet: View {
                 .padding(20)
                 .fittedLiquidGlassSheet(chrome: 60)
             }
-            .scrollBounceBehavior(.basedOnSize)
-            .scrollDismissesKeyboard(.immediately)
+            .scrollDisabled(true)
             .dismissKeyboardOnTap()
             .navigationTitle(initialContact == nil ? tr("contact.new") : tr("contact.edit"))
             .navigationBarTitleDisplayMode(.inline)

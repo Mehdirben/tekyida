@@ -88,12 +88,12 @@ public struct AddTransactionSheet: View {
                     Spacer(minLength: 24)
                 }
                 .padding(20)
+                .fittedLiquidGlassSheet(chrome: 60)
             }
-            .scrollDismissesKeyboard(.immediately)
+            .scrollDisabled(true)
             .dismissKeyboardOnTap()
             .navigationTitle(isEditing ? tr("transaction.edit") : tr("transaction.add"))
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(tr("common.cancel")) {

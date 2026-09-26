@@ -120,15 +120,16 @@ public struct TransferExperienceSheet: View {
                     }
                     .disabled(selectedNotebookId.isEmpty)
                     .opacity(selectedNotebookId.isEmpty ? 0.45 : 1.0)
+                    .padding(.top, 4)
                 }
 
-                Spacer()
+                Spacer(minLength: 24)
             }
             .padding(20)
+            .fittedLiquidGlassSheet(chrome: 60)
             .dismissKeyboardOnTap()
             .navigationTitle(tr("transfer.title"))
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(tr("common.cancel")) {

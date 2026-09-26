@@ -85,8 +85,7 @@ public struct AddExperienceSheet: View {
                 .padding(20)
                 .fittedLiquidGlassSheet(chrome: 60)
             }
-            .scrollBounceBehavior(.basedOnSize)
-            .scrollDismissesKeyboard(.immediately)
+            .scrollDisabled(true)
             .dismissKeyboardOnTap()
             .navigationTitle(initialExperience == nil ? tr("experience.new") : tr("experience.edit"))
             .navigationBarTitleDisplayMode(.inline)
