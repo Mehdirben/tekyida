@@ -33,7 +33,7 @@ public struct GlassSelectorRow<MenuContent: View>: View {
 
             Spacer()
 
-            Menu {
+            FixedGlassMenu {
                 menuContent()
             } label: {
                 HStack(spacing: 6) {

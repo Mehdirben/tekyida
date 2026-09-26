@@ -22,7 +22,7 @@ public struct NotebookHeaderButton: View {
     }
 
     public var body: some View {
-        Menu {
+        FixedGlassMenu {
             Picker(tr("notebook.select"), selection: Binding(
                 get: { activeNotebookId },
                 set: { newValue in
@@ -36,13 +36,13 @@ public struct NotebookHeaderButton: View {
             }
             .pickerStyle(.inline)
 
-            Divider()
-
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                onManage()
-            } label: {
-                Label(tr("notebook.manage"), systemImage: "slider.horizontal.3")
+            Section {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onManage()
+                } label: {
+                    Label(tr("notebook.manage"), systemImage: "slider.horizontal.3")
+                }
             }
         } label: {
             HStack(spacing: 8) {
