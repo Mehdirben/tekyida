@@ -142,6 +142,8 @@ enum L10n {
         "notebook.charLimit": "Notebook names can be up to 20 characters.",
         "notebook.manage": "Manage Notebooks",
         "notebook.select": "Select Notebook",
+        "notebook.reorder": "Reorder",
+        "notebook.reorderDone": "Done",
 
         // Sync
         "sync.syncing": "Syncing",
@@ -329,6 +331,8 @@ enum L10n {
         "notebook.charLimit": "Les noms de carnets peuvent contenir jusqu'à 20 caractères.",
         "notebook.manage": "Gérer les Carnets",
         "notebook.select": "Choisir un Carnet",
+        "notebook.reorder": "Réorganiser",
+        "notebook.reorderDone": "Terminé",
 
         // Sync
         "sync.syncing": "Synchronisation",

@@ -827,6 +827,11 @@ public final class AppState: ObservableObject {
     }
 
     public func reorderNotebooks(orderedIds: [String]) async {
+        for (index, id) in orderedIds.enumerated() {
+            if let notebookIndex = notebooks.firstIndex(where: { $0.id == id }) {
+                notebooks[notebookIndex].order = index
+            }
+        }
         do {
             _ = try await runMutation("notebooks:reorder", args: ["ids": orderedIds])
             await refreshAfterMutation()

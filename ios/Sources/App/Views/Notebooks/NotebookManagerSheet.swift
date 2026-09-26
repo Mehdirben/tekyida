@@ -10,6 +10,8 @@ public struct NotebookManagerSheet: View {
     @State private var editingNotebook: Notebook?
     @State private var showArchived: Bool = false
     @State private var deleteConfirmNotebook: Notebook?
+    @State private var isReordering: Bool = false
+    @State private var reorderedNotebooks: [Notebook] = []
 
     public init() {}
 
@@ -26,14 +28,21 @@ public struct NotebookManagerSheet: View {
 
                         GlassEffectContainer {
                             LazyVStack(spacing: 10) {
-                                ForEach(state.activeNotebooksList) { notebook in
-                                    notebookRow(notebook, isArchived: false)
+                                if isReordering {
+                                    ForEach(reorderedNotebooks) { notebook in
+                                        reorderRow(notebook)
+                                    }
+                                } else {
+                                    ForEach(state.activeNotebooksList) { notebook in
+                                        notebookRow(notebook, isArchived: false)
+                                    }
                                 }
                             }
                         }
                     }
 
-                    // Create New Notebook Form / Button
+                    if !isReordering {
+                        // Create New Notebook Form / Button
                     if isCreating {
                         VStack(spacing: 12) {
                             TextField(tr("notebooks.namePlaceholder"), text: $newNotebookName)
@@ -125,6 +134,7 @@ public struct NotebookManagerSheet: View {
                             }
                         }
                     }
+                    }
                 }
                 .padding(20)
             }
@@ -134,13 +144,32 @@ public struct NotebookManagerSheet: View {
             .navigationTitle(tr("notebooks.title"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.fraction(0.94)])
+            .interactiveDismissDisabled(isReordering)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(tr("common.done")) {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        dismiss()
+                if isReordering {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(tr("notebook.reorderDone")) {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            isReordering = false
+                        }
+                        .font(.body.bold())
                     }
-                    .font(.body.bold())
+                } else {
+                    ToolbarItemGroup(placement: .topBarTrailing) {
+                        if state.activeNotebooksList.count > 1 {
+                            Button(tr("notebook.reorder")) {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                reorderedNotebooks = state.activeNotebooksList
+                                isReordering = true
+                            }
+                        }
+
+                        Button(tr("common.done")) {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            dismiss()
+                        }
+                        .font(.body.bold())
+                    }
                 }
             }
             .sheet(item: $editingNotebook) { notebook in
@@ -259,6 +288,53 @@ public struct NotebookManagerSheet: View {
         }
         .padding(14)
         .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
+    }
+
+    private func reorderRow(_ notebook: Notebook) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.secondary)
+
+            HStack(spacing: 4) {
+                Text(notebook.name)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                if state.isItemPendingSync(id: notebook.id) {
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .font(.caption2.bold())
+                        .foregroundColor(AppTheme.warning)
+                }
+            }
+
+            Spacer()
+        }
+        .padding(14)
+        .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
+        .contentShape(ConcentricRectangle(cornerRadius: AppTheme.radiusCard))
+        .draggable(notebook.id)
+        .dropDestination(for: String.self) { items, _ in
+            guard let draggedId = items.first else { return false }
+            return moveNotebook(draggedId: draggedId, onto: notebook.id)
+        }
+    }
+
+    private func moveNotebook(draggedId: String, onto targetId: String) -> Bool {
+        guard draggedId != targetId,
+              let fromIndex = reorderedNotebooks.firstIndex(where: { $0.id == draggedId }),
+              let toIndex = reorderedNotebooks.firstIndex(where: { $0.id == targetId })
+        else { return false }
+
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            reorderedNotebooks.move(
+                fromOffsets: IndexSet(integer: fromIndex),
+                toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex
+            )
+        }
+        UISelectionFeedbackGenerator().selectionChanged()
+        state.reorderNotebooks(orderedIds: reorderedNotebooks.map(\.id))
+        return true
     }
 
     private func createNotebook() {
