@@ -33,15 +33,27 @@ public struct TransferExperienceSheet: View {
         NavigationStack {
             VStack(spacing: 20) {
                 // Info Card
-                VStack(alignment: .leading, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(experience.name)
-                            .font(.headline)
-                            .foregroundColor(.primary)
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            ConcentricRectangle(cornerRadius: 14)
+                                .fill(AppTheme.primary.opacity(0.14))
+                                .frame(width: 48, height: 48)
 
-                        Text(tr("transfer.subtitle"))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            Image(systemName: "arrow.right.arrow.left")
+                                .font(.headline)
+                                .foregroundColor(AppTheme.primary)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(experience.name)
+                                .font(.headline)
+                                .foregroundColor(.primary)
+
+                            Text(tr("transfer.subtitle"))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
 
                     Text(tr("transfer.detail"))
@@ -92,7 +104,7 @@ public struct TransferExperienceSheet: View {
                         .padding(.top, 4)
                     }
                 }
-                .padding(14)
+                .padding(16)
                 .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
 
                 if hasOtherNotebooks {
@@ -108,16 +120,15 @@ public struct TransferExperienceSheet: View {
                     }
                     .disabled(selectedNotebookId.isEmpty)
                     .opacity(selectedNotebookId.isEmpty ? 0.45 : 1.0)
-                    .padding(.top, 4)
                 }
 
-                Spacer(minLength: 24)
+                Spacer()
             }
             .padding(20)
-            .fittedLiquidGlassSheet(chrome: 60)
             .dismissKeyboardOnTap()
             .navigationTitle(tr("transfer.title"))
             .navigationBarTitleDisplayMode(.inline)
+            .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(tr("common.cancel")) {

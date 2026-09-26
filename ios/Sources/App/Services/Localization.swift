@@ -20,7 +20,6 @@ enum L10n {
         // Common
         "common.cancel": "Cancel",
         "common.delete": "Delete",
-        "common.edit": "Edit",
         "common.done": "Done",
         "common.add": "Add",
         "common.create": "Create",
@@ -131,8 +130,6 @@ enum L10n {
         // Notebooks
         "notebooks.title": "Notebooks",
         "notebooks.activeSection": "Active Notebooks",
-        "notebooks.archive": "Archive",
-        "notebooks.unarchive": "Restore",
         "notebooks.archivedSection": "Archived Notebooks",
         "notebooks.namePlaceholder": "Notebook Name (max 20)",
         "notebooks.new": "New Notebook",
@@ -210,7 +207,6 @@ enum L10n {
         // Common
         "common.cancel": "Annuler",
         "common.delete": "Supprimer",
-        "common.edit": "Modifier",
         "common.done": "Terminé",
         "common.add": "Ajouter",
         "common.create": "Créer",
@@ -321,8 +317,6 @@ enum L10n {
         // Notebooks
         "notebooks.title": "Carnets",
         "notebooks.activeSection": "Carnets Actifs",
-        "notebooks.archive": "Archiver",
-        "notebooks.unarchive": "Restaurer",
         "notebooks.archivedSection": "Carnets Archivés",
         "notebooks.namePlaceholder": "Nom du carnet (max 20)",
         "notebooks.new": "Nouveau Carnet",

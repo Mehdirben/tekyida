@@ -129,6 +129,7 @@ public struct NotebookManagerSheet: View {
                 .padding(20)
             }
             .scrollDismissesKeyboard(.immediately)
+            .hardTopScrollEdge()
             .dismissKeyboardOnTap()
             .navigationTitle(tr("notebooks.title"))
             .navigationBarTitleDisplayMode(.inline)
@@ -215,37 +216,45 @@ public struct NotebookManagerSheet: View {
             }
             .buttonStyle(.plain)
 
-            Menu {
+            HStack(spacing: 6) {
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     editingNotebook = notebook
                 } label: {
-                    Label(tr("common.edit"), systemImage: "pencil")
+                    Image(systemName: "pencil")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 30, height: 30)
+                        .contentShape(Circle())
+                        .liquidGlassPill()
                 }
+                .buttonStyle(.plain)
 
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     Task { await state.archiveNotebook(id: notebook.id, archived: !isArchived) }
                 } label: {
-                    Label(
-                        isArchived ? tr("notebooks.unarchive") : tr("notebooks.archive"),
-                        systemImage: isArchived ? "tray.and.arrow.up" : "archivebox"
-                    )
+                    Image(systemName: isArchived ? "tray.and.arrow.up" : "archivebox")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 30, height: 30)
+                        .contentShape(Circle())
+                        .liquidGlassPill()
                 }
+                .buttonStyle(.plain)
 
-                Button(role: .destructive) {
+                Button {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     deleteConfirmNotebook = notebook
                 } label: {
-                    Label(tr("common.delete"), systemImage: "trash")
+                    Image(systemName: "trash")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppTheme.danger.opacity(0.85))
+                        .frame(width: 30, height: 30)
+                        .contentShape(Circle())
+                        .liquidGlassPill()
                 }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.secondary)
-                    .frame(width: 30, height: 30)
-                    .contentShape(Circle())
-                    .liquidGlassPill()
+                .buttonStyle(.plain)
             }
         }
         .padding(14)
