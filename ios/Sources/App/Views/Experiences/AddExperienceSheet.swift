@@ -25,12 +25,14 @@ public struct AddExperienceSheet: View {
     public var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 16) {
                     // Experience Icon Banner
                     Image(systemName: "flag.fill")
-                        .font(.system(size: 38))
+                        .font(.system(size: 24))
                         .foregroundColor(AppTheme.primary)
-                        .padding(.top, 12)
+                        .frame(width: 44, height: 44)
+                        .background(AppTheme.primary.opacity(0.12), in: Circle())
+                        .padding(.top, 4)
 
                     // Experience Details Fields
                     VStack(alignment: .leading, spacing: 14) {
@@ -86,16 +88,15 @@ public struct AddExperienceSheet: View {
                     .opacity(name.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
                     .padding(.top, 4)
 
-                    Spacer(minLength: 24)
+                    Spacer(minLength: 0)
                 }
                 .padding(20)
             }
             .scrollDismissesKeyboard(.immediately)
             .dismissKeyboardOnTap()
-            .safeAreaPadding(.bottom, 24)
             .navigationTitle(initialExperience == nil ? "New Experience" : "Edit Experience")
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium])
+            .liquidGlassSheet(detents: [.fraction(0.55)])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {

@@ -77,7 +77,7 @@ public final class AppState: ObservableObject {
     }
 
     public var activeNotebook: Notebook? {
-        if let id = activeNotebookId, let found = notebooks.first(where: { $0.id == id && !$0.archived }) {
+        if let id = activeNotebookId, let found = notebooks.first(where: { $0.id == id }) {
             return found
         }
         return notebooks.first(where: { !$0.archived })
@@ -235,6 +235,9 @@ public final class AppState: ObservableObject {
     }
 
     public func changeEmail(to email: String) async throws {
+        guard isOnline else {
+            throw BackendError.message("Cannot change email while offline.")
+        }
         guard pendingMutations.isEmpty else {
             throw BackendError.message("Sync pending offline changes before changing the account email.")
         }
@@ -246,6 +249,9 @@ public final class AppState: ObservableObject {
     }
 
     public func changePassword(current: String, new: String) async throws {
+        guard isOnline else {
+            throw BackendError.message("Cannot change password while offline.")
+        }
         try await backend.actionVoid(
             "users:changePassword",
             args: ["currentPassword": current, "newPassword": new]
@@ -318,7 +324,13 @@ public final class AppState: ObservableObject {
         contacts = snapshot.contacts
         experiences = snapshot.experiences
         transactions = snapshot.transactions
-        activeNotebookId = snapshot.activeNotebookId ?? activeNotebookId
+        // Parity with PWA: restore last non-archived notebook on app restart
+        let savedId = UserDefaults.standard.string(forKey: activeNotebookKey)
+        if let savedId, let found = notebooks.first(where: { $0.id == savedId && !$0.archived }) {
+            activeNotebookId = found.id
+        } else {
+            activeNotebookId = notebooks.first(where: { !$0.archived })?.id
+        }
     }
 
     private func makeOfflineSnapshot() -> OfflineSnapshot {
@@ -803,7 +815,13 @@ public final class AppState: ObservableObject {
             _ = try await runMutation("notebooks:archive", args: ["id": id, "archived": archived])
             await refreshAfterMutation()
             if archived, activeNotebookId == id {
-                activeNotebookId = activeNotebooksList.first?.id
+                let next = activeNotebooksList.first?.id
+                activeNotebookId = next
+                if let next {
+                    UserDefaults.standard.set(next, forKey: activeNotebookKey)
+                } else {
+                    UserDefaults.standard.removeObject(forKey: activeNotebookKey)
+                }
             }
         } catch { appError = error.localizedDescription }
     }
@@ -820,7 +838,13 @@ public final class AppState: ObservableObject {
             _ = try await runMutation("notebooks:remove", args: ["id": id])
             await refreshAfterMutation()
             if activeNotebookId == id {
-                activeNotebookId = activeNotebooksList.first?.id
+                let next = activeNotebooksList.first?.id
+                activeNotebookId = next
+                if let next {
+                    UserDefaults.standard.set(next, forKey: activeNotebookKey)
+                } else {
+                    UserDefaults.standard.removeObject(forKey: activeNotebookKey)
+                }
             }
         } catch { appError = error.localizedDescription }
     }
@@ -1021,7 +1045,9 @@ public final class AppState: ObservableObject {
 
     public func selectNotebook(_ id: String) {
         activeNotebookId = id
-        UserDefaults.standard.set(id, forKey: activeNotebookKey)
+        if let nb = notebooks.first(where: { $0.id == id }), !nb.archived {
+            UserDefaults.standard.set(id, forKey: activeNotebookKey)
+        }
         persistOfflineSnapshot()
     }
 

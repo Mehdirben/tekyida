@@ -148,6 +148,22 @@ describe("offlineQueue", () => {
 
     await expect(count()).rejects.toThrow("Request Count Failed");
     countSpy.mockRestore();
+
+    const removeWhereSpy = vi.spyOn(IDBDatabase.prototype, "transaction").mockImplementationOnce(() => {
+      const tx: any = {
+        objectStore: () => ({
+          openCursor: () => ({ onsuccess: null }),
+        }),
+      };
+      setTimeout(() => {
+        tx.error = new Error("Transaction RemoveWhere Failed");
+        tx.onerror?.();
+      }, 0);
+      return tx;
+    });
+
+    await expect(removeWhere(() => true)).rejects.toThrow("Transaction RemoveWhere Failed");
+    removeWhereSpy.mockRestore();
   });
 
   it("removes mutations matching predicate with removeWhere", async () => {
@@ -225,6 +241,30 @@ describe("offlineQueue", () => {
     const remaining = await getAll();
     expect(remaining).toHaveLength(1);
     expect(remaining[0].tempId).toBe("temp_nb_unrelated");
+  });
+
+  it("purges offline-created experience and contact cascades with purgeOfflineItem", async () => {
+    const tempExpId = "temp_exp_123";
+    const tempContactId = "temp_c_123";
+    await enqueue({
+      functionPath: "transactions:create",
+      args: { experienceId: tempExpId, amount: 50 },
+      queuedAt: 1,
+    });
+    await enqueue({
+      functionPath: "transactions:create",
+      args: { contactId: tempContactId, amount: 60 },
+      queuedAt: 2,
+    });
+    await enqueue({
+      functionPath: "transactions:create",
+      args: { otherId: "123" },
+      queuedAt: 3,
+    });
+    await purgeOfflineItem(tempExpId, "experiences:remove");
+    expect(await count()).toBe(2);
+    await purgeOfflineItem(tempContactId, "contacts:remove");
+    expect(await count()).toBe(1);
   });
 
   it("purges pending updates for existing server item with purgePendingUpdates", async () => {

@@ -177,11 +177,9 @@ public struct NotebookManagerSheet: View {
 
         return HStack(spacing: 12) {
             Button {
-                if !isArchived {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    state.selectNotebook(notebook.id)
-                    dismiss()
-                }
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                state.selectNotebook(notebook.id)
+                dismiss()
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "book.closed")
@@ -214,7 +212,6 @@ public struct NotebookManagerSheet: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .disabled(isArchived)
 
             HStack(spacing: 6) {
                 Button {

@@ -184,4 +184,65 @@ final class TekyidaTests: XCTestCase {
             .dismissKeyboardOnTap()
         XCTAssertNotNil(modifiedView)
     }
+
+    func testArchivedNotebookSelectionAndPersistenceParity() {
+        let state = AppState()
+        let activeNb = Notebook(id: "nb_active", name: "Active Book", archived: false)
+        let archivedNb = Notebook(id: "nb_archived", name: "Archived Book", archived: true)
+        state.notebooks = [activeNb, archivedNb]
+
+        // Default active is first non-archived
+        XCTAssertEqual(state.activeNotebook?.id, "nb_active")
+
+        // Selecting archived notebook allows viewing it in current session
+        state.selectNotebook("nb_archived")
+        XCTAssertEqual(state.activeNotebook?.id, "nb_archived")
+
+        // But UserDefaults does NOT persist archived notebook ID
+        XCTAssertNotEqual(UserDefaults.standard.string(forKey: "tekyida_active_notebook_id"), "nb_archived")
+
+        // Selecting active notebook persists to UserDefaults
+        state.selectNotebook("nb_active")
+        XCTAssertEqual(UserDefaults.standard.string(forKey: "tekyida_active_notebook_id"), "nb_active")
+    }
+
+    func testOfflineAccountGuard() async {
+        let state = AppState()
+        state.isOnline = false
+
+        do {
+            try await state.changeEmail(to: "test@example.com")
+            XCTFail("Should throw when offline")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("offline"))
+        }
+
+        do {
+            try await state.changePassword(current: "oldpass123", new: "newpass123")
+            XCTFail("Should throw when offline")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("offline"))
+        }
+    }
+
+    func testSearchViewAndAddSheetsBodies() {
+        let state = AppState()
+        let searchView = SearchView().environmentObject(state)
+        XCTAssertNotNil(searchView.body)
+
+        let addContact = AddContactSheet(onSave: { _, _ in })
+        XCTAssertNotNil(addContact.body)
+
+        let addExp = AddExperienceSheet(contacts: [], onSave: { _, _ in })
+        XCTAssertNotNil(addExp.body)
+
+        var nbId: String? = "nb_active"
+        let headerBtn = NotebookHeaderButton(
+            notebooks: [Notebook(id: "nb_active", name: "Active")],
+            archivedNotebooks: [Notebook(id: "nb_archived", name: "Archived", archived: true)],
+            activeNotebookId: Binding(get: { nbId }, set: { nbId = $0 }),
+            onManage: {}
+        )
+        XCTAssertNotNil(headerBtn.body)
+    }
 }

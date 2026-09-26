@@ -35,6 +35,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      "@/convex": path.resolve(__dirname, "../backend/convex"),
       "@": path.resolve(__dirname, "./"),
     },
   },

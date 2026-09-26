@@ -59,6 +59,17 @@ public struct SettingsView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
+            if !state.isOnline {
+                HStack(spacing: 6) {
+                    Image(systemName: "wifi.slash")
+                        .font(.caption)
+                        .foregroundColor(AppTheme.warning)
+                    Text("Offline: Email cannot be changed while offline.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
             HStack(spacing: 12) {
                 Image(systemName: "envelope")
                     .foregroundColor(.secondary)
@@ -68,8 +79,10 @@ public struct SettingsView: View {
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                    .disabled(!state.isOnline)
             }
             .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+            .opacity(state.isOnline ? 1.0 : 0.6)
 
             HStack(spacing: 12) {
                 Image(systemName: "envelope.badge")
@@ -80,8 +93,10 @@ public struct SettingsView: View {
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                    .disabled(!state.isOnline)
             }
             .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+            .opacity(state.isOnline ? 1.0 : 0.6)
 
             if let emailMessage {
                 Text(emailMessage)
@@ -92,8 +107,8 @@ public struct SettingsView: View {
             GlassButton("Change Email", systemImage: "envelope.badge", style: .primary, size: .large) {
                 Task { await updateEmail() }
             }
-            .disabled(isChangingEmail || newEmail.isEmpty || confirmEmail.isEmpty)
-            .opacity((isChangingEmail || newEmail.isEmpty || confirmEmail.isEmpty) ? 0.45 : 1.0)
+            .disabled(!state.isOnline || isChangingEmail || newEmail.isEmpty || confirmEmail.isEmpty)
+            .opacity((!state.isOnline || isChangingEmail || newEmail.isEmpty || confirmEmail.isEmpty) ? 0.45 : 1.0)
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
@@ -103,14 +118,27 @@ public struct SettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             sectionHeader("Password")
 
+            if !state.isOnline {
+                HStack(spacing: 6) {
+                    Image(systemName: "wifi.slash")
+                        .font(.caption)
+                        .foregroundColor(AppTheme.warning)
+                    Text("Offline: Password cannot be changed while offline.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
             HStack(spacing: 12) {
                 Image(systemName: "lock")
                     .foregroundColor(.secondary)
                     .frame(width: 20)
                 SecureField("Current password", text: $currentPassword)
                     .textContentType(.password)
+                    .disabled(!state.isOnline)
             }
             .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+            .opacity(state.isOnline ? 1.0 : 0.6)
 
             HStack(spacing: 12) {
                 Image(systemName: "key")
@@ -118,8 +146,10 @@ public struct SettingsView: View {
                     .frame(width: 20)
                 SecureField("New password (at least 8 characters)", text: $newPassword)
                     .textContentType(.newPassword)
+                    .disabled(!state.isOnline)
             }
             .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+            .opacity(state.isOnline ? 1.0 : 0.6)
 
             HStack(spacing: 12) {
                 Image(systemName: "key.fill")
@@ -127,8 +157,10 @@ public struct SettingsView: View {
                     .frame(width: 20)
                 SecureField("Confirm new password", text: $confirmPassword)
                     .textContentType(.newPassword)
+                    .disabled(!state.isOnline)
             }
             .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+            .opacity(state.isOnline ? 1.0 : 0.6)
 
             if let passwordMessage {
                 Text(passwordMessage)
@@ -139,8 +171,8 @@ public struct SettingsView: View {
             GlassButton("Change Password", systemImage: "key.fill", style: .primary, size: .large) {
                 Task { await updatePassword() }
             }
-            .disabled(isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty)
-            .opacity((isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) ? 0.45 : 1.0)
+            .disabled(!state.isOnline || isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty)
+            .opacity((!state.isOnline || isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) ? 0.45 : 1.0)
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
@@ -271,6 +303,10 @@ public struct SettingsView: View {
     @MainActor
     private func updateEmail() async {
         emailMessage = nil
+        guard state.isOnline else {
+            emailMessage = "Cannot change email while offline."
+            return
+        }
         guard newEmail.range(of: #"^[^\s@]+@[^\s@]+\.[^\s@]+$"#, options: .regularExpression) != nil else {
             emailMessage = "Enter a valid email address."
             return
@@ -294,6 +330,10 @@ public struct SettingsView: View {
     @MainActor
     private func updatePassword() async {
         passwordMessage = nil
+        guard state.isOnline else {
+            passwordMessage = "Cannot change password while offline."
+            return
+        }
         guard newPassword.count >= 8 else {
             passwordMessage = "Password must be at least 8 characters."
             return
