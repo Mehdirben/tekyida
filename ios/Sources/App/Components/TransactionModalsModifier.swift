@@ -10,7 +10,7 @@ public struct TransactionModalsModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .sheet(item: $editingTransaction) { tx in
-                EditTransactionSheet(transaction: tx) { amount, desc, date in
+                AddTransactionSheet(transaction: tx) { amount, desc, date in
                     onSave(tx.id, amount, desc, date)
                 }
             }

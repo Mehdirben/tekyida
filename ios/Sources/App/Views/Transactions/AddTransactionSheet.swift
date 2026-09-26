@@ -1,19 +1,26 @@
 import SwiftUI
 
-// MARK: - Add Transaction Modal Sheet (Modern Liquid Glass HIG)
+// MARK: - Add / Edit Transaction Modal Sheet (Modern Liquid Glass HIG)
 public struct AddTransactionSheet: View {
     @Environment(\.dismiss) private var dismiss
-    let onAdd: (_ amount: Double, _ description: String?, _ date: Date) -> Void
+    let initialTransaction: Transaction?
+    let onSave: (_ amount: Double, _ description: String?, _ date: Date) -> Void
 
-    @State private var amountString: String = ""
-    @State private var isPositive: Bool = true
-    @State private var description: String = ""
-    @State private var date: Date = Date()
+    @State private var amountString: String
+    @State private var isPositive: Bool
+    @State private var description: String
+    @State private var date: Date
 
     public init(
-        onAdd: @escaping (_ amount: Double, _ description: String?, _ date: Date) -> Void
+        transaction: Transaction? = nil,
+        onSave: @escaping (_ amount: Double, _ description: String?, _ date: Date) -> Void
     ) {
-        self.onAdd = onAdd
+        self.initialTransaction = transaction
+        self.onSave = onSave
+        _amountString = State(initialValue: transaction.map { String(format: "%.2f", abs($0.amount)) } ?? "")
+        _isPositive = State(initialValue: transaction.map { $0.amount >= 0 } ?? true)
+        _description = State(initialValue: transaction?.description ?? "")
+        _date = State(initialValue: transaction?.date ?? Date())
     }
 
     public var body: some View {
@@ -65,14 +72,14 @@ public struct AddTransactionSheet: View {
                             .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
                     }
 
-                    // Bottom Add Button
+                    // Bottom Save Button
                     GlassButton(
-                        tr("transaction.add"),
-                        systemImage: "plus.circle.fill",
+                        isEditing ? tr("common.saveChanges") : tr("transaction.add"),
+                        systemImage: isEditing ? "checkmark" : "plus.circle.fill",
                         style: .primary,
                         size: .large
                     ) {
-                        submit()
+                        save()
                     }
                     .disabled(invalidAmount)
                     .opacity(invalidAmount ? 0.45 : 1.0)
@@ -84,7 +91,7 @@ public struct AddTransactionSheet: View {
             }
             .scrollDismissesKeyboard(.immediately)
             .dismissKeyboardOnTap()
-            .navigationTitle(tr("transaction.add"))
+            .navigationTitle(isEditing ? tr("transaction.edit") : tr("transaction.add"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])
             .toolbar {
@@ -96,15 +103,19 @@ public struct AddTransactionSheet: View {
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(tr("common.add")) {
+                    Button(isEditing ? tr("common.done") : tr("common.add")) {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        submit()
+                        save()
                     }
                     .font(.body.bold())
                     .disabled(invalidAmount)
                 }
             }
         }
+    }
+
+    private var isEditing: Bool {
+        initialTransaction != nil
     }
 
     private var invalidAmount: Bool {
@@ -114,10 +125,10 @@ public struct AddTransactionSheet: View {
         return false
     }
 
-    private func submit() {
+    private func save() {
         guard let rawVal = Double(amountString.replacingOccurrences(of: ",", with: ".")), rawVal > 0 else { return }
         let finalAmount = isPositive ? rawVal : -rawVal
-        onAdd(finalAmount, description.isEmpty ? nil : description, date)
+        onSave(finalAmount, description.isEmpty ? nil : description, date)
         dismiss()
     }
 }
