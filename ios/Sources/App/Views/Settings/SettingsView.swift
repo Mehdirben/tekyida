@@ -153,7 +153,7 @@ public struct SettingsView: View {
                         state.updateTheme(newValue)
                     }
                 )) {
-                    ForEach(AppThemeMode.allCases, id: .self) { mode in
+                    ForEach(AppThemeMode.allCases, id: \.self) { mode in
                         Text(mode.title).tag(mode)
                     }
                 }
@@ -176,7 +176,7 @@ public struct SettingsView: View {
                             state.updateLanguage(newValue)
                         }
                     )) {
-                        ForEach(AppLanguage.allCases, id: .self) { language in
+                        ForEach(AppLanguage.allCases, id: \.self) { language in
                             Text(language.title).tag(language)
                         }
                     }

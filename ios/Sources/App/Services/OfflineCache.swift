@@ -52,9 +52,10 @@ final class OfflineCache {
         )
         let data = try JSONEncoder().encode(snapshot)
         try data.write(to: fileURL, options: [.atomic, .completeFileProtection])
+        var excludedURL = fileURL
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
-        try? fileURL.setResourceValues(values)
+        try? excludedURL.setResourceValues(values)
     }
 
     func clear() {
