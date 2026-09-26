@@ -41,11 +41,11 @@ public struct AddExperienceSheet: View {
                         }
                         .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(tr("experience.linkedContact"))
-                                .font(.subheadline.bold())
-                                .foregroundColor(.primary)
-
+                        GlassSelectorRow(
+                            title: tr("experience.linkedContact"),
+                            systemImage: "person",
+                            selectedTitle: selectedContactTitle
+                        ) {
                             Picker(tr("experience.linkedContact"), selection: Binding(
                                 get: { selectedContactId },
                                 set: { newValue in
@@ -58,12 +58,6 @@ public struct AddExperienceSheet: View {
                                     Text(c.name).tag(c.id)
                                 }
                             }
-                            .pickerStyle(.menu)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .contentShape(Rectangle())
-                            .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
                         }
                     }
 
@@ -106,6 +100,10 @@ public struct AddExperienceSheet: View {
                 }
             }
         }
+    }
+
+    private var selectedContactTitle: String {
+        contacts.first(where: { $0.id == selectedContactId })?.name ?? tr("experience.noContact")
     }
 
     private func save() {

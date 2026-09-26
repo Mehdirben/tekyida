@@ -204,40 +204,22 @@ public struct SettingsView: View {
 
             Divider()
 
-            HStack {
-                Label(tr("settings.language"), systemImage: "globe")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Menu {
-                    Picker(tr("settings.language"), selection: Binding(
-                        get: { state.language },
-                        set: { newValue in
-                            UISelectionFeedbackGenerator().selectionChanged()
-                            state.updateLanguage(newValue)
-                        }
-                    )) {
-                        ForEach(AppLanguage.allCases, id: \.self) { language in
-                            Text(language.title).tag(language)
-                        }
+            GlassSelectorRow(
+                title: tr("settings.language"),
+                systemImage: "globe",
+                selectedTitle: state.language.title
+            ) {
+                Picker(tr("settings.language"), selection: Binding(
+                    get: { state.language },
+                    set: { newValue in
+                        UISelectionFeedbackGenerator().selectionChanged()
+                        state.updateLanguage(newValue)
                     }
-                } label: {
-                    HStack(spacing: 6) {
-                        Text(state.language.title)
-                            .font(.subheadline.bold())
-                            .foregroundColor(.primary)
-                        Image(systemName: "chevron.down")
-                            .font(.caption2.bold())
-                            .foregroundColor(.secondary)
+                )) {
+                    ForEach(AppLanguage.allCases, id: \.self) { language in
+                        Text(language.title).tag(language)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .contentShape(Capsule())
-                    .liquidGlassPill()
                 }
-                .tint(.primary)
-                .contentShape(Capsule())
-                .tapFeedback()
             }
 
             Divider()

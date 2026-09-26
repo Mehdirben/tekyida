@@ -29,6 +29,11 @@ public struct TransferExperienceSheet: View {
         self.onTransfer = onTransfer
     }
 
+    private var selectedNotebookTitle: String {
+        let allNotebooks = activeOtherNotebooks + archivedOtherNotebooks
+        return allNotebooks.first(where: { $0.id == selectedNotebookId })?.name ?? tr("transfer.selectDestination")
+    }
+
     public var body: some View {
         NavigationStack {
             VStack(spacing: 20) {
@@ -66,11 +71,11 @@ public struct TransferExperienceSheet: View {
                             .foregroundColor(AppTheme.warning)
                             .padding(.top, 4)
                     } else {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(tr("transfer.target"))
-                                .font(.subheadline.bold())
-                                .foregroundColor(.primary)
-
+                        GlassSelectorRow(
+                            title: tr("transfer.target"),
+                            systemImage: "book.closed",
+                            selectedTitle: selectedNotebookTitle
+                        ) {
                             Picker(tr("notebooks.title"), selection: Binding(
                                 get: { selectedNotebookId },
                                 set: { newValue in
@@ -94,12 +99,6 @@ public struct TransferExperienceSheet: View {
                                     }
                                 }
                             }
-                            .pickerStyle(.menu)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .contentShape(Rectangle())
-                            .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
                         }
                         .padding(.top, 4)
                     }
