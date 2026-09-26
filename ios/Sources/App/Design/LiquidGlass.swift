@@ -373,13 +373,14 @@ public extension View {
         #endif
     }
 
-    /// Replaces the iOS 26 soft (graded blur) scroll edge effect under bars
-    /// with a hard cut — the soft blur recomposites the whole glass stack and
-    /// stutters when the bar background fades during scroll-to-top.
+    /// Disables the iOS 26 soft (graded blur) scroll edge effect under bars.
+    /// The soft blur recomposites the whole glass stack and stutters when the
+    /// bar transition runs on scroll-to-top; disabling it keeps scrolling and
+    /// the bar transition cheap.
     @ViewBuilder
-    func hardTopScrollEdge() -> some View {
+    func topScrollEdgeDisabled() -> some View {
         if #available(iOS 26.0, *) {
-            self.scrollEdgeEffectStyle(.hard, for: .top)
+            self.scrollEdgeEffectDisabled(for: .top)
         } else {
             self
         }

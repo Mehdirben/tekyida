@@ -129,7 +129,7 @@ public struct NotebookManagerSheet: View {
                 .padding(20)
             }
             .scrollDismissesKeyboard(.immediately)
-            .hardTopScrollEdge()
+            .topScrollEdgeDisabled()
             .dismissKeyboardOnTap()
             .navigationTitle(tr("notebooks.title"))
             .navigationBarTitleDisplayMode(.inline)
