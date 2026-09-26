@@ -34,6 +34,7 @@ public struct NotebookHeaderButton: View {
                     Text(notebook.name).tag(notebook.id as String?)
                 }
             }
+            .pickerStyle(.inline)
 
             Divider()
 
