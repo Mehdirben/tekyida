@@ -388,18 +388,18 @@ public struct FittedLiquidGlassSheetModifier: ViewModifier {
         content
             .fixedSize(horizontal: false, vertical: true)
             .background(
-                GeometryReader { proxy -> Color in
-                    DispatchQueue.main.async {
-                        if !hasMeasured, proxy.size.height > 0 {
-                            hasMeasured = true
-                            var transaction = Transaction()
-                            transaction.disablesAnimations = true
-                            withTransaction(transaction) {
-                                contentHeight = proxy.size.height
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear {
+                            if !hasMeasured, proxy.size.height > 0 {
+                                hasMeasured = true
+                                var transaction = Transaction()
+                                transaction.disablesAnimations = true
+                                withTransaction(transaction) {
+                                    contentHeight = proxy.size.height
+                                }
                             }
                         }
-                    }
-                    return Color.clear
                 }
             )
             .presentationDetents([.height(contentHeight + chrome)])
