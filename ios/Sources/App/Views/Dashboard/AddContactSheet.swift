@@ -30,7 +30,7 @@ public struct AddContactSheet: View {
                         .padding(.top, 12)
 
                     // Modern Liquid Glass Form Group
-                    VStack(spacing: 14) {
+                    VStack(spacing: 16) {
                         HStack(spacing: 12) {
                             Image(systemName: "person.fill")
                                 .foregroundColor(.secondary)

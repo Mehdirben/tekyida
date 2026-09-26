@@ -33,7 +33,7 @@ public struct AddExperienceSheet: View {
                         .padding(.top, 12)
 
                     // Experience Details Fields
-                    VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 16) {
                         HStack(spacing: 12) {
                             Image(systemName: "flag.fill")
                                 .foregroundColor(.secondary)

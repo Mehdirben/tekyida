@@ -29,7 +29,7 @@ public struct ContactDetailView: View {
     let contact: Contact
 
     @State private var isLocalMasked: Bool? = nil
-    @State private var isAddingTransaction: Bool = false
+    @State private var showAddTransaction: Bool = false
     @State private var editingTransaction: Transaction?
     @State private var deletingTransaction: Transaction?
     @State private var selectedExperience: Experience?
@@ -78,7 +78,7 @@ public struct ContactDetailView: View {
 
                     let activityItems = timelineItems
 
-                    if activityItems.isEmpty && !isAddingTransaction {
+                    if activityItems.isEmpty {
                         GlassEmptyStateView(
                             systemImage: "tray.fill",
                             title: tr("timeline.emptyTitle"),
@@ -111,7 +111,18 @@ public struct ContactDetailView: View {
             }
 
             // Floating Liquid Glass Action Bar
-            AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
+            GlassButton(
+                tr("transaction.add"),
+                systemImage: "plus.circle.fill",
+                style: .primary,
+                size: .large
+            ) {
+                showAddTransaction = true
+            }
+            .padding(16)
+        }
+        .sheet(isPresented: $showAddTransaction) {
+            AddTransactionSheet { amount, desc, date in
                 state.createTransaction(
                     notebookId: contact.notebookId,
                     contactId: contact.id,
@@ -120,7 +131,6 @@ public struct ContactDetailView: View {
                     date: date
                 )
             }
-            .padding(16)
         }
         .transactionModals(
             editingTransaction: $editingTransaction,

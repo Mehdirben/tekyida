@@ -6,7 +6,7 @@ public struct ExperienceDetailView: View {
     let experience: Experience
 
     @State private var isLocalMasked: Bool? = nil
-    @State private var isAddingTransaction: Bool = false
+    @State private var showAddTransaction: Bool = false
     @State private var editingTransaction: Transaction?
     @State private var deletingTransaction: Transaction?
 
@@ -58,7 +58,7 @@ public struct ExperienceDetailView: View {
                     .padding(.top, 4)
 
                     let txs = state.experienceTransactions(experience.id)
-                    if txs.isEmpty && !isAddingTransaction {
+                    if txs.isEmpty {
                         GlassEmptyStateView(
                             systemImage: "doc.text.magnifyingglass",
                             title: tr("experience.emptyTitle"),
@@ -83,17 +83,27 @@ public struct ExperienceDetailView: View {
 
             if !isClosed {
                 // Floating Liquid Glass Action Bar
-                AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
-                    state.createTransaction(
-                        notebookId: experience.notebookId,
-                        contactId: experience.contactId,
-                        experienceId: experience.id,
-                        amount: amount,
-                        description: desc,
-                        date: date
-                    )
+                GlassButton(
+                    tr("transaction.add"),
+                    systemImage: "plus.circle.fill",
+                    style: .primary,
+                    size: .large
+                ) {
+                    showAddTransaction = true
                 }
                 .padding(16)
+            }
+        }
+        .sheet(isPresented: $showAddTransaction) {
+            AddTransactionSheet { amount, desc, date in
+                state.createTransaction(
+                    notebookId: experience.notebookId,
+                    contactId: experience.contactId,
+                    experienceId: experience.id,
+                    amount: amount,
+                    description: desc,
+                    date: date
+                )
             }
         }
         .transactionModals(
