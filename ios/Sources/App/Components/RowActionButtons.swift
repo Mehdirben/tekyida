@@ -26,7 +26,7 @@ public struct RowActionButtons: View {
             }) {
                 Image(systemName: "pencil")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(AppTheme.primary)
+                    .foregroundColor(.secondary)
                     .frame(width: 30, height: 30)
                     .liquidGlassPill()
             }
@@ -38,7 +38,7 @@ public struct RowActionButtons: View {
                 }) {
                     Image(systemName: "arrow.right.arrow.left")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(AppTheme.primary)
+                        .foregroundColor(.secondary)
                         .frame(width: 30, height: 30)
                         .liquidGlassPill()
                 }

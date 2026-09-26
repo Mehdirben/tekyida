@@ -35,12 +35,12 @@ public struct PinPadView: View {
             HStack(spacing: 16) {
                 ForEach(0..<6, id: \.self) { index in
                     Circle()
-                        .fill(index < pin.count ? AppTheme.primary : Color.clear)
+                        .fill(index < pin.count ? Color.primary : Color.clear)
                         .frame(width: 14, height: 14)
                         .overlay {
                             Circle()
                                 .stroke(
-                                    index < pin.count ? AppTheme.primary : Color.secondary.opacity(0.4),
+                                    index < pin.count ? Color.primary : Color.secondary.opacity(0.4),
                                     lineWidth: 2
                                 )
                         }

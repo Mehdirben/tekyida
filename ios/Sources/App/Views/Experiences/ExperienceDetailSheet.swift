@@ -3,16 +3,12 @@ import SwiftUI
 // MARK: - Experience Detail View (Modern Liquid Glass HIG)
 public struct ExperienceDetailView: View {
     @EnvironmentObject private var state: AppState
-    @Environment(\.dismiss) private var dismiss
     let experience: Experience
 
     @State private var isLocalMasked: Bool = false
     @State private var isAddingTransaction: Bool = false
     @State private var editingTransaction: Transaction?
     @State private var deletingTransaction: Transaction?
-    @State private var isEditingExperience: Bool = false
-    @State private var isTransferringExperience: Bool = false
-    @State private var isConfirmingDeleteExperience: Bool = false
 
     public init(experience: Experience) {
         self.experience = experience
@@ -92,44 +88,7 @@ public struct ExperienceDetailView: View {
                 .padding(16)
             }
         }
-        .navigationTitle(experience.name)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button(action: {
-                        state.toggleExperienceClosed(id: experience.id)
-                    }) {
-                        Label(experience.closed ? "Reopen Experience" : "Close Experience",
-                              systemImage: experience.closed ? "lock.open" : "lock")
-                    }
-                    Button(action: { isEditingExperience = true }) {
-                        Label("Edit Experience", systemImage: "pencil")
-                    }
-                    Button(action: { isTransferringExperience = true }) {
-                        Label("Transfer to Notebook", systemImage: "arrow.right.arrow.left")
-                    }
-                    Button(role: .destructive, action: { isConfirmingDeleteExperience = true }) {
-                        Label("Delete Experience", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.headline)
-                }
-            }
-        }
-        .sheet(isPresented: $isEditingExperience) {
-            let nbContacts = state.contacts.filter { $0.notebookId == experience.notebookId }
-            AddExperienceSheet(contacts: nbContacts, experience: experience) { name, contactId in
-                state.updateExperience(id: experience.id, name: name, contactId: contactId)
-            }
-        }
-        .sheet(isPresented: $isTransferringExperience) {
-            TransferExperienceSheet(experience: experience) { targetNotebookId in
-                state.transferExperience(id: experience.id, to: targetNotebookId)
-                dismiss()
-            }
-        }
+        .toolbar(.hidden, for: .navigationBar)
         .transactionModals(
             editingTransaction: $editingTransaction,
             deletingTransaction: $deletingTransaction,
@@ -140,15 +99,6 @@ public struct ExperienceDetailView: View {
                 state.deleteTransaction(id: id)
             }
         )
-        .alert("Delete Experience?", isPresented: $isConfirmingDeleteExperience) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {
-                state.deleteExperience(id: experience.id)
-                dismiss()
-            }
-        } message: {
-            Text("Deleting '\(experience.name)' will remove all of its associated transactions.")
-        }
     }
 
     private var headerCard: some View {

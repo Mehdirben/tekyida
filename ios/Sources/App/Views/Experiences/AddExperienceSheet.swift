@@ -43,7 +43,7 @@ public struct AddExperienceSheet: View {
                     VStack(alignment: .leading, spacing: 14) {
                         HStack(spacing: 12) {
                             Image(systemName: "flag.fill")
-                                .foregroundColor(AppTheme.primary)
+                                .foregroundColor(.secondary)
                                 .frame(width: 24)
 
                             TextField("Experience Name (e.g. Summer Vacation)", text: $name)

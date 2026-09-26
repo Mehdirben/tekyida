@@ -83,7 +83,7 @@ public struct NotebookManagerSheet: View {
                                 Text("New Notebook")
                                     .font(.subheadline.bold())
                             }
-                            .foregroundColor(AppTheme.primary)
+                            .foregroundColor(.primary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
                             .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
@@ -175,7 +175,7 @@ public struct NotebookManagerSheet: View {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "book.closed")
                     .font(.title3)
                     .symbolRenderingMode(.hierarchical)
-                    .foregroundColor(isSelected ? AppTheme.primary : .secondary)
+                    .foregroundColor(isSelected ? Color.accentColor : .secondary)
 
                 VStack(alignment: .leading, spacing: 2) {
                     if isEditing {
@@ -216,7 +216,7 @@ public struct NotebookManagerSheet: View {
                         }) {
                             Image(systemName: "pencil")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(AppTheme.primary)
+                                .foregroundColor(.secondary)
                                 .frame(width: 30, height: 30)
                                 .liquidGlassPill()
                         }
@@ -227,7 +227,7 @@ public struct NotebookManagerSheet: View {
                 }) {
                     Image(systemName: isArchived ? "tray.and.arrow.up" : "archivebox")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(AppTheme.primary)
+                        .foregroundColor(.secondary)
                         .frame(width: 30, height: 30)
                         .liquidGlassPill()
                 }

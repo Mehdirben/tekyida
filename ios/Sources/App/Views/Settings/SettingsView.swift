@@ -156,7 +156,7 @@ public struct SettingsView: View {
                             Text("Change PIN")
                         }
                         .font(.subheadline.bold())
-                        .foregroundColor(AppTheme.primary)
+                        .foregroundColor(.primary)
                     }
                     .buttonStyle(ScaleTouchStyle())
 
@@ -233,7 +233,7 @@ public struct SettingsView: View {
                     HStack(spacing: 6) {
                         Text(state.language.title)
                             .font(.subheadline.bold())
-                            .foregroundColor(AppTheme.primary)
+                            .foregroundColor(.primary)
                         Image(systemName: "chevron.down")
                             .font(.caption2.bold())
                             .foregroundColor(.secondary)

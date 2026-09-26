@@ -40,7 +40,7 @@ public struct AddContactSheet: View {
                     VStack(spacing: 14) {
                         HStack(spacing: 12) {
                             Image(systemName: "person.fill")
-                                .foregroundColor(AppTheme.primary)
+                                .foregroundColor(.secondary)
                                 .frame(width: 24)
 
                             TextField("Full Name (e.g. Sarah Smith)", text: $name)

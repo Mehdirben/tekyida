@@ -3,15 +3,12 @@ import SwiftUI
 // MARK: - Contact Detail View (Modern Liquid Glass HIG)
 public struct ContactDetailView: View {
     @EnvironmentObject private var state: AppState
-    @Environment(\.dismiss) private var dismiss
     let contact: Contact
 
     @State private var isLocalMasked: Bool = false
     @State private var isAddingTransaction: Bool = false
     @State private var editingTransaction: Transaction?
     @State private var deletingTransaction: Transaction?
-    @State private var isEditingContact: Bool = false
-    @State private var isConfirmingDeleteContact: Bool = false
 
     public init(contact: Contact) {
         self.contact = contact
@@ -77,28 +74,7 @@ public struct ContactDetailView: View {
             }
             .padding(16)
         }
-        .navigationTitle(contact.name)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button(action: { isEditingContact = true }) {
-                        Label("Edit Contact", systemImage: "pencil")
-                    }
-                    Button(role: .destructive, action: { isConfirmingDeleteContact = true }) {
-                        Label("Delete Contact", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.headline)
-                }
-            }
-        }
-        .sheet(isPresented: $isEditingContact) {
-            AddContactSheet(contact: contact) { newName, newPhone in
-                state.updateContact(id: contact.id, name: newName, phone: newPhone)
-            }
-        }
+        .toolbar(.hidden, for: .navigationBar)
         .transactionModals(
             editingTransaction: $editingTransaction,
             deletingTransaction: $deletingTransaction,
@@ -109,15 +85,6 @@ public struct ContactDetailView: View {
                 state.deleteTransaction(id: id)
             }
         )
-        .alert("Delete Contact?", isPresented: $isConfirmingDeleteContact) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {
-                state.deleteContact(id: contact.id)
-                dismiss()
-            }
-        } message: {
-            Text("Deleting this contact will remove all direct transactions and unlink any associated experiences.")
-        }
     }
 
     private var headerCard: some View {

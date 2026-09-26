@@ -15,7 +15,7 @@ public struct MaskToggleButton: View {
         }) {
             Image(systemName: isMasked ? "eye.slash.fill" : "eye.fill")
                 .font(.subheadline)
-                .foregroundColor(AppTheme.primary)
+                .foregroundColor(.secondary)
                 .frame(width: 36, height: 36)
                 .liquidGlassPill()
         }
