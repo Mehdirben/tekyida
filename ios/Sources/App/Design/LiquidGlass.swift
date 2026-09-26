@@ -390,12 +390,13 @@ public struct FittedLiquidGlassSheetModifier: ViewModifier {
             .background(
                 GeometryReader { proxy -> Color in
                     DispatchQueue.main.async {
-                        guard !hasMeasured, proxy.size.height > 0 else { return }
-                        hasMeasured = true
-                        var transaction = Transaction()
-                        transaction.disablesAnimations = true
-                        withTransaction(transaction) {
-                            contentHeight = proxy.size.height
+                        if !hasMeasured, proxy.size.height > 0 {
+                            hasMeasured = true
+                            var transaction = Transaction()
+                            transaction.disablesAnimations = true
+                            withTransaction(transaction) {
+                                contentHeight = proxy.size.height
+                            }
                         }
                     }
                     return Color.clear
