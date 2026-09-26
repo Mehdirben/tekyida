@@ -376,7 +376,8 @@ public extension View {
 
 // MARK: - Content-Fitted Liquid Glass Sheet
 public struct FittedLiquidGlassSheetModifier: ViewModifier {
-    @State private var contentHeight: CGFloat = 320
+    @State private var contentHeight: CGFloat = 370
+    @State private var hasMeasured = false
     let chrome: CGFloat
 
     public init(chrome: CGFloat) {
@@ -389,7 +390,11 @@ public struct FittedLiquidGlassSheetModifier: ViewModifier {
             .background(
                 GeometryReader { proxy -> Color in
                     DispatchQueue.main.async {
-                        if abs(proxy.size.height - contentHeight) > 0.5 {
+                        guard !hasMeasured, proxy.size.height > 0 else { return }
+                        hasMeasured = true
+                        var transaction = Transaction()
+                        transaction.disablesAnimations = true
+                        withTransaction(transaction) {
                             contentHeight = proxy.size.height
                         }
                     }
