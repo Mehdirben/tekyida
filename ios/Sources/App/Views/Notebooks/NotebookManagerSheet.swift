@@ -215,45 +215,37 @@ public struct NotebookManagerSheet: View {
             }
             .buttonStyle(.plain)
 
-            HStack(spacing: 6) {
+            Menu {
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     editingNotebook = notebook
                 } label: {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.secondary)
-                        .frame(width: 30, height: 30)
-                        .contentShape(Circle())
-                        .liquidGlassPill()
+                    Label(tr("common.edit"), systemImage: "pencil")
                 }
-                .buttonStyle(.plain)
 
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     Task { await state.archiveNotebook(id: notebook.id, archived: !isArchived) }
                 } label: {
-                    Image(systemName: isArchived ? "tray.and.arrow.up" : "archivebox")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.secondary)
-                        .frame(width: 30, height: 30)
-                        .contentShape(Circle())
-                        .liquidGlassPill()
+                    Label(
+                        isArchived ? tr("notebooks.unarchive") : tr("notebooks.archive"),
+                        systemImage: isArchived ? "tray.and.arrow.up" : "archivebox"
+                    )
                 }
-                .buttonStyle(.plain)
 
-                Button {
+                Button(role: .destructive) {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     deleteConfirmNotebook = notebook
                 } label: {
-                    Image(systemName: "trash")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(AppTheme.danger.opacity(0.85))
-                        .frame(width: 30, height: 30)
-                        .contentShape(Circle())
-                        .liquidGlassPill()
+                    Label(tr("common.delete"), systemImage: "trash")
                 }
-                .buttonStyle(.plain)
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.secondary)
+                    .frame(width: 30, height: 30)
+                    .contentShape(Circle())
+                    .liquidGlassPill()
             }
         }
         .padding(14)

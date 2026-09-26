@@ -33,27 +33,15 @@ public struct TransferExperienceSheet: View {
         NavigationStack {
             VStack(spacing: 20) {
                 // Info Card
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            ConcentricRectangle(cornerRadius: 14)
-                                .fill(AppTheme.primary.opacity(0.14))
-                                .frame(width: 48, height: 48)
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(experience.name)
+                            .font(.headline)
+                            .foregroundColor(.primary)
 
-                            Image(systemName: "arrow.right.arrow.left")
-                                .font(.headline)
-                                .foregroundColor(AppTheme.primary)
-                        }
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(experience.name)
-                                .font(.headline)
-                                .foregroundColor(.primary)
-
-                            Text(tr("transfer.subtitle"))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
+                        Text(tr("transfer.subtitle"))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
 
                     Text(tr("transfer.detail"))
@@ -104,7 +92,7 @@ public struct TransferExperienceSheet: View {
                         .padding(.top, 4)
                     }
                 }
-                .padding(16)
+                .padding(14)
                 .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
 
                 if hasOtherNotebooks {
