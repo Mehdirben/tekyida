@@ -393,7 +393,7 @@ public struct FittedLiquidGlassSheetModifier: ViewModifier {
                         .onAppear {
                             if !hasMeasured, proxy.size.height > 0 {
                                 hasMeasured = true
-                                var transaction = Transaction()
+                                var transaction = SwiftUI.Transaction()
                                 transaction.disablesAnimations = true
                                 withTransaction(transaction) {
                                     contentHeight = proxy.size.height
