@@ -103,3 +103,56 @@ export async function clear(): Promise<void> {
         tx.onerror = () => reject(tx.error);
     });
 }
+
+/** Remove mutations matching a predicate */
+export async function removeWhere(predicate: (mutation: QueuedMutation) => boolean): Promise<void> {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        const store = tx.objectStore(STORE_NAME);
+        const request = store.openCursor();
+        request.onsuccess = () => {
+            const cursor = request.result;
+            if (cursor) {
+                const item = cursor.value as QueuedMutation;
+                if (predicate(item)) {
+                    cursor.delete();
+                }
+                cursor.continue();
+            }
+        };
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+/** Purge mutations related to a deleted offline-created item */
+export async function purgeOfflineItem(
+    targetId: string,
+    functionPath: string
+): Promise<void> {
+    await removeWhere((queued) => {
+        // Matches the creation mutation of this item
+        if (queued.tempId === targetId) return true;
+        // Matches direct operations on this item (update, etc.)
+        if (queued.args?.id === targetId) return true;
+        // Cascade matching based on the item type being removed
+        if (functionPath === "notebooks:remove" && queued.args?.notebookId === targetId) {
+            return true;
+        }
+        if (functionPath === "experiences:remove" && queued.args?.experienceId === targetId) {
+            return true;
+        }
+        if (functionPath === "contacts:remove" && queued.args?.contactId === targetId) {
+            return true;
+        }
+        return false;
+    });
+}
+
+/** Purge pending update mutations for an existing item */
+export async function purgePendingUpdates(targetId: string): Promise<void> {
+    await removeWhere((queued) => {
+        return queued.functionPath.endsWith(":update") && queued.args?.id === targetId;
+    });
+}

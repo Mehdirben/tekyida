@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { enqueue, getAll, remove, count, clear, resetDB } from "./offlineQueue";
+import { enqueue, getAll, remove, count, clear, resetDB, removeWhere, purgeOfflineItem, purgePendingUpdates } from "./offlineQueue";
 
 describe("offlineQueue", () => {
   beforeEach(async () => {
@@ -149,4 +149,112 @@ describe("offlineQueue", () => {
     await expect(count()).rejects.toThrow("Request Count Failed");
     countSpy.mockRestore();
   });
+
+  it("removes mutations matching predicate with removeWhere", async () => {
+    await enqueue({
+      functionPath: "notebooks:create",
+      args: { name: "Book 1" },
+      queuedAt: 1,
+      tempId: "temp-1",
+    });
+    await enqueue({
+      functionPath: "notebooks:update",
+      args: { id: "server-1", name: "Book 2" },
+      queuedAt: 2,
+    });
+    await enqueue({
+      functionPath: "notebooks:update",
+      args: { id: "server-2", name: "Book 3" },
+      queuedAt: 3,
+    });
+
+    expect(await count()).toBe(3);
+
+    await removeWhere((m) => m.args?.id === "server-1");
+
+    const remaining = await getAll();
+    expect(remaining).toHaveLength(2);
+    expect(remaining.map((m) => m.functionPath)).toEqual(["notebooks:create", "notebooks:update"]);
+    expect(remaining[1].args?.id).toBe("server-2");
+  });
+
+  it("purges offline-created item and its cascading mutations with purgeOfflineItem", async () => {
+    const tempNbId = "temp_nb_123";
+    const tempContactId = "temp_c_456";
+
+    // Notebook creation
+    await enqueue({
+      functionPath: "notebooks:create",
+      args: { name: "Trip" },
+      queuedAt: 1,
+      tempId: tempNbId,
+    });
+    // Notebook update
+    await enqueue({
+      functionPath: "notebooks:update",
+      args: { id: tempNbId, name: "Trip 2" },
+      queuedAt: 2,
+    });
+    // Contact in that notebook
+    await enqueue({
+      functionPath: "contacts:create",
+      args: { notebookId: tempNbId, name: "Bob" },
+      queuedAt: 3,
+      tempId: tempContactId,
+    });
+    // Transaction in that notebook
+    await enqueue({
+      functionPath: "transactions:create",
+      args: { notebookId: tempNbId, contactId: tempContactId, amount: 100 },
+      queuedAt: 4,
+      tempId: "temp_tx_789",
+    });
+    // Unrelated notebook
+    await enqueue({
+      functionPath: "notebooks:create",
+      args: { name: "Personal" },
+      queuedAt: 5,
+      tempId: "temp_nb_unrelated",
+    });
+
+    expect(await count()).toBe(5);
+
+    // Purge the offline-created notebook
+    await purgeOfflineItem(tempNbId, "notebooks:remove");
+
+    const remaining = await getAll();
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].tempId).toBe("temp_nb_unrelated");
+  });
+
+  it("purges pending updates for existing server item with purgePendingUpdates", async () => {
+    const serverItemId = "jd789abc";
+
+    // Pending updates for serverItemId
+    await enqueue({
+      functionPath: "transactions:update",
+      args: { id: serverItemId, amount: 200 },
+      queuedAt: 1,
+    });
+    await enqueue({
+      functionPath: "transactions:update",
+      args: { id: serverItemId, amount: 250 },
+      queuedAt: 2,
+    });
+    // Pending update for another item
+    await enqueue({
+      functionPath: "transactions:update",
+      args: { id: "other_id", amount: 300 },
+      queuedAt: 3,
+    });
+
+    expect(await count()).toBe(3);
+
+    await purgePendingUpdates(serverItemId);
+
+    const remaining = await getAll();
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].args.id).toBe("other_id");
+  });
 });
+

@@ -45,6 +45,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     const notebooksUpdate = useMutation(api.notebooks.update);
     const notebooksArchive = useMutation(api.notebooks.archive);
     const notebooksRemove = useMutation(api.notebooks.remove);
+    const notebooksReorder = useMutation(api.notebooks.reorder);
     const contactsCreate = useMutation(api.contacts.create);
     const contactsUpdate = useMutation(api.contacts.update);
     const contactsRemove = useMutation(api.contacts.remove);
@@ -56,6 +57,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     const experiencesRemove = useMutation(api.experiences.remove);
     const experiencesClose = useMutation(api.experiences.close);
     const experiencesReopen = useMutation(api.experiences.reopen);
+    const experiencesTransfer = useMutation(api.experiences.transfer);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const getMutationFn = useCallback((path: string): ((args: any) => Promise<any>) | null => {
@@ -64,6 +66,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
             case "notebooks:update": return notebooksUpdate;
             case "notebooks:archive": return notebooksArchive;
             case "notebooks:remove": return notebooksRemove;
+            case "notebooks:reorder": return notebooksReorder;
             case "contacts:create": return contactsCreate;
             case "contacts:update": return contactsUpdate;
             case "contacts:remove": return contactsRemove;
@@ -75,14 +78,15 @@ export function SyncProvider({ children }: { children: ReactNode }) {
             case "experiences:remove": return experiencesRemove;
             case "experiences:close": return experiencesClose;
             case "experiences:reopen": return experiencesReopen;
+            case "experiences:transfer": return experiencesTransfer;
             default: return null;
         }
     }, [
-        notebooksCreate, notebooksUpdate, notebooksArchive, notebooksRemove,
+        notebooksCreate, notebooksUpdate, notebooksArchive, notebooksRemove, notebooksReorder,
         contactsCreate, contactsUpdate, contactsRemove,
         transactionsCreate, transactionsUpdate, transactionsRemove,
         experiencesCreate, experiencesUpdate, experiencesRemove,
-        experiencesClose, experiencesReopen,
+        experiencesClose, experiencesReopen, experiencesTransfer,
     ]);
 
     // Refresh pending count and pending IDs from IndexedDB
@@ -144,6 +148,12 @@ export function SyncProvider({ children }: { children: ReactNode }) {
                 // Replace any temp IDs in args with real IDs from previous creates
                 const patchedArgs = replaceTempIds(item.args, idMap);
 
+                // Safely skip any unmapped offline IDs so Convex's v.id() validator error is never triggered
+                if (hasUnmappedTempId(patchedArgs)) {
+                    if (item.id) await offlineQueue.remove(item.id);
+                    continue;
+                }
+
                 try {
                     const result = await fn(patchedArgs);
 
@@ -201,8 +211,29 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         // Apply optimistic update to cache (always, for instant UI feedback)
         const generatedTempId = await applyOptimisticUpdate(functionPath, args, optimisticCtx);
 
-        if (!navigator.onLine) {
-            // Queue for later sync
+        const isRemove = functionPath.endsWith(":remove");
+        const targetId = typeof args.id === "string" ? args.id : undefined;
+
+        // 1. When an offline-created item (temp_*) is deleted while offline:
+        // Purge its pending creation and any intermediate update mutations from the queue.
+        // No remote remove mutation is enqueued because the server never had this item.
+        if (isRemove && targetId && targetId.startsWith("temp_")) {
+            await offlineQueue.purgeOfflineItem(targetId, functionPath);
+            await refreshCount();
+            return undefined as unknown as Ret;
+        }
+
+        // 2. When removing an existing server item while offline:
+        // Redundant pending updates for that same item are purged.
+        if (isRemove && targetId && !targetId.startsWith("temp_")) {
+            await offlineQueue.purgePendingUpdates(targetId);
+        }
+
+        const pendingMutationsCount = await offlineQueue.count();
+
+        // If offline, or if there are already pending mutations in the queue,
+        // enqueue this mutation to preserve FIFO execution order.
+        if (!navigator.onLine || pendingMutationsCount > 0) {
             await offlineQueue.enqueue({
                 functionPath,
                 args,
@@ -210,7 +241,10 @@ export function SyncProvider({ children }: { children: ReactNode }) {
                 tempId: generatedTempId,
             });
             await refreshCount();
-            return generatedTempId as unknown as Ret;
+            if (navigator.onLine) {
+                void flushQueue();
+            }
+            return (generatedTempId ?? undefined) as unknown as Ret;
         }
 
         try {
@@ -232,12 +266,12 @@ export function SyncProvider({ children }: { children: ReactNode }) {
                     tempId: generatedTempId,
                 });
                 await refreshCount();
-                return generatedTempId as unknown as Ret;
+                return (generatedTempId ?? undefined) as unknown as Ret;
             }
             // Otherwise rethrow (validation error, auth error, etc.)
             throw err;
         }
-    }, [refreshCount]);
+    }, [refreshCount, flushQueue]);
 
     const status: SyncStatus = isSyncing
         ? "syncing"
@@ -269,6 +303,23 @@ export function useSync() {
     return ctx;
 }
 
+/** Check if any ID field still contains an unmapped temp_ ID */
+function hasUnmappedTempId(args: Record<string, unknown>): boolean {
+    const idFields = ["id", "notebookId", "contactId", "experienceId", "targetNotebookId"];
+    for (const field of idFields) {
+        const val = args[field];
+        if (typeof val === "string" && val.startsWith("temp_")) {
+            return true;
+        }
+    }
+    if (Array.isArray(args.ids)) {
+        if (args.ids.some((item) => typeof item === "string" && item.startsWith("temp_"))) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /** Replace temp IDs in mutation args with real IDs from the mapping */
 function replaceTempIds(
     args: Record<string, unknown>,
@@ -279,6 +330,10 @@ function replaceTempIds(
     for (const [key, value] of Object.entries(patched)) {
         if (typeof value === "string" && idMap.has(value)) {
             patched[key] = idMap.get(value)!;
+        } else if (Array.isArray(value)) {
+            patched[key] = value.map((item) =>
+                typeof item === "string" && idMap.has(item) ? idMap.get(item)! : item
+            );
         }
     }
     return patched;
