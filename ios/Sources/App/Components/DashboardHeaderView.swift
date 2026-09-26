@@ -23,17 +23,10 @@ public struct BrandLogoHeader: View {
 // MARK: - Shared Scrolling Tekyida Header
 // Brand left + notebook menu right, placed in the page ScrollView so it scrolls with content.
 public struct TekyidaScrollHeader: View {
-    let notebooks: [Notebook]
-    @Binding var activeNotebookId: String?
+    @EnvironmentObject private var state: AppState
     let onManageNotebooks: () -> Void
 
-    public init(
-        notebooks: [Notebook],
-        activeNotebookId: Binding<String?>,
-        onManageNotebooks: @escaping () -> Void
-    ) {
-        self.notebooks = notebooks
-        self._activeNotebookId = activeNotebookId
+    public init(onManageNotebooks: @escaping () -> Void) {
         self.onManageNotebooks = onManageNotebooks
     }
 
@@ -44,8 +37,17 @@ public struct TekyidaScrollHeader: View {
             Spacer()
 
             NotebookHeaderButton(
-                notebooks: notebooks,
-                activeNotebookId: $activeNotebookId,
+                notebooks: state.activeNotebooksList,
+                activeNotebookId: Binding(
+                    get: { state.activeNotebookId },
+                    set: { id in
+                        if let id {
+                            state.selectNotebook(id)
+                        } else {
+                            state.activeNotebookId = nil
+                        }
+                    }
+                ),
                 onManage: onManageNotebooks
             )
         }

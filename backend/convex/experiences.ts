@@ -1,19 +1,23 @@
-import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
 
 export const list = query({
     args: { notebookId: v.id("notebooks") },
-    handler: async (ctx, args) => {
+    handler: async (ctx, { notebookId }) => {
         const userId = await getAuthUserId(ctx);
-        if (!userId) return [];
+        if (!userId) {
+            return [];
+        }
 
-        const notebook = await ctx.db.get(args.notebookId);
-        if (!notebook || notebook.userId !== userId) return [];
+        const currentNotebook = await ctx.db.get(notebookId);
+        if (!currentNotebook || currentNotebook.userId !== userId) {
+            return [];
+        }
 
         const experiences = await ctx.db
             .query("experiences")
-            .withIndex("by_notebook", (q) => q.eq("notebookId", args.notebookId))
+            .withIndex("by_notebook", (q) => q.eq("notebookId", notebookId))
             .order("desc")
             .collect();
 

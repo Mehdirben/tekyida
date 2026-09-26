@@ -27,14 +27,7 @@ public struct ExperiencesView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        TekyidaScrollHeader(
-                            notebooks: state.activeNotebooksList,
-                            activeNotebookId: Binding(
-                                get: { state.activeNotebookId },
-                                set: { id in if let id { state.selectNotebook(id) } else { state.activeNotebookId = nil } }
-                            ),
-                            onManageNotebooks: { showNotebookManager = true }
-                        )
+                        TekyidaScrollHeader(onManageNotebooks: { showNotebookManager = true })
 
                         // Open Experiences Total Balance Card
                         if let activeNb = state.activeNotebook {
