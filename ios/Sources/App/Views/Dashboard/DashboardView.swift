@@ -63,15 +63,15 @@ public struct DashboardView: View {
                     state.updateContact(id: contact.id, name: name, phone: phone)
                 }
             }
-            .alert("Delete Contact?", isPresented: Binding(
+            .alert(tr("contacts.deleteTitle"), isPresented: Binding(
                 get: { deletingContact != nil },
                 set: { if !$0 { deletingContact = nil } }
             )) {
-                Button("Cancel", role: .cancel) {
+                Button(tr("common.cancel"), role: .cancel) {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     deletingContact = nil
                 }
-                Button("Delete", role: .destructive) {
+                Button(tr("common.delete"), role: .destructive) {
                     UINotificationFeedbackGenerator().notificationOccurred(.warning)
                     if let contact = deletingContact {
                         state.deleteContact(id: contact.id)
@@ -79,7 +79,7 @@ public struct DashboardView: View {
                     }
                 }
             } message: {
-                Text("Deleting '\(deletingContact?.name ?? "")' will remove all their direct transactions.")
+                Text(String(format: tr("contacts.deleteMessage"), deletingContact?.name ?? ""))
             }
         }
     }
@@ -105,7 +105,7 @@ public struct DashboardView: View {
         return VStack(spacing: 12) {
             // Title-Style Section Header
             HStack {
-                Text("Contacts")
+                Text(tr("contacts.title"))
                     .font(.title3.bold())
                     .foregroundColor(.primary)
 
@@ -126,8 +126,8 @@ public struct DashboardView: View {
             if sortedContacts.isEmpty {
                 GlassEmptyStateView(
                     systemImage: "person.2.slash",
-                    title: "No Contacts Yet",
-                    subtitle: "Add your first contact to track money owed or lent."
+                    title: tr("contacts.emptyTitle"),
+                    subtitle: tr("contacts.emptySubtitle")
                 )
             } else {
                 LazyVStack(spacing: 12) {
@@ -152,7 +152,7 @@ public struct DashboardView: View {
 
             // Bottom Add Contact button with modern Liquid Glass prominent styling
             ListAddBottomButton(
-                title: "Add Contact",
+                title: tr("contacts.add"),
                 systemImage: "person.badge.plus",
                 action: { showAddContact = true }
             )

@@ -30,15 +30,15 @@ public struct EditTransactionSheet: View {
                     // Transaction Form Fields
                     VStack(spacing: 16) {
                         // Direction Selector
-                        Picker("Direction", selection: Binding(
+                        Picker(tr("transaction.direction"), selection: Binding(
                             get: { isPositive },
                             set: { newValue in
                                 UISelectionFeedbackGenerator().selectionChanged()
                                 isPositive = newValue
                             }
                         )) {
-                            Text("They owe you").tag(true)
-                            Text("You owe them").tag(false)
+                            Text(tr("transaction.theyOweYou")).tag(true)
+                            Text(tr("transaction.youOweThem")).tag(false)
                         }
                         .pickerStyle(.segmented)
 
@@ -60,12 +60,12 @@ public struct EditTransactionSheet: View {
                                 .foregroundColor(.secondary)
                                 .frame(width: 20)
 
-                            TextField("Note or description", text: $description)
+                            TextField(tr("transaction.notePlaceholder"), text: $description)
                         }
                         .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
                         // Date Picker
-                        DatePicker("Date & Time", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                        DatePicker(tr("transaction.dateAndTime"), selection: $date, displayedComponents: [.date, .hourAndMinute])
                             .font(.subheadline)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
@@ -74,7 +74,7 @@ public struct EditTransactionSheet: View {
 
                     // Bottom Save Button
                     GlassButton(
-                        "Save Changes",
+                        tr("common.saveChanges"),
                         systemImage: "checkmark",
                         style: .primary,
                         size: .large
@@ -90,20 +90,21 @@ public struct EditTransactionSheet: View {
                 .padding(20)
             }
             .scrollDismissesKeyboard(.immediately)
+            .ignoresSafeArea(.keyboard, edges: .bottom)
             .dismissKeyboardOnTap()
-            .navigationTitle("Edit Transaction")
+            .navigationTitle(tr("transaction.edit"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
+                    Button(tr("common.cancel")) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         dismiss()
                     }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
+                    Button(tr("common.done")) {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         save()
                     }

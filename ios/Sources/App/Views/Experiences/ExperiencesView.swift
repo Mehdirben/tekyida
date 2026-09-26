@@ -16,6 +16,14 @@ public struct ExperiencesView: View {
         case all = "All"
         case active = "Active"
         case closed = "Closed"
+
+        public var localizedName: String {
+            switch self {
+            case .all: return tr("filter.all")
+            case .active: return tr("filter.active")
+            case .closed: return tr("filter.closed")
+            }
+        }
     }
 
     public init() {}
@@ -73,15 +81,15 @@ public struct ExperiencesView: View {
                     state.transferExperience(id: exp.id, to: targetNotebookId)
                 }
             }
-            .alert("Delete Experience?", isPresented: Binding(
+            .alert(tr("experiences.deleteTitle"), isPresented: Binding(
                 get: { deletingExperience != nil },
                 set: { if !$0 { deletingExperience = nil } }
             )) {
-                Button("Cancel", role: .cancel) {
+                Button(tr("common.cancel"), role: .cancel) {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     deletingExperience = nil
                 }
-                Button("Delete", role: .destructive) {
+                Button(tr("common.delete"), role: .destructive) {
                     UINotificationFeedbackGenerator().notificationOccurred(.warning)
                     if let exp = deletingExperience {
                         state.deleteExperience(id: exp.id)
@@ -89,7 +97,7 @@ public struct ExperiencesView: View {
                     }
                 }
             } message: {
-                Text("Deleting '\(deletingExperience?.name ?? "")' will remove all its transactions.")
+                Text(String(format: tr("experiences.deleteMessage"), deletingExperience?.name ?? ""))
             }
         }
     }
@@ -108,7 +116,7 @@ public struct ExperiencesView: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Open Experiences Total")
+                Text(tr("experiences.openTotal"))
                     .font(.caption.bold())
                     .foregroundColor(.secondary)
 
@@ -129,7 +137,7 @@ public struct ExperiencesView: View {
     }
 
     private var filterSegmentedControl: some View {
-        Picker("Filter", selection: Binding(
+        Picker(tr("experiences.title"), selection: Binding(
             get: { filterMode },
             set: { newValue in
                 UISelectionFeedbackGenerator().selectionChanged()
@@ -137,7 +145,7 @@ public struct ExperiencesView: View {
             }
         )) {
             ForEach(ExperienceFilter.allCases, id: \.self) { filter in
-                Text(filter.rawValue).tag(filter)
+                Text(filter.localizedName).tag(filter)
             }
         }
         .pickerStyle(.segmented)
@@ -159,7 +167,7 @@ public struct ExperiencesView: View {
         return VStack(spacing: 12) {
             // Title-Style Section Header
             HStack {
-                Text("Experiences")
+                Text(tr("experiences.title"))
                     .font(.title3.bold())
                     .foregroundColor(.primary)
 
@@ -180,8 +188,8 @@ public struct ExperiencesView: View {
             if filtered.isEmpty {
                 GlassEmptyStateView(
                     systemImage: "safari",
-                    title: "No Experiences Found",
-                    subtitle: "Group expenses and split bills with friends using experiences."
+                    title: tr("experiences.emptyTitle"),
+                    subtitle: tr("experiences.emptySubtitle")
                 )
             } else {
                 LazyVStack(spacing: 12) {
@@ -217,7 +225,7 @@ public struct ExperiencesView: View {
 
             // Bottom Add Experience button
             ListAddBottomButton(
-                title: "Add Experience",
+                title: tr("experiences.add"),
                 systemImage: "plus",
                 action: { showAddExperience = true }
             )

@@ -97,7 +97,7 @@ public struct ExperienceRowView: View {
                                 .foregroundColor(.secondary)
                         }
 
-                        Text("\(transactionCount) transaction\(transactionCount == 1 ? "" : "s")")
+                        Text("\(transactionCount) \(transactionCount == 1 ? tr("common.transaction") : tr("common.transactions"))")
                             .font(.caption2)
                             .foregroundColor(.secondary)
 
@@ -117,7 +117,7 @@ public struct ExperienceRowView: View {
                         HStack(spacing: 5) {
                             Image(systemName: experience.closed ? "lock.fill" : "lock.open.fill")
                                 .font(.system(size: 11, weight: .bold))
-                            Text(experience.closed ? "Closed" : "Open")
+                            Text(experience.closed ? tr("experience.statusClosed") : tr("experience.statusOpen"))
                                 .font(.caption2.bold())
                         }
                         .foregroundColor(experience.closed ? AppTheme.warning : AppTheme.accent)

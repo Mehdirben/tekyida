@@ -29,12 +29,12 @@ struct OfflineSyncBanner: View {
     }
 
     private var statusText: String {
-        if state.isSyncing { return "Syncing offline changes…" }
-        if !state.isOnline { return "Offline. Changes will sync when you reconnect." }
+        if state.isSyncing { return tr("sync.bannerSyncing") }
+        if !state.isOnline { return tr("sync.bannerOffline") }
         if !state.isAuthenticated && state.pendingSyncCount > 0 {
-            return "Sign in to the account with pending offline changes."
+            return tr("sync.bannerSignin")
         }
-        if state.pendingSyncCount == 1 { return "1 change waiting to sync." }
-        return "\(state.pendingSyncCount) changes waiting to sync."
+        if state.pendingSyncCount == 1 { return tr("sync.oneWaiting") }
+        return String(format: tr("sync.changesWaiting"), state.pendingSyncCount)
     }
 }

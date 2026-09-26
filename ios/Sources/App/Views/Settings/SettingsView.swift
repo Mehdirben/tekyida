@@ -35,27 +35,27 @@ public struct SettingsView: View {
                 .dismissKeyboardOnTap()
                 .tabBarMinimizeBehaviorOnScroll()
             }
-            .navigationTitle("Settings")
+            .navigationTitle(tr("settings.title"))
             .navigationBarTitleDisplayMode(.large)
-            .alert("Sign Out?", isPresented: $showSignOutConfirm) {
-                Button("Cancel", role: .cancel) {
+            .alert(tr("settings.signOutTitle"), isPresented: $showSignOutConfirm) {
+                Button(tr("common.cancel"), role: .cancel) {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 }
-                Button("Sign Out", role: .destructive) {
+                Button(tr("settings.signOut"), role: .destructive) {
                     UINotificationFeedbackGenerator().notificationOccurred(.warning)
                     Task { await state.signOut() }
                 }
             } message: {
-                Text("You can sign back in to sync your notebooks.")
+                Text(tr("settings.signOutMessage"))
             }
         }
     }
 
     private var accountSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("Email")
+            sectionHeader(tr("settings.email"))
 
-            Label(state.userEmail.isEmpty ? "Tekyida Account" : state.userEmail, systemImage: "envelope")
+            Label(state.userEmail.isEmpty ? tr("settings.account") : state.userEmail, systemImage: "envelope")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -64,7 +64,7 @@ public struct SettingsView: View {
                     Image(systemName: "wifi.slash")
                         .font(.caption)
                         .foregroundColor(AppTheme.warning)
-                    Text("Offline: Email cannot be changed while offline.")
+                    Text(tr("settings.offlineEmail"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -74,7 +74,7 @@ public struct SettingsView: View {
                 Image(systemName: "envelope")
                     .foregroundColor(.secondary)
                     .frame(width: 20)
-                TextField("New email address", text: $newEmail)
+                TextField(tr("settings.newEmail"), text: $newEmail)
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
@@ -88,7 +88,7 @@ public struct SettingsView: View {
                 Image(systemName: "envelope.badge")
                     .foregroundColor(.secondary)
                     .frame(width: 20)
-                TextField("Confirm new email", text: $confirmEmail)
+                TextField(tr("settings.confirmEmail"), text: $confirmEmail)
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
@@ -101,10 +101,10 @@ public struct SettingsView: View {
             if let emailMessage {
                 Text(emailMessage)
                     .font(.caption)
-                    .foregroundStyle(emailMessage.hasPrefix("Email updated") ? AppTheme.accent : AppTheme.danger)
+                    .foregroundStyle(emailMessage == tr("settings.emailUpdated") ? AppTheme.accent : AppTheme.danger)
             }
 
-            GlassButton("Change Email", systemImage: "envelope.badge", style: .primary, size: .large) {
+            GlassButton(tr("settings.changeEmail"), systemImage: "envelope.badge", style: .primary, size: .large) {
                 Task { await updateEmail() }
             }
             .disabled(!state.isOnline || isChangingEmail || newEmail.isEmpty || confirmEmail.isEmpty)
@@ -116,14 +116,14 @@ public struct SettingsView: View {
 
     private var passwordSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("Password")
+            sectionHeader(tr("settings.password"))
 
             if !state.isOnline {
                 HStack(spacing: 6) {
                     Image(systemName: "wifi.slash")
                         .font(.caption)
                         .foregroundColor(AppTheme.warning)
-                    Text("Offline: Password cannot be changed while offline.")
+                    Text(tr("settings.offlinePassword"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -133,7 +133,7 @@ public struct SettingsView: View {
                 Image(systemName: "lock")
                     .foregroundColor(.secondary)
                     .frame(width: 20)
-                SecureField("Current password", text: $currentPassword)
+                SecureField(tr("settings.currentPassword"), text: $currentPassword)
                     .textContentType(.password)
                     .disabled(!state.isOnline)
             }
@@ -144,7 +144,7 @@ public struct SettingsView: View {
                 Image(systemName: "key")
                     .foregroundColor(.secondary)
                     .frame(width: 20)
-                SecureField("New password (at least 8 characters)", text: $newPassword)
+                SecureField(tr("settings.newPassword"), text: $newPassword)
                     .textContentType(.newPassword)
                     .disabled(!state.isOnline)
             }
@@ -155,7 +155,7 @@ public struct SettingsView: View {
                 Image(systemName: "key.fill")
                     .foregroundColor(.secondary)
                     .frame(width: 20)
-                SecureField("Confirm new password", text: $confirmPassword)
+                SecureField(tr("settings.confirmNewPassword"), text: $confirmPassword)
                     .textContentType(.newPassword)
                     .disabled(!state.isOnline)
             }
@@ -165,10 +165,10 @@ public struct SettingsView: View {
             if let passwordMessage {
                 Text(passwordMessage)
                     .font(.caption)
-                    .foregroundStyle(passwordMessage.hasPrefix("Password updated") ? AppTheme.accent : AppTheme.danger)
+                    .foregroundStyle(passwordMessage == tr("settings.passwordUpdated") ? AppTheme.accent : AppTheme.danger)
             }
 
-            GlassButton("Change Password", systemImage: "key.fill", style: .primary, size: .large) {
+            GlassButton(tr("settings.changePassword"), systemImage: "key.fill", style: .primary, size: .large) {
                 Task { await updatePassword() }
             }
             .disabled(!state.isOnline || isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty)
@@ -180,14 +180,14 @@ public struct SettingsView: View {
 
     private var preferencesSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("Preferences")
+            sectionHeader(tr("settings.preferences"))
 
             HStack {
-                Label("Appearance", systemImage: "circle.lefthalf.filled")
+                Label(tr("settings.appearance"), systemImage: "circle.lefthalf.filled")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Picker("Theme", selection: Binding(
+                Picker(tr("settings.appearance"), selection: Binding(
                     get: { state.themeMode },
                     set: { newValue in
                         UISelectionFeedbackGenerator().selectionChanged()
@@ -205,12 +205,12 @@ public struct SettingsView: View {
             Divider()
 
             HStack {
-                Label("Language", systemImage: "globe")
+                Label(tr("settings.language"), systemImage: "globe")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
                 Menu {
-                    Picker("Language", selection: Binding(
+                    Picker(tr("settings.language"), selection: Binding(
                         get: { state.language },
                         set: { newValue in
                             UISelectionFeedbackGenerator().selectionChanged()
@@ -251,8 +251,8 @@ public struct SettingsView: View {
             )) {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Hide Amounts on Launch")
-                        Text("Mask currency figures by default")
+                        Text(tr("settings.hideAmounts"))
+                        Text(tr("settings.hideAmountsDesc"))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -272,8 +272,8 @@ public struct SettingsView: View {
             )) {
                 Label {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Navigate on Transfer")
-                        Text("Switch notebook when moving an experience")
+                        Text(tr("settings.transferRedirect"))
+                        Text(tr("settings.transferRedirectDesc"))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -288,7 +288,7 @@ public struct SettingsView: View {
     }
 
     private var signOutSection: some View {
-        GlassButton("Sign Out", systemImage: "rectangle.portrait.and.arrow.right", style: .danger, size: .large) {
+        GlassButton(tr("settings.signOut"), systemImage: "rectangle.portrait.and.arrow.right", style: .danger, size: .large) {
             showSignOutConfirm = true
         }
         .padding(.top, 4)
@@ -304,15 +304,15 @@ public struct SettingsView: View {
     private func updateEmail() async {
         emailMessage = nil
         guard state.isOnline else {
-            emailMessage = "Cannot change email while offline."
+            emailMessage = tr("settings.emailOfflineError")
             return
         }
         guard newEmail.range(of: #"^[^\s@]+@[^\s@]+\.[^\s@]+$"#, options: .regularExpression) != nil else {
-            emailMessage = "Enter a valid email address."
+            emailMessage = tr("settings.emailInvalid")
             return
         }
         guard newEmail == confirmEmail else {
-            emailMessage = "Email addresses do not match."
+            emailMessage = tr("settings.emailMismatch")
             return
         }
         isChangingEmail = true
@@ -321,7 +321,7 @@ public struct SettingsView: View {
             try await state.changeEmail(to: newEmail)
             newEmail = ""
             confirmEmail = ""
-            emailMessage = "Email updated successfully."
+            emailMessage = tr("settings.emailUpdated")
         } catch {
             emailMessage = error.localizedDescription
         }
@@ -331,15 +331,15 @@ public struct SettingsView: View {
     private func updatePassword() async {
         passwordMessage = nil
         guard state.isOnline else {
-            passwordMessage = "Cannot change password while offline."
+            passwordMessage = tr("settings.passwordOfflineError")
             return
         }
         guard newPassword.count >= 8 else {
-            passwordMessage = "Password must be at least 8 characters."
+            passwordMessage = tr("settings.passwordTooShort")
             return
         }
         guard newPassword == confirmPassword else {
-            passwordMessage = "Passwords do not match."
+            passwordMessage = tr("settings.passwordMismatch")
             return
         }
         isChangingPassword = true
@@ -349,7 +349,7 @@ public struct SettingsView: View {
             currentPassword = ""
             newPassword = ""
             confirmPassword = ""
-            passwordMessage = "Password updated successfully."
+            passwordMessage = tr("settings.passwordUpdated")
         } catch {
             passwordMessage = error.localizedDescription
         }

@@ -204,9 +204,9 @@ public enum AppThemeMode: String, Codable, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .system: return "System"
-        case .light: return "Light"
-        case .dark: return "Dark"
+        case .system: return tr("theme.system")
+        case .light: return tr("theme.light")
+        case .dark: return tr("theme.dark")
         }
     }
 }

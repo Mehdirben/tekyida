@@ -50,46 +50,46 @@ public struct TransferExperienceSheet: View {
                                 .font(.headline)
                                 .foregroundColor(.primary)
 
-                            Text("Move to another notebook")
+                            Text(tr("transfer.subtitle"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
 
-                    Text("Moving this experience will transfer all associated transactions. Contacts are notebook-scoped, so any contact link will be detached.")
+                    Text(tr("transfer.detail"))
                         .font(.footnote)
                         .foregroundColor(.secondary)
 
                     if !hasOtherNotebooks {
-                        Text("No other notebooks found. Create another notebook first.")
+                        Text(tr("transfer.noOthers"))
                             .font(.caption)
                             .foregroundColor(AppTheme.warning)
                             .padding(.top, 4)
                     } else {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Target Notebook")
+                            Text(tr("transfer.target"))
                                 .font(.subheadline.bold())
                                 .foregroundColor(.primary)
 
-                            Picker("Notebook", selection: Binding(
+                            Picker(tr("notebooks.title"), selection: Binding(
                                 get: { selectedNotebookId },
                                 set: { newValue in
                                     UISelectionFeedbackGenerator().selectionChanged()
                                     selectedNotebookId = newValue
                                 }
                             )) {
-                                Text("Select Destination").tag("")
+                                Text(tr("transfer.selectDestination")).tag("")
                                 if !activeOtherNotebooks.isEmpty {
-                                    Section("Active Notebooks") {
+                                    Section(tr("notebooks.activeSection")) {
                                         ForEach(activeOtherNotebooks) { nb in
                                             Text(nb.name).tag(nb.id)
                                         }
                                     }
                                 }
                                 if !archivedOtherNotebooks.isEmpty {
-                                    Section("Archived Notebooks") {
+                                    Section(tr("notebooks.archivedSection")) {
                                         ForEach(archivedOtherNotebooks) { nb in
-                                            Text("\(nb.name) (Archived)").tag(nb.id)
+                                            Text("\(nb.name) \(tr("common.archivedSuffix"))").tag(nb.id)
                                         }
                                     }
                                 }
@@ -109,7 +109,7 @@ public struct TransferExperienceSheet: View {
 
                 if hasOtherNotebooks {
                     GlassButton(
-                        "Confirm Transfer",
+                        tr("transfer.confirm"),
                         systemImage: "arrow.right.arrow.left",
                         style: .primary,
                         size: .large
@@ -126,19 +126,19 @@ public struct TransferExperienceSheet: View {
             }
             .padding(20)
             .dismissKeyboardOnTap()
-            .navigationTitle("Transfer Experience")
+            .navigationTitle(tr("transfer.title"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
+                    Button(tr("common.cancel")) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         dismiss()
                     }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Transfer") {
+                    Button(tr("transfer.transfer")) {
                         guard !selectedNotebookId.isEmpty else { return }
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         onTransfer(selectedNotebookId)

@@ -11,10 +11,10 @@ public enum AppTab: Int, CaseIterable, Identifiable, Hashable, Sendable {
 
     public var title: String {
         switch self {
-        case .dashboard: return "Dashboard"
-        case .experiences: return "Experiences"
-        case .settings: return "Settings"
-        case .search: return "Search"
+        case .dashboard: return tr("tab.dashboard")
+        case .experiences: return tr("tab.experiences")
+        case .settings: return tr("tab.settings")
+        case .search: return tr("tab.search")
         }
     }
 
@@ -43,7 +43,7 @@ struct ContentView: View {
             if state.isLoading {
                 ZStack {
                     MeshGradientBackground()
-                    ProgressView("Connecting to Tekyida…")
+                    ProgressView(tr("app.connecting"))
                         .tint(AppTheme.primary)
                 }
             } else if state.isAuthenticated {
@@ -56,11 +56,11 @@ struct ContentView: View {
         .environmentObject(state)
         .tint(AppTheme.primary)
         .dismissKeyboardOnTap()
-        .alert("Could not sync", isPresented: Binding(
+        .alert(tr("app.syncError"), isPresented: Binding(
             get: { state.appError != nil },
             set: { if !$0 { state.clearAppError() } }
         )) {
-            Button("OK") { state.clearAppError() }
+            Button(tr("common.ok")) { state.clearAppError() }
         } message: {
             Text(state.appError ?? "")
         }

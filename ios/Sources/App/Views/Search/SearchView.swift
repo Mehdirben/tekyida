@@ -8,14 +8,28 @@ public struct SearchView: View {
         case contacts = "Contacts"
         case experiences = "Experiences"
         case transactions = "Transactions"
+
+        public var localizedName: String {
+            switch self {
+            case .contacts: return tr("search.scope.contacts")
+            case .experiences: return tr("search.scope.experiences")
+            case .transactions: return tr("search.scope.transactions")
+            }
+        }
+
+        public var emptyResultTitle: String {
+            switch self {
+            case .contacts: return tr("search.noResults.contacts")
+            case .experiences: return tr("search.noResults.experiences")
+            case .transactions: return tr("search.noResults.transactions")
+            }
+        }
     }
 
     @State private var query: String = ""
     @State private var scope: FilterScope = .contacts
     @State private var selectedContact: Contact?
     @State private var selectedExperience: Experience?
-    @State private var editingTransaction: Transaction?
-    @State private var deletingTransaction: Transaction?
     @FocusState private var isSearchFocused: Bool
 
     public init() {}
@@ -33,7 +47,7 @@ public struct SearchView: View {
                                 .foregroundColor(.secondary)
                                 .font(.system(size: 16, weight: .medium))
 
-                            TextField("Contacts, experiences, amounts...", text: $query)
+                            TextField(tr("search.placeholder"), text: $query)
                                 .textFieldStyle(.plain)
                                 .autocorrectionDisabled()
                                 .textInputAutocapitalization(.never)
@@ -54,7 +68,7 @@ public struct SearchView: View {
                         .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
                         // Filter Scope Segmented Control
-                        Picker("Filter", selection: Binding(
+                        Picker(tr("search.title"), selection: Binding(
                             get: { scope },
                             set: { newValue in
                                 guard newValue != scope else { return }
@@ -63,7 +77,7 @@ public struct SearchView: View {
                             }
                         )) {
                             ForEach(FilterScope.allCases, id: \.self) { item in
-                                Text(item.rawValue).tag(item)
+                                Text(item.localizedName).tag(item)
                             }
                         }
                         .pickerStyle(.segmented)
@@ -82,7 +96,7 @@ public struct SearchView: View {
                 .tabBarMinimizeBehaviorOnScroll()
                 .dismissKeyboardOnTap()
             }
-            .navigationTitle("Search")
+            .navigationTitle(tr("tab.search"))
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -99,16 +113,6 @@ public struct SearchView: View {
                     .environmentObject(state)
                     .liquidGlassSheet(detents: [.fraction(0.94)])
             }
-            .transactionModals(
-                editingTransaction: $editingTransaction,
-                deletingTransaction: $deletingTransaction,
-                onSave: { id, amount, desc, date in
-                    state.updateTransaction(id: id, amount: amount, description: desc, date: date)
-                },
-                onDelete: { id in
-                    state.deleteTransaction(id: id)
-                }
-            )
         }
     }
 
@@ -120,15 +124,15 @@ public struct SearchView: View {
             if isScopeEmpty(results) {
                 GlassEmptyStateView(
                     systemImage: scopeIcon,
-                    title: "No \(scope.rawValue) Found",
-                    subtitle: "Try a different search or switch the filter."
+                    title: scope.emptyResultTitle,
+                    subtitle: tr("search.tryDifferent")
                 )
                 .padding(.top, 24)
             } else {
                 // Contacts
                 if scope == .contacts && !results.contacts.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Contacts (\(results.contacts.count))")
+                        Text("\(tr("search.scope.contacts")) (\(results.contacts.count))")
                             .font(.headline)
                             .foregroundColor(.primary)
 
@@ -183,7 +187,7 @@ public struct SearchView: View {
                 // Experiences
                 if scope == .experiences && !results.experiences.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Experiences (\(results.experiences.count))")
+                        Text("\(tr("search.scope.experiences")) (\(results.experiences.count))")
                             .font(.headline)
                             .foregroundColor(.primary)
 
@@ -215,7 +219,7 @@ public struct SearchView: View {
 
                                                 if exp.closed {
                                                     StatusBadge(
-                                                        title: "Closed",
+                                                        title: tr("experience.statusClosed"),
                                                         color: AppTheme.warning,
                                                         backgroundColor: AppTheme.warningBg
                                                     )
@@ -245,7 +249,7 @@ public struct SearchView: View {
                 // Transactions
                 if scope == .transactions && !results.transactions.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Transactions (\(results.transactions.count))")
+                        Text("\(tr("search.scope.transactions")) (\(results.transactions.count))")
                             .font(.headline)
                             .foregroundColor(.primary)
 
@@ -254,9 +258,9 @@ public struct SearchView: View {
                                 TransactionRowView(
                                     transaction: tx,
                                     isMasked: state.isAmountsHidden,
-                                    showsActions: canManageTransaction(tx),
-                                    onEdit: { editingTransaction = tx },
-                                    onDelete: { deletingTransaction = tx }
+                                    showsActions: false,
+                                    onEdit: {},
+                                    onDelete: {}
                                 )
                             }
                         }
@@ -282,21 +286,13 @@ public struct SearchView: View {
         }
     }
 
-    private func canManageTransaction(_ transaction: Transaction) -> Bool {
-        guard let experienceId = transaction.experienceId,
-              let experience = state.experiences.first(where: { $0.id == experienceId }) else {
-            return true
-        }
-        return !experience.closed
-    }
-
     // MARK: - Initial State
     private var recentOrEmptyState: some View {
         VStack(spacing: 16) {
             GlassEmptyStateView(
                 systemImage: "magnifyingglass.circle.fill",
-                title: "Quick Search",
-                subtitle: "Search contacts, shared experiences, descriptions, or transaction amounts."
+                title: tr("search.quickTitle"),
+                subtitle: tr("search.quickSubtitle")
             )
             .padding(.top, 16)
         }

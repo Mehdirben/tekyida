@@ -23,12 +23,12 @@ struct AccountAccessView: View {
                             .scaledToFit()
                             .frame(width: 72, height: 72)
                             .clipShape(RoundedRectangle(cornerRadius: 20))
-                        Text(state.isAwaitingEmailVerification ? "Verify your email" : "Welcome to Tekyida")
+                        Text(state.isAwaitingEmailVerification ? tr("auth.verifyTitle") : tr("auth.welcome"))
                             .font(.largeTitle.bold())
                             .foregroundStyle(.primary)
                         Text(state.isAwaitingEmailVerification
-                             ? "Enter the 6-digit code we sent to \(email)."
-                             : "Sign in to sync your notebooks and transactions.")
+                             ? String(format: tr("auth.enterCode"), email)
+                             : tr("auth.signinSubtitle"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -41,13 +41,13 @@ struct AccountAccessView: View {
                                 Image(systemName: "number")
                                     .foregroundColor(.secondary)
                                     .frame(width: 20)
-                                TextField("6-digit verification code", text: $verificationCode)
+                                TextField(tr("auth.codePlaceholder"), text: $verificationCode)
                                     .keyboardType(.numberPad)
                                     .textContentType(.oneTimeCode)
                             }
                             .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
-                            GlassButton("Verify email", systemImage: "checkmark.circle", style: .primary, size: .large) {
+                            GlassButton(tr("auth.verify"), systemImage: "checkmark.circle", style: .primary, size: .large) {
                                 submit { await state.verifyEmail(email: email, code: verificationCode) }
                             }
                             .disabled(isSubmitting || verificationCode.isEmpty)
@@ -57,7 +57,7 @@ struct AccountAccessView: View {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 submit { await state.resendVerification(email: email) }
                             } label: {
-                                Text("Resend code")
+                                Text(tr("auth.resend"))
                                     .font(.subheadline)
                                     .foregroundStyle(AppTheme.primary)
                                     .frame(maxWidth: .infinity)
@@ -71,7 +71,7 @@ struct AccountAccessView: View {
                                 state.isAwaitingEmailVerification = false
                                 state.authError = nil
                             } label: {
-                                Text("Back to sign in")
+                                Text(tr("auth.backToSignin"))
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                                     .frame(maxWidth: .infinity)
@@ -85,7 +85,7 @@ struct AccountAccessView: View {
                                     Image(systemName: "person.fill")
                                         .foregroundColor(.secondary)
                                         .frame(width: 20)
-                                    TextField("Name", text: $name)
+                                    TextField(tr("auth.name"), text: $name)
                                         .textContentType(.name)
                                 }
                                 .glassInputStyle(cornerRadius: AppTheme.radiusInput)
@@ -95,7 +95,7 @@ struct AccountAccessView: View {
                                 Image(systemName: "envelope.fill")
                                     .foregroundColor(.secondary)
                                     .frame(width: 20)
-                                TextField("Email", text: $email)
+                                TextField(tr("auth.email"), text: $email)
                                     .textContentType(.emailAddress)
                                     .keyboardType(.emailAddress)
                                     .textInputAutocapitalization(.never)
@@ -107,7 +107,7 @@ struct AccountAccessView: View {
                                 Image(systemName: "lock.fill")
                                     .foregroundColor(.secondary)
                                     .frame(width: 20)
-                                SecureField("Password", text: $password)
+                                SecureField(tr("auth.password"), text: $password)
                                     .textContentType(isRegistration ? .newPassword : .password)
                             }
                             .glassInputStyle(cornerRadius: AppTheme.radiusInput)
@@ -117,24 +117,24 @@ struct AccountAccessView: View {
                                     Image(systemName: "lock.shield.fill")
                                         .foregroundColor(.secondary)
                                         .frame(width: 20)
-                                    SecureField("Confirm password", text: $confirmation)
+                                    SecureField(tr("auth.confirmPassword"), text: $confirmation)
                                         .textContentType(.newPassword)
                                 }
                                 .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                             }
 
                             GlassButton(
-                                isRegistration ? "Create account" : "Sign in",
+                                isRegistration ? tr("auth.createAccount") : tr("auth.signIn"),
                                 systemImage: isRegistration ? "person.badge.plus" : "arrow.right",
                                 style: .primary,
                                 size: .large
                             ) {
                                 guard !isRegistration || password == confirmation else {
-                                    localError = "Passwords do not match."
+                                    localError = tr("auth.passwordMismatch")
                                     return
                                 }
                                 guard !isRegistration || password.count >= 8 else {
-                                    localError = "Password must be at least 8 characters."
+                                    localError = tr("auth.passwordTooShort")
                                     return
                                 }
                                 localError = nil
@@ -156,7 +156,7 @@ struct AccountAccessView: View {
                                 localError = nil
                                 state.authError = nil
                             } label: {
-                                Text(isRegistration ? "I already have an account" : "Create an account")
+                                Text(isRegistration ? tr("auth.haveAccount") : tr("auth.createOne"))
                                     .font(.subheadline)
                                     .foregroundStyle(AppTheme.primary)
                                     .frame(maxWidth: .infinity)

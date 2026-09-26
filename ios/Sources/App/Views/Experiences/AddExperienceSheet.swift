@@ -39,7 +39,7 @@ public struct AddExperienceSheet: View {
                                 .foregroundColor(.secondary)
                                 .frame(width: 24)
 
-                            TextField("Experience Name (e.g. Summer Vacation)", text: $name)
+                            TextField(tr("experience.namePlaceholder"), text: $name)
                                 .textInputAutocapitalization(.sentences)
                                 .onChange(of: name) { _, newVal in
                                     if newVal.count > 200 { name = String(newVal.prefix(200)) }
@@ -48,18 +48,18 @@ public struct AddExperienceSheet: View {
                         .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Linked Contact")
+                            Text(tr("experience.linkedContact"))
                                 .font(.subheadline.bold())
                                 .foregroundColor(.primary)
 
-                            Picker("Assign to Contact", selection: Binding(
+                            Picker(tr("experience.linkedContact"), selection: Binding(
                                 get: { selectedContactId },
                                 set: { newValue in
                                     UISelectionFeedbackGenerator().selectionChanged()
                                     selectedContactId = newValue
                                 }
                             )) {
-                                Text("None (Standalone Experience)").tag("")
+                                Text(tr("experience.noContact")).tag("")
                                 ForEach(contacts) { c in
                                     Text(c.name).tag(c.id)
                                 }
@@ -75,7 +75,7 @@ public struct AddExperienceSheet: View {
 
                     // Bottom Save Button
                     GlassButton(
-                        initialExperience == nil ? "Save Experience" : "Update Experience",
+                        initialExperience == nil ? tr("experience.save") : tr("experience.update"),
                         systemImage: initialExperience == nil ? "plus" : "checkmark",
                         style: .primary,
                         size: .large
@@ -91,19 +91,20 @@ public struct AddExperienceSheet: View {
                 .padding(20)
             }
             .scrollDismissesKeyboard(.immediately)
+            .ignoresSafeArea(.keyboard, edges: .bottom)
             .dismissKeyboardOnTap()
-            .navigationTitle(initialExperience == nil ? "New Experience" : "Edit Experience")
+            .navigationTitle(initialExperience == nil ? tr("experience.new") : tr("experience.edit"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
+                    Button(tr("common.cancel")) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(initialExperience == nil ? "Create" : "Done") {
+                    Button(initialExperience == nil ? tr("common.create") : tr("common.done")) {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         save()
                     }

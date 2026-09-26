@@ -68,7 +68,7 @@ public struct ContactDetailView: View {
 
                     // Title-Style Section Header
                     HStack {
-                        Text("Activity Timeline")
+                        Text(tr("timeline.title"))
                             .font(.headline)
                             .foregroundColor(.primary)
                         Spacer()
@@ -81,8 +81,8 @@ public struct ContactDetailView: View {
                     if activityItems.isEmpty && !isAddingTransaction {
                         GlassEmptyStateView(
                             systemImage: "tray.fill",
-                            title: "No Transactions Yet",
-                            subtitle: "Tap the button below to add your first transaction."
+                            title: tr("timeline.emptyTitle"),
+                            subtitle: tr("timeline.emptySubtitle")
                         )
                     } else {
                         LazyVStack(spacing: 10) {
@@ -217,7 +217,7 @@ public struct ContactDetailView: View {
                     }
 
                     HStack(spacing: 6) {
-                        Text("\(transactionCount) \(transactionCount == 1 ? "transaction" : "transactions")")
+                        Text("\(transactionCount) \(transactionCount == 1 ? tr("common.transaction") : tr("common.transactions"))")
                             .font(.caption2)
                             .foregroundColor(.secondary)
 

@@ -1017,6 +1017,7 @@ public final class AppState: ObservableObject {
         if let value = UserDefaults.standard.string(forKey: languageKey), let selected = AppLanguage(rawValue: value) {
             language = selected
         }
+        L10n.language = language
         amountsHiddenByDefault = UserDefaults.standard.bool(forKey: amountsDefaultKey)
         isAmountsHidden = amountsHiddenByDefault
         transferRedirect = UserDefaults.standard.object(forKey: transferRedirectKey) as? Bool ?? true
@@ -1030,6 +1031,7 @@ public final class AppState: ObservableObject {
 
     public func updateLanguage(_ lang: AppLanguage) {
         language = lang
+        L10n.language = lang
         UserDefaults.standard.set(lang.rawValue, forKey: languageKey)
     }
 

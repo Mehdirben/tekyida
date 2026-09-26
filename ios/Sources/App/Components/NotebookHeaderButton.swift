@@ -23,7 +23,7 @@ public struct NotebookHeaderButton: View {
 
     public var body: some View {
         Menu {
-            Picker("Notebook", selection: Binding(
+            Picker(tr("notebook.select"), selection: Binding(
                 get: { activeNotebookId },
                 set: { newValue in
                     UISelectionFeedbackGenerator().selectionChanged()
@@ -43,7 +43,7 @@ public struct NotebookHeaderButton: View {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "slider.horizontal.3")
-                    Text("Manage Notebooks")
+                    Text(tr("notebook.manage"))
                 }
                 .font(.subheadline)
                 .fixedSize()
@@ -74,8 +74,8 @@ public struct NotebookHeaderButton: View {
 
     private var currentName: String {
         if let active = activeNotebook {
-            return active.archived ? "\(active.name) (Archived)" : active.name
+            return active.archived ? "\(active.name) \(tr("common.archivedSuffix"))" : active.name
         }
-        return notebooks.first(where: { $0.id == activeNotebookId })?.name ?? "Select Notebook"
+        return notebooks.first(where: { $0.id == activeNotebookId })?.name ?? tr("notebook.select")
     }
 }

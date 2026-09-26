@@ -28,7 +28,7 @@ public struct QuickStatsView: View {
                 // Row 1: Side by side cards for Money Owed & Money Given
                 HStack(spacing: 12) {
                     statCard(
-                        title: "Money Owed",
+                        title: tr("stats.moneyOwed"),
                         amount: moneyOwed,
                         icon: "arrow.down.left",
                         color: AppTheme.accent,
@@ -36,7 +36,7 @@ public struct QuickStatsView: View {
                     )
 
                     statCard(
-                        title: "Money Given",
+                        title: tr("stats.moneyGiven"),
                         amount: moneyGiven,
                         icon: "arrow.up.right",
                         color: AppTheme.danger,
@@ -57,7 +57,7 @@ public struct QuickStatsView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Net Balance")
+                        Text(tr("stats.netBalance"))
                             .font(.caption.bold())
                             .foregroundColor(.secondary)
 

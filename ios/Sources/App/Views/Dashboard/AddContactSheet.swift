@@ -36,7 +36,7 @@ public struct AddContactSheet: View {
                                 .foregroundColor(.secondary)
                                 .frame(width: 24)
 
-                            TextField("Full Name (e.g. Sarah Smith)", text: $name)
+                            TextField(tr("contact.namePlaceholder"), text: $name)
                                 .textInputAutocapitalization(.words)
                                 .onChange(of: name) { _, newVal in
                                     if newVal.count > 200 { name = String(newVal.prefix(200)) }
@@ -49,7 +49,7 @@ public struct AddContactSheet: View {
                                 .foregroundColor(AppTheme.accent)
                                 .frame(width: 24)
 
-                            TextField("Phone (optional)", text: $phone)
+                            TextField(tr("contact.phonePlaceholder"), text: $phone)
                                 .keyboardType(.phonePad)
                         }
                         .glassInputStyle(cornerRadius: AppTheme.radiusInput)
@@ -62,19 +62,20 @@ public struct AddContactSheet: View {
                 .padding(20)
             }
             .scrollDismissesKeyboard(.immediately)
+            .ignoresSafeArea(.keyboard, edges: .bottom)
             .dismissKeyboardOnTap()
-            .navigationTitle(initialContact == nil ? "New Contact" : "Edit Contact")
+            .navigationTitle(initialContact == nil ? tr("contact.new") : tr("contact.edit"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
+                    Button(tr("common.cancel")) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(initialContact == nil ? "Add" : "Done") {
+                    Button(initialContact == nil ? tr("common.add") : tr("common.done")) {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         save()
                     }
@@ -88,7 +89,7 @@ public struct AddContactSheet: View {
     private var saveButton: some View {
         let isNameEmpty = name.trimmingCharacters(in: .whitespaces).isEmpty
         return GlassButton(
-            initialContact == nil ? "Save Contact" : "Update Contact",
+            initialContact == nil ? tr("contact.save") : tr("contact.update"),
             systemImage: initialContact == nil ? "person.badge.plus" : "checkmark",
             style: .primary,
             size: .large,

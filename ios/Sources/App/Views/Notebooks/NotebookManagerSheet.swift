@@ -19,7 +19,7 @@ public struct NotebookManagerSheet: View {
                 VStack(spacing: 20) {
                     // Active Notebooks Section
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Active Notebooks")
+                        Text(tr("notebooks.activeSection"))
                             .font(.headline)
                             .foregroundColor(.primary)
                             .padding(.horizontal, 4)
@@ -36,14 +36,14 @@ public struct NotebookManagerSheet: View {
                     // Create New Notebook Form / Button
                     if isCreating {
                         VStack(spacing: 12) {
-                            TextField("Notebook Name (max 20)", text: $newNotebookName)
+                            TextField(tr("notebooks.namePlaceholder"), text: $newNotebookName)
                                 .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                                 .onChange(of: newNotebookName) { _, newVal in
                                     if newVal.count > 20 { newNotebookName = String(newVal.prefix(20)) }
                                 }
 
                             HStack(spacing: 10) {
-                                Button("Cancel") {
+                                Button(tr("common.cancel")) {
                                     newNotebookName = ""
                                     isCreating = false
                                 }
@@ -55,7 +55,7 @@ public struct NotebookManagerSheet: View {
                                     )
                                 )
 
-                                Button("Create") {
+                                Button(tr("common.create")) {
                                     createNotebook()
                                 }
                                 .buttonStyle(
@@ -78,7 +78,7 @@ public struct NotebookManagerSheet: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "plus.circle.fill")
                                     .font(.headline)
-                                Text("New Notebook")
+                                Text(tr("notebooks.new"))
                                     .font(.subheadline.bold())
                             }
                             .foregroundColor(.primary)
@@ -100,7 +100,9 @@ public struct NotebookManagerSheet: View {
                             }) {
                                 HStack {
                                     Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
-                                    Text(showArchived ? "Hide Archived (\(state.archivedNotebooksList.count))" : "Show Archived (\(state.archivedNotebooksList.count))")
+                                    Text(showArchived
+                                         ? String(format: tr("notebooks.hideArchived"), state.archivedNotebooksList.count)
+                                         : String(format: tr("notebooks.showArchived"), state.archivedNotebooksList.count))
                                         .font(.subheadline.bold())
                                     Spacer()
                                     Image(systemName: showArchived ? "chevron.up" : "chevron.down")
@@ -128,12 +130,12 @@ public struct NotebookManagerSheet: View {
             }
             .scrollDismissesKeyboard(.immediately)
             .dismissKeyboardOnTap()
-            .navigationTitle("Notebooks")
+            .navigationTitle(tr("notebooks.title"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.fraction(0.94)])
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
+                    Button(tr("common.done")) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         dismiss()
                     }
@@ -146,17 +148,17 @@ public struct NotebookManagerSheet: View {
                 }
             }
             .alert(
-                "Delete Notebook?",
+                tr("notebooks.deleteTitle"),
                 isPresented: Binding(
                     get: { deleteConfirmNotebook != nil },
                     set: { if !$0 { deleteConfirmNotebook = nil } }
                 ),
                 actions: {
-                    Button("Cancel", role: .cancel) {
+                    Button(tr("common.cancel"), role: .cancel) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         deleteConfirmNotebook = nil
                     }
-                    Button("Delete", role: .destructive) {
+                    Button(tr("common.delete"), role: .destructive) {
                         UINotificationFeedbackGenerator().notificationOccurred(.warning)
                         if let nb = deleteConfirmNotebook {
                             Task { await state.deleteNotebook(id: nb.id) }
@@ -165,7 +167,7 @@ public struct NotebookManagerSheet: View {
                     }
                 },
                 message: {
-                    Text("This will permanently delete '\(deleteConfirmNotebook?.name ?? "")' and all its contacts, experiences, and transactions.")
+                    Text(String(format: tr("notebooks.deleteMessage"), deleteConfirmNotebook?.name ?? ""))
                 }
             )
         }
@@ -287,19 +289,19 @@ private struct EditNotebookPopup: View {
                     Image(systemName: "book.closed")
                         .foregroundColor(.secondary)
                         .frame(width: 20)
-                    TextField("Notebook name", text: $name)
+                    TextField(tr("notebook.nameField"), text: $name)
                         .onChange(of: name) { _, value in
                             if value.count > 20 { name = String(value.prefix(20)) }
                         }
                 }
                 .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
-                Text("Notebook names can be up to 20 characters.")
+                Text(tr("notebook.charLimit"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                GlassButton("Save Changes", systemImage: "checkmark", style: .primary, size: .large) {
+                GlassButton(tr("common.saveChanges"), systemImage: "checkmark", style: .primary, size: .large) {
                     let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmed.isEmpty else { return }
                     onSave(trimmed)
@@ -311,12 +313,13 @@ private struct EditNotebookPopup: View {
                 Spacer(minLength: 0)
             }
             .padding(20)
+            .ignoresSafeArea(.keyboard, edges: .bottom)
             .dismissKeyboardOnTap()
-            .navigationTitle("Edit Notebook")
+            .navigationTitle(tr("notebook.editTitle"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
+                    Button(tr("common.cancel")) {
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         dismiss()
                     }

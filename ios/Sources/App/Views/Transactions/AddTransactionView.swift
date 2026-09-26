@@ -24,30 +24,30 @@ public struct AddTransactionView: View {
                 VStack(spacing: 14) {
                     // Row 1: Direction & Amount Field
                     VStack(spacing: 10) {
-                        Picker("Direction", selection: Binding(
+                        Picker(tr("transaction.direction"), selection: Binding(
                             get: { isPositive },
                             set: { newValue in
                                 UISelectionFeedbackGenerator().selectionChanged()
                                 isPositive = newValue
                             }
                         )) {
-                            Text("They owe you").tag(true)
-                            Text("You owe them").tag(false)
+                            Text(tr("transaction.theyOweYou")).tag(true)
+                            Text(tr("transaction.youOweThem")).tag(false)
                         }
                         .pickerStyle(.segmented)
 
-                        TextField("Amount (e.g. 150)", text: $amountString)
+                        TextField(tr("transaction.amountPlaceholder"), text: $amountString)
                             .keyboardType(.decimalPad)
                             .font(.body.weight(.semibold))
                             .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                     }
 
                     // Row 2: Description Field
-                    TextField("Description (optional)", text: $description)
+                    TextField(tr("transaction.descriptionPlaceholder"), text: $description)
                         .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
                     // Row 3: Date Picker
-                    DatePicker("Date", selection: $date, displayedComponents: [.date, .hourAndMinute])
+                    DatePicker(tr("transaction.date"), selection: $date, displayedComponents: [.date, .hourAndMinute])
                         .font(.subheadline)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
@@ -61,7 +61,7 @@ public struct AddTransactionView: View {
                                 isAdding = false
                             }
                         }) {
-                            Text("Cancel")
+                            Text(tr("common.cancel"))
                                 .frame(maxWidth: .infinity)
                                 .contentShape(Rectangle())
                         }
@@ -75,7 +75,7 @@ public struct AddTransactionView: View {
                         .contentShape(ConcentricRectangle(cornerRadius: AppTheme.radiusButton))
 
                         Button(action: submit) {
-                            Text("Add Transaction")
+                            Text(tr("transaction.add"))
                                 .frame(maxWidth: .infinity)
                                 .contentShape(Rectangle())
                         }
@@ -100,7 +100,7 @@ public struct AddTransactionView: View {
                 )
             } else {
                 GlassButton(
-                    "Add Transaction",
+                    tr("transaction.add"),
                     systemImage: "plus.circle.fill",
                     style: .primary,
                     size: .large,

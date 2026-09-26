@@ -33,7 +33,7 @@ public struct ExperienceDetailView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "lock.fill")
                                 .foregroundColor(AppTheme.warning)
-                            Text("This experience is closed. Reopen it to make changes.")
+                            Text(tr("experience.closedNotice"))
                                 .font(.caption.bold())
                                 .foregroundColor(AppTheme.warning)
                         }
@@ -49,7 +49,7 @@ public struct ExperienceDetailView: View {
 
                     // Title-Style Section Header
                     HStack {
-                        Text("Transactions")
+                        Text(tr("experience.transactionsTitle"))
                             .font(.headline)
                             .foregroundColor(.primary)
                         Spacer()
@@ -61,8 +61,8 @@ public struct ExperienceDetailView: View {
                     if txs.isEmpty && !isAddingTransaction {
                         GlassEmptyStateView(
                             systemImage: "doc.text.magnifyingglass",
-                            title: "No Transactions in this Experience",
-                            subtitle: "Tap the button below to add expenses or payments to this experience."
+                            title: tr("experience.emptyTitle"),
+                            subtitle: tr("experience.emptySubtitle")
                         )
                     } else {
                         LazyVStack(spacing: 10) {
@@ -132,7 +132,7 @@ public struct ExperienceDetailView: View {
                         state.toggleExperienceClosed(id: experience.id)
                     }) {
                         StatusBadge(
-                            title: isClosed ? "Closed" : "Open",
+                            title: isClosed ? tr("experience.statusClosed") : tr("experience.statusOpen"),
                             systemImage: isClosed ? "lock.fill" : "lock.open.fill",
                             color: isClosed ? AppTheme.warning : AppTheme.accent,
                             backgroundColor: isClosed ? AppTheme.warningBg : AppTheme.accentBg
