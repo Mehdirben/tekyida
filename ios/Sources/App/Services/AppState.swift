@@ -284,6 +284,10 @@ public final class AppState: ObservableObject {
         date: Date
     ) {
         guard abs(amount) > 0.0001, let idx = transactions.firstIndex(where: { $0.id == id }) else { return }
+        if let experienceId = transactions[idx].experienceId,
+           experiences.first(where: { $0.id == experienceId })?.closed == true {
+            return
+        }
         let trimmedDesc = description?.trimmingCharacters(in: .whitespacesAndNewlines)
         transactions[idx].amount = amount
         transactions[idx].description = trimmedDesc?.isEmpty == true ? nil : trimmedDesc
@@ -292,6 +296,11 @@ public final class AppState: ObservableObject {
     }
 
     public func deleteTransaction(id: String) {
+        if let transaction = transactions.first(where: { $0.id == id }),
+           let experienceId = transaction.experienceId,
+           experiences.first(where: { $0.id == experienceId })?.closed == true {
+            return
+        }
         transactions.removeAll { $0.id == id }
         saveData()
     }

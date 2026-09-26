@@ -4,17 +4,20 @@ import SwiftUI
 public struct TransactionRowView: View {
     let transaction: Transaction
     let isMasked: Bool
+    let showsActions: Bool
     let onEdit: () -> Void
     let onDelete: () -> Void
 
     public init(
         transaction: Transaction,
         isMasked: Bool,
+        showsActions: Bool = true,
         onEdit: @escaping () -> Void,
         onDelete: @escaping () -> Void
     ) {
         self.transaction = transaction
         self.isMasked = isMasked
+        self.showsActions = showsActions
         self.onEdit = onEdit
         self.onDelete = onDelete
     }
@@ -59,10 +62,12 @@ public struct TransactionRowView: View {
             )
 
             // Actions (Edit, Delete)
-            RowActionButtons(
-                onEdit: onEdit,
-                onDelete: onDelete
-            )
+            if showsActions {
+                RowActionButtons(
+                    onEdit: onEdit,
+                    onDelete: onDelete
+                )
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)

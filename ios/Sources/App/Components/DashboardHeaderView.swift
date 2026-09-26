@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Brand Logo Header (navbar-sized, plain, no glass)
+// MARK: - Scrolling Brand Header (plain, no glass)
 public struct BrandLogoHeader: View {
     public init() {}
 
@@ -20,10 +20,9 @@ public struct BrandLogoHeader: View {
     }
 }
 
-// MARK: - Shared Tekyida Navigation Bar Modifier
-// Custom top line: brand (plain, no glass) left + notebook menu right.
-// The inset stays transparent so the screen's background continues behind it.
-public struct TekyidaNavigationBarModifier: ViewModifier {
+// MARK: - Shared Scrolling Tekyida Header
+// Brand left + notebook menu right, placed in the page ScrollView so it scrolls with content.
+public struct TekyidaScrollHeader: View {
     let notebooks: [Notebook]
     @Binding var activeNotebookId: String?
     let onManageNotebooks: () -> Void
@@ -38,39 +37,18 @@ public struct TekyidaNavigationBarModifier: ViewModifier {
         self.onManageNotebooks = onManageNotebooks
     }
 
-    public func body(content: Content) -> some View {
-        content
-            .toolbar(.hidden, for: .navigationBar)
-            .safeAreaInset(edge: .top, spacing: 0) {
-                HStack(spacing: 12) {
-                    BrandLogoHeader()
+    public var body: some View {
+        HStack(spacing: 12) {
+            BrandLogoHeader()
 
-                    Spacer()
+            Spacer()
 
-                    NotebookHeaderButton(
-                        notebooks: notebooks,
-                        activeNotebookId: $activeNotebookId,
-                        onManage: onManageNotebooks
-                    )
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 10)
-                .background(.clear)
-            }
-    }
-}
-
-public extension View {
-    func tekyidaNavigationBar(
-        notebooks: [Notebook],
-        activeNotebookId: Binding<String?>,
-        onManageNotebooks: @escaping () -> Void
-    ) -> some View {
-        modifier(TekyidaNavigationBarModifier(
-            notebooks: notebooks,
-            activeNotebookId: activeNotebookId,
-            onManageNotebooks: onManageNotebooks
-        ))
+            NotebookHeaderButton(
+                notebooks: notebooks,
+                activeNotebookId: $activeNotebookId,
+                onManage: onManageNotebooks
+            )
+        }
+        .padding(.top, 8)
     }
 }

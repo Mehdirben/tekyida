@@ -1,10 +1,8 @@
 import SwiftUI
 
 // MARK: - Reusable Notebook Header Menu
-// Native dropdown menu anchored at the navigation bar: instant notebook
-// switching with system checkmarks plus a manage action. On iOS 26+ the
-// menu label sits on the toolbar's own Liquid Glass; below iOS 26 it
-// draws its own material pill.
+// Native dropdown menu for switching notebooks or opening notebook management.
+// The compact label uses the app's liquid glass pill style.
 public struct NotebookHeaderButton: View {
     let notebooks: [Notebook]
     @Binding var activeNotebookId: String?
@@ -51,7 +49,7 @@ public struct NotebookHeaderButton: View {
                     .font(.caption2.bold())
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 8)
             .padding(.vertical, 7)
             .liquidGlassPill()
         }

@@ -68,18 +68,14 @@ public struct SearchView: View {
                 }
             }
             .sheet(item: $selectedContact) { contact in
-                NavigationStack {
-                    ContactDetailSheet(contact: contact)
-                        .environmentObject(state)
-                }
-                .liquidGlassSheet(detents: [.fraction(0.94)])
+                ContactDetailSheet(contact: contact)
+                    .environmentObject(state)
+                    .liquidGlassSheet(detents: [.fraction(0.94)])
             }
             .sheet(item: $selectedExperience) { exp in
-                NavigationStack {
-                    ExperienceDetailSheet(experience: exp)
-                        .environmentObject(state)
-                }
-                .liquidGlassSheet(detents: [.fraction(0.94)])
+                ExperienceDetailSheet(experience: exp)
+                    .environmentObject(state)
+                    .liquidGlassSheet(detents: [.fraction(0.94)])
             }
             .transactionModals(
                 editingTransaction: $editingTransaction,
@@ -233,6 +229,7 @@ public struct SearchView: View {
                             TransactionRowView(
                                 transaction: tx,
                                 isMasked: state.isAmountsHidden,
+                                showsActions: canManageTransaction(tx),
                                 onEdit: { editingTransaction = tx },
                                 onDelete: { deletingTransaction = tx }
                             )
@@ -241,6 +238,14 @@ public struct SearchView: View {
                 }
             }
         }
+    }
+
+    private func canManageTransaction(_ transaction: Transaction) -> Bool {
+        guard let experienceId = transaction.experienceId,
+              let experience = state.experiences.first(where: { $0.id == experienceId }) else {
+            return true
+        }
+        return !experience.closed
     }
 
     // MARK: - Initial State

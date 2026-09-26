@@ -27,6 +27,12 @@ public struct ExperiencesView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
+                        TekyidaScrollHeader(
+                            notebooks: state.activeNotebooksList,
+                            activeNotebookId: $state.activeNotebookId,
+                            onManageNotebooks: { showNotebookManager = true }
+                        )
+
                         // Open Experiences Total Balance Card
                         if let activeNb = state.activeNotebook {
                             totalBalanceCard(notebookId: activeNb.id)
@@ -39,22 +45,15 @@ public struct ExperiencesView: View {
                         experiencesList
                     }
                     .padding(.horizontal, 16)
-                    .padding(.top, 12)
                     .padding(.bottom, 96)
                 }
                 .tabBarMinimizeBehaviorOnScroll()
             }
-            .tekyidaNavigationBar(
-                notebooks: state.activeNotebooksList,
-                activeNotebookId: $state.activeNotebookId,
-                onManageNotebooks: { showNotebookManager = true }
-            )
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $navigatedExperience) { exp in
-                NavigationStack {
-                    ExperienceDetailView(experience: exp)
-                }
-                .environmentObject(state)
-                .liquidGlassSheet(detents: [.fraction(0.94)])
+                ExperienceDetailView(experience: exp)
+                    .environmentObject(state)
+                    .liquidGlassSheet(detents: [.fraction(0.94)])
             }
             .sheet(isPresented: $showNotebookManager) {
                 NotebookManagerSheet()

@@ -5,13 +5,21 @@ public struct ExperienceDetailView: View {
     @EnvironmentObject private var state: AppState
     let experience: Experience
 
-    @State private var isLocalMasked: Bool = false
+    @State private var isLocalMasked: Bool? = nil
     @State private var isAddingTransaction: Bool = false
     @State private var editingTransaction: Transaction?
     @State private var deletingTransaction: Transaction?
 
     public init(experience: Experience) {
         self.experience = experience
+    }
+
+    private var shouldMaskAmounts: Bool {
+        isLocalMasked ?? state.isAmountsHidden
+    }
+
+    private var isClosed: Bool {
+        state.experiences.first(where: { $0.id == experience.id })?.closed ?? experience.closed
     }
 
     public var body: some View {
@@ -21,7 +29,7 @@ public struct ExperienceDetailView: View {
                 VStack(spacing: 16) {
                     headerCard
 
-                    if experience.closed {
+                    if isClosed {
                         HStack(spacing: 8) {
                             Image(systemName: "lock.fill")
                                 .foregroundColor(AppTheme.warning)
@@ -29,7 +37,8 @@ public struct ExperienceDetailView: View {
                                 .font(.caption.bold())
                                 .foregroundColor(AppTheme.warning)
                         }
-                        .padding(12)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 10)
                         .frame(maxWidth: .infinity)
                         .background(AppTheme.warningBg, in: ConcentricRectangle(cornerRadius: AppTheme.radiusInput))
                         .overlay {
@@ -56,16 +65,15 @@ public struct ExperienceDetailView: View {
                             subtitle: "Tap the button below to add expenses or payments to this experience."
                         )
                     } else {
-                        GlassEffectContainer {
-                            VStack(spacing: 10) {
-                                ForEach(txs) { tx in
-                                    TransactionRowView(
-                                        transaction: tx,
-                                        isMasked: isLocalMasked || state.isAmountsHidden,
-                                        onEdit: { editingTransaction = tx },
-                                        onDelete: { deletingTransaction = tx }
-                                    )
-                                }
+                        VStack(spacing: 10) {
+                            ForEach(txs) { tx in
+                                TransactionRowView(
+                                    transaction: tx,
+                                    isMasked: shouldMaskAmounts,
+                                    showsActions: !isClosed,
+                                    onEdit: { editingTransaction = tx },
+                                    onDelete: { deletingTransaction = tx }
+                                )
                             }
                         }
                     }
@@ -73,7 +81,7 @@ public struct ExperienceDetailView: View {
                 .padding(16)
             }
 
-            if !experience.closed {
+            if !isClosed {
                 // Floating Liquid Glass Action Bar
                 AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
                     state.createTransaction(
@@ -88,7 +96,6 @@ public struct ExperienceDetailView: View {
                 .padding(16)
             }
         }
-        .toolbar(.hidden, for: .navigationBar)
         .transactionModals(
             editingTransaction: $editingTransaction,
             deletingTransaction: $deletingTransaction,
@@ -124,10 +131,10 @@ public struct ExperienceDetailView: View {
                         state.toggleExperienceClosed(id: experience.id)
                     }) {
                         StatusBadge(
-                            title: experience.closed ? "Closed" : "Open",
-                            systemImage: experience.closed ? "lock.fill" : "lock.open.fill",
-                            color: experience.closed ? AppTheme.warning : AppTheme.accent,
-                            backgroundColor: experience.closed ? AppTheme.warningBg : AppTheme.accentBg
+                            title: isClosed ? "Closed" : "Open",
+                            systemImage: isClosed ? "lock.fill" : "lock.open.fill",
+                            color: isClosed ? AppTheme.warning : AppTheme.accent,
+                            backgroundColor: isClosed ? AppTheme.warningBg : AppTheme.accentBg
                         )
                     }
 
@@ -143,7 +150,7 @@ public struct ExperienceDetailView: View {
 
                 AmountView(
                     amount: balance,
-                    isHidden: isLocalMasked || state.isAmountsHidden,
+                    isHidden: shouldMaskAmounts,
                     font: .headline,
                     fontWeight: .bold
                 )
@@ -151,7 +158,10 @@ public struct ExperienceDetailView: View {
 
             Spacer()
 
-            MaskToggleButton(isMasked: $isLocalMasked)
+            MaskToggleButton(isMasked: Binding(
+                get: { shouldMaskAmounts },
+                set: { isLocalMasked = $0 }
+            ))
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)

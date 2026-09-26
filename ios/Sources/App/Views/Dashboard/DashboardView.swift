@@ -19,6 +19,12 @@ public struct DashboardView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
+                        TekyidaScrollHeader(
+                            notebooks: state.activeNotebooksList,
+                            activeNotebookId: $state.activeNotebookId,
+                            onManageNotebooks: { showNotebookManager = true }
+                        )
+
                         // QuickStats Widgets
                         if let activeNb = state.activeNotebook {
                             QuickStatsView(
@@ -36,22 +42,15 @@ public struct DashboardView: View {
                         contactsSection
                     }
                     .padding(.horizontal, 16)
-                    .padding(.top, 12)
                     .padding(.bottom, 96)
                 }
                 .tabBarMinimizeBehaviorOnScroll()
             }
-            .tekyidaNavigationBar(
-                notebooks: state.activeNotebooksList,
-                activeNotebookId: $state.activeNotebookId,
-                onManageNotebooks: { showNotebookManager = true }
-            )
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $navigatedContact) { contact in
-                NavigationStack {
-                    ContactDetailView(contact: contact)
-                }
-                .environmentObject(state)
-                .liquidGlassSheet(detents: [.fraction(0.94)])
+                ContactDetailView(contact: contact)
+                    .environmentObject(state)
+                    .liquidGlassSheet(detents: [.fraction(0.94)])
             }
             .sheet(isPresented: $showNotebookManager) {
                 NotebookManagerSheet()

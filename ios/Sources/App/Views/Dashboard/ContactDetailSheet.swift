@@ -5,13 +5,17 @@ public struct ContactDetailView: View {
     @EnvironmentObject private var state: AppState
     let contact: Contact
 
-    @State private var isLocalMasked: Bool = false
+    @State private var isLocalMasked: Bool? = nil
     @State private var isAddingTransaction: Bool = false
     @State private var editingTransaction: Transaction?
     @State private var deletingTransaction: Transaction?
 
     public init(contact: Contact) {
         self.contact = contact
+    }
+
+    private var shouldMaskAmounts: Bool {
+        isLocalMasked ?? state.isAmountsHidden
     }
 
     public var body: some View {
@@ -41,20 +45,18 @@ public struct ContactDetailView: View {
                             subtitle: "Tap the button below to add your first transaction."
                         )
                     } else {
-                        GlassEffectContainer {
-                            VStack(spacing: 10) {
-                                ForEach(closedExps) { exp in
-                                    closedExperienceRow(exp)
-                                }
+                        VStack(spacing: 10) {
+                            ForEach(closedExps) { exp in
+                                closedExperienceRow(exp)
+                            }
 
-                                ForEach(directTxs) { tx in
-                                    TransactionRowView(
-                                        transaction: tx,
-                                        isMasked: isLocalMasked || state.isAmountsHidden,
-                                        onEdit: { editingTransaction = tx },
-                                        onDelete: { deletingTransaction = tx }
-                                    )
-                                }
+                            ForEach(directTxs) { tx in
+                                TransactionRowView(
+                                    transaction: tx,
+                                    isMasked: shouldMaskAmounts,
+                                    onEdit: { editingTransaction = tx },
+                                    onDelete: { deletingTransaction = tx }
+                                )
                             }
                         }
                     }
@@ -74,7 +76,6 @@ public struct ContactDetailView: View {
             }
             .padding(16)
         }
-        .toolbar(.hidden, for: .navigationBar)
         .transactionModals(
             editingTransaction: $editingTransaction,
             deletingTransaction: $deletingTransaction,
@@ -113,7 +114,7 @@ public struct ContactDetailView: View {
 
                 AmountView(
                     amount: balance,
-                    isHidden: isLocalMasked || state.isAmountsHidden,
+                    isHidden: shouldMaskAmounts,
                     font: .headline,
                     fontWeight: .bold
                 )
@@ -121,7 +122,10 @@ public struct ContactDetailView: View {
 
             Spacer()
 
-            MaskToggleButton(isMasked: $isLocalMasked)
+            MaskToggleButton(isMasked: Binding(
+                get: { shouldMaskAmounts },
+                set: { isLocalMasked = $0 }
+            ))
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
@@ -154,7 +158,7 @@ public struct ContactDetailView: View {
 
             AmountView(
                 amount: expBalance,
-                isHidden: isLocalMasked || state.isAmountsHidden,
+                isHidden: shouldMaskAmounts,
                 font: .subheadline,
                 fontWeight: .bold
             )
