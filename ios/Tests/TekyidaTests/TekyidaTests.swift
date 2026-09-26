@@ -239,7 +239,7 @@ final class TekyidaTests: XCTestCase {
         var nbId: String? = "nb_active"
         let headerBtn = NotebookHeaderButton(
             notebooks: [Notebook(id: "nb_active", name: "Active")],
-            archivedNotebooks: [Notebook(id: "nb_archived", name: "Archived", archived: true)],
+            activeNotebook: Notebook(id: "nb_active", name: "Active"),
             activeNotebookId: Binding(get: { nbId }, set: { nbId = $0 }),
             onManage: {}
         )

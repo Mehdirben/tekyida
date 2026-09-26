@@ -16,6 +16,7 @@ public struct SearchView: View {
     @State private var selectedExperience: Experience?
     @State private var editingTransaction: Transaction?
     @State private var deletingTransaction: Transaction?
+    @FocusState private var isSearchFocused: Bool
 
     public init() {}
 
@@ -36,6 +37,7 @@ public struct SearchView: View {
                                 .textFieldStyle(.plain)
                                 .autocorrectionDisabled()
                                 .textInputAutocapitalization(.never)
+                                .focused($isSearchFocused)
 
                             if !query.isEmpty {
                                 Button {
@@ -82,6 +84,11 @@ public struct SearchView: View {
             }
             .navigationTitle("Search")
             .navigationBarTitleDisplayMode(.large)
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    isSearchFocused = true
+                }
+            }
             .sheet(item: $selectedContact) { contact in
                 ContactDetailSheet(contact: contact)
                     .environmentObject(state)

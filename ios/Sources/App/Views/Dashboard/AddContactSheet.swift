@@ -22,14 +22,12 @@ public struct AddContactSheet: View {
     public var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 20) {
                     // Contact Avatar Header
                     Image(systemName: "person.fill")
-                        .font(.system(size: 26))
+                        .font(.system(size: 44))
                         .foregroundColor(AppTheme.primary)
-                        .frame(width: 44, height: 44)
-                        .background(AppTheme.primary.opacity(0.12), in: Circle())
-                        .padding(.top, 4)
+                        .padding(.top, 12)
 
                     // Modern Liquid Glass Form Group
                     VStack(spacing: 14) {
@@ -59,7 +57,7 @@ public struct AddContactSheet: View {
 
                     saveButton
 
-                    Spacer(minLength: 0)
+                    Spacer(minLength: 24)
                 }
                 .padding(20)
             }
@@ -67,7 +65,7 @@ public struct AddContactSheet: View {
             .dismissKeyboardOnTap()
             .navigationTitle(initialContact == nil ? "New Contact" : "Edit Contact")
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.fraction(0.55)])
+            .liquidGlassSheet(detents: [.medium])
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {

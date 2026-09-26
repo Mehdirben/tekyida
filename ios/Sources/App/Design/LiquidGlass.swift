@@ -92,7 +92,7 @@ public struct LiquidGlassModifier: ViewModifier {
             case .surface, .button, .bar, .floating:
                 content.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
             case .input:
-                content.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+                content.glassEffect(.clear, in: .rect(cornerRadius: cornerRadius))
             }
         } else {
             fallbackBody(content: content)
@@ -123,7 +123,7 @@ public struct LiquidGlassModifier: ViewModifier {
         case .prominent:
             ConcentricRectangle(cornerRadius: cornerRadius).fill(AppTheme.primary)
         case .input:
-            ConcentricRectangle(cornerRadius: cornerRadius).fill(.ultraThinMaterial)
+            ConcentricRectangle(cornerRadius: cornerRadius).fill(Color(uiColor: .secondarySystemFill))
         case .bar, .floating:
             ConcentricRectangle(cornerRadius: cornerRadius).fill(.ultraThinMaterial)
         }
@@ -346,7 +346,6 @@ public extension View {
         self
             .presentationDetents(detents)
             .presentationDragIndicator(.visible)
-            .presentationBackground(.ultraThinMaterial)
     }
 
     /// Adopts tab bar minimize behavior on scroll down where available

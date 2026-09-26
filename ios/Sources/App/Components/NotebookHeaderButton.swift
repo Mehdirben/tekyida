@@ -5,18 +5,18 @@ import SwiftUI
 // The compact label uses the app's liquid glass pill style.
 public struct NotebookHeaderButton: View {
     let notebooks: [Notebook]
-    let archivedNotebooks: [Notebook]
+    let activeNotebook: Notebook?
     @Binding var activeNotebookId: String?
     let onManage: () -> Void
 
     public init(
         notebooks: [Notebook],
-        archivedNotebooks: [Notebook] = [],
+        activeNotebook: Notebook? = nil,
         activeNotebookId: Binding<String?>,
         onManage: @escaping () -> Void
     ) {
         self.notebooks = notebooks
-        self.archivedNotebooks = archivedNotebooks
+        self.activeNotebook = activeNotebook
         self._activeNotebookId = activeNotebookId
         self.onManage = onManage
     }
@@ -30,17 +30,8 @@ public struct NotebookHeaderButton: View {
                     activeNotebookId = newValue
                 }
             )) {
-                Section {
-                    ForEach(notebooks) { notebook in
-                        Text(notebook.name).tag(notebook.id as String?)
-                    }
-                }
-                if !archivedNotebooks.isEmpty {
-                    Section("Archived") {
-                        ForEach(archivedNotebooks) { notebook in
-                            Text("\(notebook.name) (Archived)").tag(notebook.id as String?)
-                        }
-                    }
+                ForEach(notebooks) { notebook in
+                    Text(notebook.name).tag(notebook.id as String?)
                 }
             }
 
@@ -82,12 +73,9 @@ public struct NotebookHeaderButton: View {
     }
 
     private var currentName: String {
-        if let found = notebooks.first(where: { $0.id == activeNotebookId }) {
-            return found.name
+        if let active = activeNotebook {
+            return active.archived ? "\(active.name) (Archived)" : active.name
         }
-        if let found = archivedNotebooks.first(where: { $0.id == activeNotebookId }) {
-            return "\(found.name) (Archived)"
-        }
-        return "Select Notebook"
+        return notebooks.first(where: { $0.id == activeNotebookId })?.name ?? "Select Notebook"
     }
 }

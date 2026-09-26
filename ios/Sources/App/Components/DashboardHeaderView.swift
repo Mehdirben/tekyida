@@ -81,7 +81,7 @@ public struct TekyidaScrollHeader: View {
 
             NotebookHeaderButton(
                 notebooks: state.activeNotebooksList,
-                archivedNotebooks: state.archivedNotebooksList,
+                activeNotebook: state.activeNotebook,
                 activeNotebookId: Binding(
                     get: { state.activeNotebookId },
                     set: { id in
