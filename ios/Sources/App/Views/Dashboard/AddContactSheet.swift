@@ -21,53 +21,48 @@ public struct AddContactSheet: View {
 
     public var body: some View {
         NavigationStack {
-            GeometryReader { proxy in
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Contact Avatar Header
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 44))
-                            .foregroundColor(AppTheme.primary)
-                            .padding(.top, 12)
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Contact Avatar Header
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(AppTheme.primary)
+                        .padding(.top, 12)
 
-                        // Modern Liquid Glass Form Group
-                        VStack(spacing: 16) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "person.fill")
-                                    .foregroundColor(.secondary)
-                                    .frame(width: 24)
+                    // Modern Liquid Glass Form Group
+                    VStack(spacing: 16) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "person.fill")
+                                .foregroundColor(.secondary)
+                                .frame(width: 24)
 
-                                TextField(tr("contact.namePlaceholder"), text: $name)
-                                    .textInputAutocapitalization(.words)
-                                    .onChange(of: name) { _, newVal in
-                                        if newVal.count > 200 { name = String(newVal.prefix(200)) }
-                                    }
-                            }
-                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
-
-                            HStack(spacing: 12) {
-                                Image(systemName: "phone.fill")
-                                    .foregroundColor(AppTheme.accent)
-                                    .frame(width: 24)
-
-                                TextField(tr("contact.phonePlaceholder"), text: $phone)
-                                    .keyboardType(.phonePad)
-                            }
-                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                            TextField(tr("contact.namePlaceholder"), text: $name)
+                                .textInputAutocapitalization(.words)
+                                .onChange(of: name) { _, newVal in
+                                    if newVal.count > 200 { name = String(newVal.prefix(200)) }
+                                }
                         }
+                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
-                        Spacer(minLength: 0)
+                        HStack(spacing: 12) {
+                            Image(systemName: "phone.fill")
+                                .foregroundColor(AppTheme.accent)
+                                .frame(width: 24)
 
-                        saveButton
-
-                        Color.clear.frame(height: 24)
+                            TextField(tr("contact.phonePlaceholder"), text: $phone)
+                                .keyboardType(.phonePad)
+                        }
+                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                     }
-                    .padding(20)
-                    .frame(minHeight: proxy.size.height)
+
+                    saveButton
+
+                    Spacer(minLength: 24)
                 }
-                .scrollDismissesKeyboard(.immediately)
-                .dismissKeyboardOnTap()
+                .padding(20)
             }
+            .scrollDismissesKeyboard(.immediately)
+            .dismissKeyboardOnTap()
             .navigationTitle(initialContact == nil ? tr("contact.new") : tr("contact.edit"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])
@@ -101,6 +96,7 @@ public struct AddContactSheet: View {
         )
         .disabled(isNameEmpty)
         .opacity(isNameEmpty ? 0.45 : 1.0)
+        .padding(.top, 4)
     }
 
     private func save() {
