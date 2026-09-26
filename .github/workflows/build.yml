@@ -52,6 +52,7 @@ jobs:
               - 'package*.json'
             frontend:
               - 'frontend/**'
+              - 'backend/convex/**'
               - 'package*.json'
             android:
               - 'android/**'

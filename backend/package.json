@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "convex dev",
     "deploy": "convex deploy",
-    "sync-to-frontend": "cp -r convex/ ../frontend/convex/",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },

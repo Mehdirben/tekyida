@@ -1,7 +1,8 @@
 services:
   app:
     build:
-      context: .
+      context: ..
+      dockerfile: frontend/Dockerfile
       args:
         NEXT_PUBLIC_CONVEX_URL: ${NEXT_PUBLIC_CONVEX_URL:?Set NEXT_PUBLIC_CONVEX_URL in .env}
         NEXT_PUBLIC_CONVEX_SITE_URL: ${NEXT_PUBLIC_CONVEX_SITE_URL:?Set NEXT_PUBLIC_CONVEX_SITE_URL in .env}

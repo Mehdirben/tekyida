@@ -6,12 +6,17 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 FROM base AS dependencies
 RUN apk add --no-cache libc6-compat
-COPY package.json package-lock.json* ./
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm install
 
 FROM base AS builder
-COPY --from=dependencies /app/node_modules ./node_modules
-COPY . .
+WORKDIR /app
+COPY --from=dependencies /app/frontend/node_modules ./frontend/node_modules
+COPY frontend/ ./frontend
+COPY backend/convex/ ./backend/convex
+
+WORKDIR /app/frontend
 
 # NEXT_PUBLIC_* values are embedded in the browser bundle by Next.js.
 ARG NEXT_PUBLIC_CONVEX_URL
@@ -26,6 +31,7 @@ RUN if [ -z "$NEXT_PUBLIC_CONVEX_URL" ] || [ -z "$NEXT_PUBLIC_CONVEX_SITE_URL" ]
     && npm run build
 
 FROM base AS runner
+WORKDIR /app
 ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
@@ -33,9 +39,9 @@ ENV NODE_ENV=production \
 RUN addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 nextjs
 
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/frontend/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/frontend/.next/standalone/frontend ./
+COPY --from=builder --chown=nextjs:nodejs /app/frontend/.next/static ./.next/static
 
 USER nextjs
 EXPOSE 3000

@@ -7,7 +7,7 @@ It is specific to this repository:
 - Next.js `16.2.6` requires Node.js `20.9.0` or newer.
 - Tekyida is structured as a monorepo (`frontend/`, `backend/`, `ios/`, `android/`, `docs/`).
 - Backend files & CLI commands run from `backend/` (e.g. `cd backend && npx convex ...`).
-- Frontend files & Docker build run from `frontend/` (Dokploy builds `frontend/Dockerfile` with context `frontend`).
+- Frontend files run from `frontend/`, while Docker builds `frontend/Dockerfile` with repository root context `.` (to access shared `backend/convex` types).
 - Tekyida uses `@convex-dev/auth` with the Password provider.
 - `backend/convex/schema.ts` includes `authTables`, so password accounts migrate with the database snapshot.
 - `backend/convex/auth.config.ts` and `backend/convex/http.ts` are already correct for self-hosting.
@@ -207,7 +207,7 @@ npx convex import \
 ```
 
 ### 10.5 Deploy the frontend
-Trigger a build and deployment in Dokploy (or push to the configured Git branch). Dokploy builds `frontend/Dockerfile` with context `frontend` and starts the updated container.
+Trigger a build and deployment in Dokploy (or push to the configured Git branch). Dokploy builds `frontend/Dockerfile` with context `.` and starts the updated container.
 
 ## 11) Verification checklist
 
