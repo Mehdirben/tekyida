@@ -26,12 +26,6 @@ public struct AddExperienceSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Experience Icon Banner
-                    Image(systemName: "flag.fill")
-                        .font(.system(size: 38))
-                        .foregroundColor(AppTheme.primary)
-                        .padding(.top, 12)
-
                     // Experience Details Fields
                     VStack(alignment: .leading, spacing: 16) {
                         HStack(spacing: 12) {
