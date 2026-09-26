@@ -9,6 +9,7 @@ public struct AddExperienceSheet: View {
 
     @State private var name: String
     @State private var selectedContactId: String
+    @State private var contentMinHeight: CGFloat = 0
 
     public init(
         contacts: [Contact],
@@ -24,74 +25,86 @@ public struct AddExperienceSheet: View {
 
     public var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Experience Icon Banner
-                    Image(systemName: "flag.fill")
-                        .font(.system(size: 38))
-                        .foregroundColor(AppTheme.primary)
-                        .padding(.top, 12)
+            GeometryReader { proxy in
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Absorbs leftover height so the form stays anchored to the bottom
+                        Color.clear.frame(maxHeight: .infinity)
 
-                    // Experience Details Fields
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "flag.fill")
-                                .foregroundColor(.secondary)
-                                .frame(width: 24)
+                        // Experience Icon Banner
+                        Image(systemName: "flag.fill")
+                            .font(.system(size: 38))
+                            .foregroundColor(AppTheme.primary)
+                            .padding(.top, 12)
 
-                            TextField(tr("experience.namePlaceholder"), text: $name)
-                                .textInputAutocapitalization(.sentences)
-                                .onChange(of: name) { _, newVal in
-                                    if newVal.count > 200 { name = String(newVal.prefix(200)) }
-                                }
-                        }
-                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                        // Experience Details Fields
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "flag.fill")
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 24)
 
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(tr("experience.linkedContact"))
-                                .font(.subheadline.bold())
-                                .foregroundColor(.primary)
-
-                            Picker(tr("experience.linkedContact"), selection: Binding(
-                                get: { selectedContactId },
-                                set: { newValue in
-                                    UISelectionFeedbackGenerator().selectionChanged()
-                                    selectedContactId = newValue
-                                }
-                            )) {
-                                Text(tr("experience.noContact")).tag("")
-                                ForEach(contacts) { c in
-                                    Text(c.name).tag(c.id)
-                                }
+                                TextField(tr("experience.namePlaceholder"), text: $name)
+                                    .textInputAutocapitalization(.sentences)
+                                    .onChange(of: name) { _, newVal in
+                                        if newVal.count > 200 { name = String(newVal.prefix(200)) }
+                                    }
                             }
-                            .pickerStyle(.menu)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .contentShape(Rectangle())
-                            .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
+                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(tr("experience.linkedContact"))
+                                    .font(.subheadline.bold())
+                                    .foregroundColor(.primary)
+
+                                Picker(tr("experience.linkedContact"), selection: Binding(
+                                    get: { selectedContactId },
+                                    set: { newValue in
+                                        UISelectionFeedbackGenerator().selectionChanged()
+                                        selectedContactId = newValue
+                                    }
+                                )) {
+                                    Text(tr("experience.noContact")).tag("")
+                                    ForEach(contacts) { c in
+                                        Text(c.name).tag(c.id)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .contentShape(Rectangle())
+                                .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
+                            }
                         }
-                    }
 
-                    // Bottom Save Button
-                    GlassButton(
-                        initialExperience == nil ? tr("experience.save") : tr("experience.update"),
-                        systemImage: initialExperience == nil ? "plus" : "checkmark",
-                        style: .primary,
-                        size: .large
-                    ) {
-                        save()
-                    }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                    .opacity(name.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
-                    .padding(.top, 4)
+                        // Bottom Save Button
+                        GlassButton(
+                            initialExperience == nil ? tr("experience.save") : tr("experience.update"),
+                            systemImage: initialExperience == nil ? "plus" : "checkmark",
+                            style: .primary,
+                            size: .large
+                        ) {
+                            save()
+                        }
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .opacity(name.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
+                        .padding(.top, 4)
 
-                    Spacer(minLength: 24)
+                        // Fixed bottom safe space, identical to the transaction sheet
+                        Color.clear.frame(height: 24)
+                    }
+                    .padding(20)
+                    .frame(minHeight: contentMinHeight > 0 ? contentMinHeight : proxy.size.height)
                 }
-                .padding(20)
+                .scrollDismissesKeyboard(.immediately)
+                .dismissKeyboardOnTap()
+                .onAppear {
+                    if contentMinHeight == 0 {
+                        contentMinHeight = proxy.size.height
+                    }
+                }
             }
-            .scrollDismissesKeyboard(.immediately)
-            .dismissKeyboardOnTap()
             .navigationTitle(initialExperience == nil ? tr("experience.new") : tr("experience.edit"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])
