@@ -8,7 +8,6 @@ public struct AddContactSheet: View {
 
     @State private var name: String
     @State private var phone: String
-    @State private var contentMinHeight: CGFloat = 0
 
     public init(
         contact: Contact? = nil,
@@ -22,60 +21,49 @@ public struct AddContactSheet: View {
 
     public var body: some View {
         NavigationStack {
-            GeometryReader { proxy in
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Absorbs leftover height so the form stays anchored to the bottom
-                        Color.clear.frame(maxHeight: .infinity)
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Contact Avatar Header
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(AppTheme.primary)
+                        .padding(.top, 12)
 
-                        // Contact Avatar Header
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 44))
-                            .foregroundColor(AppTheme.primary)
-                            .padding(.top, 12)
+                    // Modern Liquid Glass Form Group
+                    VStack(spacing: 16) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "person.fill")
+                                .foregroundColor(.secondary)
+                                .frame(width: 24)
 
-                        // Modern Liquid Glass Form Group
-                        VStack(spacing: 16) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "person.fill")
-                                    .foregroundColor(.secondary)
-                                    .frame(width: 24)
-
-                                TextField(tr("contact.namePlaceholder"), text: $name)
-                                    .textInputAutocapitalization(.words)
-                                    .onChange(of: name) { _, newVal in
-                                        if newVal.count > 200 { name = String(newVal.prefix(200)) }
-                                    }
-                            }
-                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
-
-                            HStack(spacing: 12) {
-                                Image(systemName: "phone.fill")
-                                    .foregroundColor(AppTheme.accent)
-                                    .frame(width: 24)
-
-                                TextField(tr("contact.phonePlaceholder"), text: $phone)
-                                    .keyboardType(.phonePad)
-                            }
-                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                            TextField(tr("contact.namePlaceholder"), text: $name)
+                                .textInputAutocapitalization(.words)
+                                .onChange(of: name) { _, newVal in
+                                    if newVal.count > 200 { name = String(newVal.prefix(200)) }
+                                }
                         }
+                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
-                        saveButton
+                        HStack(spacing: 12) {
+                            Image(systemName: "phone.fill")
+                                .foregroundColor(AppTheme.accent)
+                                .frame(width: 24)
 
-                        // Fixed bottom safe space, identical to the transaction sheet
-                        Color.clear.frame(height: 24)
+                            TextField(tr("contact.phonePlaceholder"), text: $phone)
+                                .keyboardType(.phonePad)
+                        }
+                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                     }
-                    .padding(20)
-                    .frame(minHeight: contentMinHeight > 0 ? contentMinHeight : proxy.size.height)
+
+                    saveButton
+
+                    Spacer(minLength: 24)
                 }
-                .scrollDismissesKeyboard(.immediately)
-                .dismissKeyboardOnTap()
-                .onAppear {
-                    if contentMinHeight == 0 {
-                        contentMinHeight = proxy.size.height
-                    }
-                }
+                .padding(20)
             }
+            .scrollDismissesKeyboard(.immediately)
+            .dismissKeyboardOnTap()
+            .ignoresSafeArea(.keyboard)
             .navigationTitle(initialContact == nil ? tr("contact.new") : tr("contact.edit"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.medium])
