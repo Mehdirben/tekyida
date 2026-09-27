@@ -18,143 +18,14 @@ public struct NotebookManagerSheet: View {
 
     public var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Active Notebooks Section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(tr("notebooks.activeSection"))
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                            .padding(.horizontal, 4)
-
-                        GlassEffectContainer {
-                            LazyVStack(spacing: 10) {
-                                if isReordering {
-                                    ForEach(reorderedNotebooks) { notebook in
-                                        reorderRow(notebook, in: $reorderedNotebooks)
-                                    }
-                                } else {
-                                    ForEach(state.activeNotebooksList) { notebook in
-                                        notebookRow(notebook, isArchived: false)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if !isReordering {
-                        // Create New Notebook Form / Button
-                    if isCreating {
-                        VStack(spacing: 12) {
-                            TextField(tr("notebooks.namePlaceholder"), text: $newNotebookName)
-                                .glassInputStyle(cornerRadius: AppTheme.radiusInput)
-                                .onChange(of: newNotebookName) { _, newVal in
-                                    if newVal.count > 20 { newNotebookName = String(newVal.prefix(20)) }
-                                }
-
-                            HStack(spacing: 10) {
-                                Button(tr("common.cancel")) {
-                                    newNotebookName = ""
-                                    isCreating = false
-                                }
-                                .buttonStyle(
-                                    .liquidGlass(
-                                        variant: .glass,
-                                        size: .regular,
-                                        cornerRadius: AppTheme.radiusButton
-                                    )
-                                )
-
-                                Button(tr("common.create")) {
-                                    createNotebook()
-                                }
-                                .buttonStyle(
-                                    .liquidGlass(
-                                        variant: .prominent,
-                                        size: .regular,
-                                        cornerRadius: AppTheme.radiusButton
-                                    )
-                                )
-                                .disabled(newNotebookName.trimmingCharacters(in: .whitespaces).isEmpty)
-                                .opacity(newNotebookName.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
-                            }
-                        }
-                        .padding(14)
-                        .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
-                    } else {
-                        Button(action: {
-                            isCreating = true
-                        }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.headline)
-                                Text(tr("notebooks.new"))
-                                    .font(.subheadline.bold())
-                            }
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .contentShape(Rectangle())
-                            .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
-                        }
-                        .buttonStyle(ScaleTouchStyle())
-                    }
-                    }
-
-                    // Archived Notebooks Section
-                    if isReordering {
-                        if !reorderedArchivedNotebooks.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text(tr("notebooks.archivedSection"))
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                    .padding(.horizontal, 4)
-
-                                GlassEffectContainer {
-                                    LazyVStack(spacing: 10) {
-                                        ForEach(reorderedArchivedNotebooks) { notebook in
-                                            reorderRow(notebook, in: $reorderedArchivedNotebooks)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else if !state.archivedNotebooksList.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Button(action: {
-                                withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
-                                    showArchived.toggle()
-                                }
-                            }) {
-                                HStack {
-                                    Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
-                                    Text(showArchived
-                                         ? String(format: tr("notebooks.hideArchived"), state.archivedNotebooksList.count)
-                                         : String(format: tr("notebooks.showArchived"), state.archivedNotebooksList.count))
-                                        .font(.subheadline.bold())
-                                    Spacer()
-                                    Image(systemName: showArchived ? "chevron.up" : "chevron.down")
-                                        .font(.caption.bold())
-                                }
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 4)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(ScaleTouchStyle())
-
-                            if showArchived {
-                                GlassEffectContainer {
-                                    LazyVStack(spacing: 10) {
-                                        ForEach(state.archivedNotebooksList) { notebook in
-                                            notebookRow(notebook, isArchived: true)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+            Group {
+                if isReordering {
+                    reorderList
+                        .transition(.opacity)
+                } else {
+                    managerContent
+                        .transition(.opacity)
                 }
-                .padding(20)
             }
             .scrollDismissesKeyboard(.immediately)
             .topScrollEdgeDisabled()
@@ -168,7 +39,9 @@ public struct NotebookManagerSheet: View {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button(tr("notebook.reorderDone")) {
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            isReordering = false
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                isReordering = false
+                            }
                         }
                         .font(.body.bold())
                     }
@@ -179,7 +52,9 @@ public struct NotebookManagerSheet: View {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 reorderedNotebooks = state.activeNotebooksList
                                 reorderedArchivedNotebooks = state.archivedNotebooksList
-                                isReordering = true
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    isReordering = true
+                                }
                             }
                         }
 
@@ -220,6 +95,167 @@ public struct NotebookManagerSheet: View {
                 }
             )
         }
+    }
+
+    private var managerContent: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // Active Notebooks Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(tr("notebooks.activeSection"))
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 4)
+
+                    GlassEffectContainer {
+                        LazyVStack(spacing: 10) {
+                            ForEach(state.activeNotebooksList) { notebook in
+                                notebookRow(notebook, isArchived: false)
+                            }
+                        }
+                    }
+                }
+
+                // Create New Notebook Form / Button
+                if isCreating {
+                    VStack(spacing: 12) {
+                        TextField(tr("notebooks.namePlaceholder"), text: $newNotebookName)
+                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                            .onChange(of: newNotebookName) { _, newVal in
+                                if newVal.count > 20 { newNotebookName = String(newVal.prefix(20)) }
+                            }
+
+                        HStack(spacing: 10) {
+                            Button(tr("common.cancel")) {
+                                newNotebookName = ""
+                                isCreating = false
+                            }
+                            .buttonStyle(
+                                .liquidGlass(
+                                    variant: .glass,
+                                    size: .regular,
+                                    cornerRadius: AppTheme.radiusButton
+                                )
+                            )
+
+                            Button(tr("common.create")) {
+                                createNotebook()
+                            }
+                            .buttonStyle(
+                                .liquidGlass(
+                                    variant: .prominent,
+                                    size: .regular,
+                                    cornerRadius: AppTheme.radiusButton
+                                )
+                            )
+                            .disabled(newNotebookName.trimmingCharacters(in: .whitespaces).isEmpty)
+                            .opacity(newNotebookName.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
+                        }
+                    }
+                    .padding(14)
+                    .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
+                } else {
+                    Button(action: {
+                        isCreating = true
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.headline)
+                            Text(tr("notebooks.new"))
+                                .font(.subheadline.bold())
+                        }
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .contentShape(Rectangle())
+                        .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
+                    }
+                    .buttonStyle(ScaleTouchStyle())
+                }
+
+                // Archived Notebooks Section
+                if !state.archivedNotebooksList.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
+                                showArchived.toggle()
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
+                                Text(showArchived
+                                     ? String(format: tr("notebooks.hideArchived"), state.archivedNotebooksList.count)
+                                     : String(format: tr("notebooks.showArchived"), state.archivedNotebooksList.count))
+                                    .font(.subheadline.bold())
+                                Spacer()
+                                Image(systemName: showArchived ? "chevron.up" : "chevron.down")
+                                    .font(.caption.bold())
+                            }
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 4)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(ScaleTouchStyle())
+
+                        if showArchived {
+                            GlassEffectContainer {
+                                LazyVStack(spacing: 10) {
+                                    ForEach(state.archivedNotebooksList) { notebook in
+                                        notebookRow(notebook, isArchived: true)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(20)
+        }
+    }
+
+    /// Transparent native List in edit mode: system drag-to-reorder with live
+    /// gap animation and auto-scroll, while rows keep their liquid-glass cards.
+    private var reorderList: some View {
+        List {
+            Section {
+                ForEach(reorderedNotebooks) { notebook in
+                    reorderRow(notebook)
+                        .padding(.vertical, 5)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets())
+                }
+                .onMove(perform: moveActiveNotebooks)
+            } header: {
+                reorderSectionHeader(tr("notebooks.activeSection"))
+            }
+
+            if !reorderedArchivedNotebooks.isEmpty {
+                Section {
+                    ForEach(reorderedArchivedNotebooks) { notebook in
+                        reorderRow(notebook)
+                            .padding(.vertical, 5)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets())
+                    }
+                    .onMove(perform: moveArchivedNotebooks)
+                } header: {
+                    reorderSectionHeader(tr("notebooks.archivedSection"))
+                }
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .environment(\.editMode, .constant(.active))
+        .padding(.horizontal, 20)
+    }
+
+    private func reorderSectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.headline)
+            .foregroundColor(.primary)
+            .textCase(nil)
     }
 
     private func notebookRow(_ notebook: Notebook, isArchived: Bool) -> some View {
@@ -309,51 +345,37 @@ public struct NotebookManagerSheet: View {
         .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
     }
 
-    private func reorderRow(_ notebook: Notebook, in list: Binding<[Notebook]>) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: "line.3.horizontal")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.secondary)
+    private func reorderRow(_ notebook: Notebook) -> some View {
+        HStack(spacing: 4) {
+            Text(notebook.name)
+                .font(.headline)
+                .foregroundColor(.primary)
 
-            HStack(spacing: 4) {
-                Text(notebook.name)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-
-                if state.isItemPendingSync(id: notebook.id) {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.caption2.bold())
-                        .foregroundColor(AppTheme.warning)
-                }
+            if state.isItemPendingSync(id: notebook.id) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.caption2.bold())
+                    .foregroundColor(AppTheme.warning)
             }
 
             Spacer()
         }
         .padding(14)
         .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
-        .contentShape(ConcentricRectangle(cornerRadius: AppTheme.radiusCard))
-        .draggable(notebook.id)
-        .dropDestination(for: String.self) { items, _ in
-            guard let draggedId = items.first else { return false }
-            return moveNotebook(draggedId: draggedId, onto: notebook.id, in: list)
-        }
     }
 
-    private func moveNotebook(draggedId: String, onto targetId: String, in list: Binding<[Notebook]>) -> Bool {
-        guard draggedId != targetId,
-              let fromIndex = list.wrappedValue.firstIndex(where: { $0.id == draggedId }),
-              let toIndex = list.wrappedValue.firstIndex(where: { $0.id == targetId })
-        else { return false }
+    private func moveActiveNotebooks(from source: IndexSet, to destination: Int) {
+        reorderedNotebooks.move(fromOffsets: source, toOffset: destination)
+        persistReorderedNotebooks()
+    }
 
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-            list.wrappedValue.move(
-                fromOffsets: IndexSet(integer: fromIndex),
-                toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex
-            )
-        }
+    private func moveArchivedNotebooks(from source: IndexSet, to destination: Int) {
+        reorderedArchivedNotebooks.move(fromOffsets: source, toOffset: destination)
+        persistReorderedNotebooks()
+    }
+
+    private func persistReorderedNotebooks() {
         UISelectionFeedbackGenerator().selectionChanged()
         state.reorderNotebooks(orderedIds: reorderedNotebooks.map(\.id) + reorderedArchivedNotebooks.map(\.id))
-        return true
     }
 
     private func createNotebook() {
