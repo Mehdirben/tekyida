@@ -10,6 +10,9 @@ export default defineConfig({
       reportsDirectory: "../tests/reports/backend",
       reporter: ["text", "json", "html", "json-summary"],
       include: [
+        "convex/auth.config.ts",
+        "convex/auth.ts",
+        "convex/http.ts",
         "convex/notebooks.ts",
         "convex/contacts.ts",
         "convex/experiences.ts",

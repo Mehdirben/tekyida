@@ -1,10 +1,11 @@
 import { convexAuth } from "@convex-dev/auth/server";
 import { Email } from "@convex-dev/auth/providers/Email";
 import { Password } from "@convex-dev/auth/providers/Password";
+import type { Value } from "convex/values";
 
 const EMAIL_TOKEN_MAX_AGE_SECONDS = 10 * 60;
 
-function requireEnv(name: string) {
+export function requireEnv(name: string) {
   const value = process.env[name];
   if (!value) {
     throw new Error(`Missing required environment variable ${name}`);
@@ -12,7 +13,7 @@ function requireEnv(name: string) {
   return value;
 }
 
-async function sendResendEmail(args: {
+export async function sendResendEmail(args: {
   to: string;
   subject: string;
   html: string;
@@ -38,57 +39,48 @@ async function sendResendEmail(args: {
   }
 }
 
-function generateNumericCode() {
+export function generateNumericCode() {
   const values = new Uint32Array(1);
   crypto.getRandomValues(values);
   return String(values[0] % 1_000_000).padStart(6, "0");
 }
 
-function generateResetToken() {
+export function generateResetToken() {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-const emailVerificationProvider = Email({
-  id: "email-verification",
-  name: "Tekyida Email Verification",
-  from: process.env.AUTH_EMAIL_FROM,
-  maxAge: EMAIL_TOKEN_MAX_AGE_SECONDS,
-  generateVerificationToken: async () => generateNumericCode(),
-  sendVerificationRequest: async ({ identifier, token }) => {
-    await sendResendEmail({
-      to: identifier,
-      subject: "Your Tekyida verification code",
-      text: `Your Tekyida verification code is ${token}. It expires in 10 minutes.`,
-      html: `
+export async function sendVerificationEmail(args: { identifier: string; token: string }) {
+  await sendResendEmail({
+    to: args.identifier,
+    subject: "Your Tekyida verification code",
+    text: `Your Tekyida verification code is ${args.token}. It expires in 10 minutes.`,
+    html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111827;">
           <h1 style="font-size: 20px;">Verify your Tekyida email</h1>
           <p>Use this code to finish signing in:</p>
-          <p style="font-size: 28px; font-weight: 700; letter-spacing: 6px;">${token}</p>
+          <p style="font-size: 28px; font-weight: 700; letter-spacing: 6px;">${args.token}</p>
           <p>This code expires in 10 minutes.</p>
         </div>
       `,
-    });
-  },
-});
+  });
+}
 
-const passwordResetProvider = Email({
-  id: "password-reset",
-  name: "Tekyida Password Reset",
-  from: process.env.AUTH_EMAIL_FROM,
-  maxAge: EMAIL_TOKEN_MAX_AGE_SECONDS,
-  generateVerificationToken: async () => generateResetToken(),
-  sendVerificationRequest: async ({ identifier, token, url }) => {
-    const resetUrl = new URL("/reset-password", url);
-    resetUrl.searchParams.set("token", token);
-    resetUrl.searchParams.set("email", identifier);
+export async function sendPasswordResetEmail(args: {
+  identifier: string;
+  token: string;
+  url: string;
+}) {
+  const resetUrl = new URL("/reset-password", args.url);
+  resetUrl.searchParams.set("token", args.token);
+  resetUrl.searchParams.set("email", args.identifier);
 
-    await sendResendEmail({
-      to: identifier,
-      subject: "Reset your Tekyida password",
-      text: `Reset your Tekyida password using this link: ${resetUrl.toString()}\n\nThis link expires in 10 minutes.`,
-      html: `
+  await sendResendEmail({
+    to: args.identifier,
+    subject: "Reset your Tekyida password",
+    text: `Reset your Tekyida password using this link: ${resetUrl.toString()}\n\nThis link expires in 10 minutes.`,
+    html: `
         <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111827;">
           <h1 style="font-size: 20px;">Reset your Tekyida password</h1>
           <p>Use the button below to choose a new password. This link expires in 10 minutes.</p>
@@ -100,8 +92,34 @@ const passwordResetProvider = Email({
           <p>If you did not request this, you can ignore this email.</p>
         </div>
       `,
-    });
-  },
+  });
+}
+
+export function buildPasswordProfile(params: Record<string, Value | undefined>) {
+  return {
+    email: params.email as string,
+    ...(typeof params.name === "string" && params.name.trim()
+      ? { name: params.name.trim() }
+      : {}),
+  };
+}
+
+const emailVerificationProvider = Email({
+  id: "email-verification",
+  name: "Tekyida Email Verification",
+  from: process.env.AUTH_EMAIL_FROM,
+  maxAge: EMAIL_TOKEN_MAX_AGE_SECONDS,
+  generateVerificationToken: generateNumericCode,
+  sendVerificationRequest: sendVerificationEmail,
+});
+
+const passwordResetProvider = Email({
+  id: "password-reset",
+  name: "Tekyida Password Reset",
+  from: process.env.AUTH_EMAIL_FROM,
+  maxAge: EMAIL_TOKEN_MAX_AGE_SECONDS,
+  generateVerificationToken: generateResetToken,
+  sendVerificationRequest: sendPasswordResetEmail,
 });
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
@@ -109,12 +127,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     Password({
       verify: emailVerificationProvider,
       reset: passwordResetProvider,
-      profile: (params) => ({
-        email: params.email as string,
-        ...(typeof params.name === "string" && params.name.trim()
-          ? { name: params.name.trim() }
-          : {}),
-      }),
+      profile: buildPasswordProfile,
     }),
   ],
   session: {
