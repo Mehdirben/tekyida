@@ -5,7 +5,7 @@ import { ChevronDown, Check, Archive } from "lucide-react";
 import { triggerHaptic } from "@/lib/haptics";
 import { useTranslation } from "@/i18n/LanguageContext";
 
-export interface SelectOption {
+interface SelectOption {
     value: string;
     label: string;
     archived?: boolean;
@@ -76,7 +76,6 @@ export default function Select({
             const spaceBelow = window.innerHeight - rect.bottom;
             const spaceAbove = rect.top;
             if (spaceBelow < 220 && spaceAbove > spaceBelow) {
-                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setOpenUpward(true);
             } else {
                 setOpenUpward(false);

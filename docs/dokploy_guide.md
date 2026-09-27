@@ -22,7 +22,7 @@ Under the **General / Build** tab, configure the Docker paths:
 |---|---|---|
 | **Build Type** | `Dockerfile` | Uses the Dockerfile inside `frontend/` |
 | **Docker File** | `frontend/Dockerfile` | Path from the repository root to the Dockerfile |
-| **Docker Context Path** | `frontend` | Sets build context root to `frontend/` |
+| **Docker Context Path** | `.` | Sets build context root to repository root so Next.js accesses shared `backend/convex` types |
 
 ### Ports & Networking
 

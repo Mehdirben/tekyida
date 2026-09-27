@@ -1,128 +1,135 @@
 import SwiftUI
 
-// MARK: - Contact Detail Sheet
-public struct ContactDetailSheet: View {
+private enum ContactTimelineItem: Identifiable {
+    case transaction(Transaction)
+    case experience(Experience, balance: Double, transactionCount: Int, lastTransactionDate: Date?)
+
+    var id: String {
+        switch self {
+        case let .transaction(transaction):
+            return "transaction-\(transaction.id)"
+        case let .experience(experience, _, _, _):
+            return "experience-\(experience.id)"
+        }
+    }
+
+    var sortDate: Date {
+        switch self {
+        case let .transaction(transaction):
+            return transaction.date
+        case let .experience(_, _, _, lastTransactionDate):
+            return lastTransactionDate ?? .distantPast
+        }
+    }
+}
+
+// MARK: - Contact Detail View (Modern Liquid Glass HIG)
+public struct ContactDetailView: View {
     @EnvironmentObject private var state: AppState
-    @Environment(\.dismiss) private var dismiss
     let contact: Contact
 
-    @State private var isLocalMasked: Bool = false
-    @State private var isAddingTransaction: Bool = false
+    @State private var isLocalMasked: Bool? = nil
+    @State private var showAddTransaction: Bool = false
     @State private var editingTransaction: Transaction?
     @State private var deletingTransaction: Transaction?
-    @State private var isEditingContact: Bool = false
-    @State private var isConfirmingDeleteContact: Bool = false
+    @State private var selectedExperience: Experience?
 
     public init(contact: Contact) {
         self.contact = contact
     }
 
+    private var shouldMaskAmounts: Bool {
+        isLocalMasked ?? state.isAmountsHidden
+    }
+
+    private var timelineItems: [ContactTimelineItem] {
+        let transactionItems = state.directTransactions(for: contact.id)
+            .map(ContactTimelineItem.transaction)
+        let experienceItems = state.closedExperiences(for: contact.id).map { experience in
+            let transactions = state.experienceTransactions(experience.id)
+            let balance = transactions.reduce(0.0) { $0 + $1.amount }
+            return ContactTimelineItem.experience(
+                experience,
+                balance: balance,
+                transactionCount: transactions.count,
+                lastTransactionDate: transactions.first?.date
+            )
+        }
+
+        return (transactionItems + experienceItems).sorted { $0.sortDate > $1.sortDate }
+    }
+
     public var body: some View {
-        NavigationStack {
-            ZStack {
-                MeshGradientBackground()
+        // Transparent content so the glass sheet presentation shows through
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 16) {
+                    headerCard
 
-                VStack(spacing: 0) {
-                    ScrollView {
-                        VStack(spacing: 16) {
-                            headerCard
+                    // Title-Style Section Header
+                    HStack {
+                        Text(tr("timeline.title"))
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                    .padding(.top, 4)
 
-                            HStack {
-                                Text("Activity Timeline")
-                                    .font(.caption.bold())
-                                    .foregroundColor(.secondary)
-                                    .textCase(.uppercase)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 4)
+                    let activityItems = timelineItems
 
-                            let directTxs = state.directTransactions(for: contact.id)
-                            let closedExps = state.closedExperiences(for: contact.id)
-
-                            if directTxs.isEmpty && closedExps.isEmpty && !isAddingTransaction {
-                                GlassEmptyStateView(
-                                    systemImage: "tray.fill",
-                                    title: "No transactions yet",
-                                    subtitle: "Tap the button below to add your first transaction."
-                                )
-                            } else {
-                                ForEach(closedExps) { exp in
-                                    closedExperienceRow(exp)
-                                }
-
-                                ForEach(directTxs) { tx in
+                    if activityItems.isEmpty {
+                        GlassEmptyStateView(
+                            systemImage: "tray.fill",
+                            title: tr("timeline.emptyTitle"),
+                            subtitle: tr("timeline.emptySubtitle")
+                        )
+                    } else {
+                        LazyVStack(spacing: 10) {
+                            ForEach(activityItems) { item in
+                                switch item {
+                                case let .experience(experience, balance, transactionCount, lastTransactionDate):
+                                    experienceRow(
+                                        experience,
+                                        balance: balance,
+                                        transactionCount: transactionCount,
+                                        lastTransactionDate: lastTransactionDate
+                                    )
+                                case let .transaction(transaction):
                                     TransactionRowView(
-                                        transaction: tx,
-                                        isMasked: isLocalMasked || state.isAmountsHidden,
-                                        onEdit: { editingTransaction = tx },
-                                        onDelete: { deletingTransaction = tx }
+                                        transaction: transaction,
+                                        isMasked: shouldMaskAmounts,
+                                        onEdit: { editingTransaction = transaction },
+                                        onDelete: { deletingTransaction = transaction }
                                     )
                                 }
                             }
                         }
-                        .padding(16)
                     }
+                }
+                .padding(16)
+            }
 
-                    AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
-                        state.createTransaction(
-                            notebookId: contact.notebookId,
-                            contactId: contact.id,
-                            amount: amount,
-                            description: desc,
-                            date: date
-                        )
-                    }
-                    .padding(16)
-                }
+            // Floating Liquid Glass Action Bar
+            GlassActionButton(
+                tr("transaction.add"),
+                systemImage: "plus.circle.fill"
+            ) {
+                showAddTransaction = true
             }
-            .navigationTitle(contact.name)
-            .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.large])
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                        .font(.body.bold())
-                }
-
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button(action: { isEditingContact = true }) {
-                            Label("Edit Contact", systemImage: "pencil")
-                        }
-                        Button(role: .destructive, action: { isConfirmingDeleteContact = true }) {
-                            Label("Delete Contact", systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .font(.headline)
-                            .symbolRenderingMode(.hierarchical)
-                    }
-                }
-            }
-            .sheet(isPresented: $isEditingContact) {
-                AddContactSheet(contact: contact) { newName, newPhone in
-                    state.updateContact(id: contact.id, name: newName, phone: newPhone)
-                }
-            }
-            .transactionModals(
-                editingTransaction: $editingTransaction,
-                deletingTransaction: $deletingTransaction,
-                onSave: { id, amount, desc, date in
-                    state.updateTransaction(id: id, amount: amount, description: desc, date: date)
-                },
-                onDelete: { id in
-                    state.deleteTransaction(id: id)
-                }
-            )
-            .alert("Delete Contact?", isPresented: $isConfirmingDeleteContact) {
-                Button("Cancel", role: .cancel) {}
-                Button("Delete", role: .destructive) {
-                    state.deleteContact(id: contact.id)
-                    dismiss()
-                }
-            } message: {
-                Text("Deleting this contact will remove all direct transactions and unlink any associated experiences.")
-            }
+            .padding(16)
+        }
+        .transactionActions(
+            isAdding: $showAddTransaction,
+            editing: $editingTransaction,
+            deleting: $deletingTransaction,
+            notebookId: contact.notebookId,
+            contactId: contact.id
+        )
+        .sheet(item: $selectedExperience) { experience in
+            ExperienceDetailView(experience: experience)
+                .environmentObject(state)
+                .liquidGlassSheet(detents: [.fraction(0.94)])
         }
     }
 
@@ -130,9 +137,9 @@ public struct ContactDetailSheet: View {
         let balance = state.contactBalance(contact.id)
         return HStack(spacing: 16) {
             ZStack {
-                Circle()
+                ConcentricRectangle(cornerRadius: 18)
                     .fill(AppTheme.primary.opacity(0.15))
-                    .frame(width: 52, height: 52)
+                    .frame(width: 56, height: 56)
 
                 Text(String(contact.name.prefix(1)).uppercased())
                     .font(.title2.bold())
@@ -152,7 +159,7 @@ public struct ContactDetailSheet: View {
 
                 AmountView(
                     amount: balance,
-                    isHidden: isLocalMasked || state.isAmountsHidden,
+                    isHidden: shouldMaskAmounts,
                     font: .headline,
                     fontWeight: .bold
                 )
@@ -160,46 +167,82 @@ public struct ContactDetailSheet: View {
 
             Spacer()
 
-            MaskToggleButton(isMasked: $isLocalMasked)
+            MaskToggleButton(isMasked: Binding(
+                get: { shouldMaskAmounts },
+                set: { isLocalMasked = $0 }
+            ))
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
 
-    private func closedExperienceRow(_ exp: Experience) -> some View {
-        let expBalance = state.experienceBalance(exp.id)
-        return HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(AppTheme.warningBg)
-                    .frame(width: 36, height: 36)
+    private func experienceRow(
+        _ experience: Experience,
+        balance: Double,
+        transactionCount: Int,
+        lastTransactionDate: Date?
+    ) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            selectedExperience = experience
+        } label: {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(AppTheme.primary.opacity(0.12))
+                        .frame(width: 36, height: 36)
 
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(AppTheme.warning)
+                    Image(systemName: "safari.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(AppTheme.primary)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 5) {
+                        Text(experience.name)
+                            .font(.subheadline.bold())
+                            .foregroundColor(.primary)
+
+                        if state.isItemPendingSync(id: experience.id) {
+                            PendingSyncIndicator(size: 10)
+                        }
+                    }
+
+                    HStack(spacing: 6) {
+                        Text("\(transactionCount) \(transactionCount == 1 ? tr("common.transaction") : tr("common.transactions"))")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+
+                        if let lastTransactionDate {
+                            Text(lastTransactionDate.formatted(.dateTime.day().month(.abbreviated).year()))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                AmountView(
+                    amount: balance,
+                    isHidden: shouldMaskAmounts,
+                    showsCurrency: false,
+                    font: .subheadline,
+                    fontWeight: .bold
+                )
+
+                Image(systemName: "chevron.right")
+                    .font(.caption2.bold())
+                    .foregroundColor(.secondary.opacity(0.7))
             }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(exp.name)
-                    .font(.subheadline.bold())
-                    .foregroundColor(.primary)
-
-                Text("Closed Experience")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-            }
-
-            Spacer()
-
-            AmountView(
-                amount: expBalance,
-                isHidden: isLocalMasked || state.isAmountsHidden,
-                font: .subheadline,
-                fontWeight: .bold
-            )
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
+            .contentShape(RoundedRectangle(cornerRadius: AppTheme.radiusButton))
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
+        .buttonStyle(.plain)
     }
 }
+
+// MARK: - Backwards Compatibility Alias
+public typealias ContactDetailSheet = ContactDetailView

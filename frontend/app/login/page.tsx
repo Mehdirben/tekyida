@@ -43,7 +43,7 @@ export default function LoginPage() {
             setNotice(t("auth.resetSuccess"));
             window.history.replaceState({}, "", "/login");
         }
-    }, [t]);
+    }, [t, setNotice]);
 
     // Redirect if already authenticated
     useEffect(() => {

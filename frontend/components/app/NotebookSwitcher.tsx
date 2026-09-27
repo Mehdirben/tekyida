@@ -1,17 +1,16 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { ChevronDown, Plus, BookOpen, Check, Pencil, Trash2, X, CloudOff, GripVertical, Archive, ArchiveRestore } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { ChevronDown, Plus, BookOpen, Check, Pencil, Trash2, CloudOff, GripVertical, Archive, ArchiveRestore } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useDragReorder } from "@/hooks/useDragReorder";
 import { triggerHaptic } from "@/lib/haptics";
-
-interface Notebook {
-    id: string;
-    name: string;
-    archived?: boolean;
-}
+import NotebookConfirmModals from "./NotebookConfirmModals";
+import NotebookArchivedSection from "./NotebookArchivedSection";
+import NotebookEditRow from "./NotebookEditRow";
+import NotebookAddPanel from "./NotebookAddPanel";
+import type { Notebook } from "./notebookTypes";
 
 interface NotebookSwitcherProps {
     notebooks: Notebook[];
@@ -51,93 +50,23 @@ export default function NotebookSwitcher({
     const editInputRef = useRef<HTMLInputElement>(null);
     const archivedSectionRef = useRef<HTMLDivElement>(null);
 
-    const [isReordering, setIsReordering] = useState(false);
-    const [draggedId, setDraggedId] = useState<string | null>(null);
-    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-    const [localNotebooks, setLocalNotebooks] = useState<Notebook[]>([]);
-    const [offsetY, setOffsetY] = useState(0);
-    const dragStartYRef = useRef(0);
-    const dragCurrentIndexRef = useRef<number | null>(null);
+    const {
+        isReordering,
+        items: reorderItems,
+        draggedId,
+        offsetY,
+        beginReorder,
+        stopReorder,
+        startDrag,
+    } = useDragReorder<Notebook>((items) => onReorder?.(items.map((n) => n.id)));
 
-    const handleDragStart = (
-        e: React.MouseEvent | React.TouchEvent,
-        index: number,
-        id: string
-    ) => {
-        triggerHaptic("light");
-        setDraggedId(id);
-        setDraggedIndex(index);
-        dragCurrentIndexRef.current = index;
-        setOffsetY(0);
-
-        const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-        dragStartYRef.current = clientY;
-    };
-
-    useEffect(() => {
-        if (draggedId !== null && draggedIndex !== null) {
-            const handleDragMove = (e: MouseEvent | TouchEvent) => {
-                const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-                const deltaY = clientY - dragStartYRef.current;
-                setOffsetY(deltaY);
-
-                const itemHeight = 48; // Estimated height of a row
-                const newIndex = Math.max(
-                    0,
-                    Math.min(
-                        localNotebooks.length - 1,
-                        Math.round(draggedIndex + deltaY / itemHeight)
-                    )
-                );
-
-                if (newIndex !== dragCurrentIndexRef.current) {
-                    triggerHaptic("light");
-                    const updated = [...localNotebooks];
-                    const [movedItem] = updated.splice(draggedIndex, 1);
-                    updated.splice(newIndex, 0, movedItem);
-
-                    const indexDiff = newIndex - draggedIndex;
-                    dragStartYRef.current += indexDiff * itemHeight;
-
-                    setLocalNotebooks(updated);
-                    setDraggedIndex(newIndex);
-                    dragCurrentIndexRef.current = newIndex;
-                    setOffsetY(clientY - dragStartYRef.current);
-                }
-            };
-
-            const handleDragEnd = () => {
-                triggerHaptic("success");
-                setDraggedId(null);
-                setDraggedIndex(null);
-                dragCurrentIndexRef.current = null;
-                setOffsetY(0);
-
-                const ids = localNotebooks.map((n) => n.id);
-                onReorder?.(ids);
-            };
-
-            const onMove = (e: MouseEvent | TouchEvent) => {
-                if (e.cancelable) e.preventDefault();
-                handleDragMove(e);
-            };
-            const onEnd = () => {
-                handleDragEnd();
-            };
-
-            window.addEventListener("mousemove", onMove, { passive: false });
-            window.addEventListener("mouseup", onEnd);
-            window.addEventListener("touchmove", onMove, { passive: false });
-            window.addEventListener("touchend", onEnd);
-
-            return () => {
-                window.removeEventListener("mousemove", onMove);
-                window.removeEventListener("mouseup", onEnd);
-                window.removeEventListener("touchmove", onMove);
-                window.removeEventListener("touchend", onEnd);
-            };
-        }
-    }, [draggedId, draggedIndex, localNotebooks, onReorder]);
+    const closeMenu = useCallback(() => {
+        setOpen(false);
+        setAdding(false);
+        setNewName("");
+        setEditingId(null);
+        stopReorder();
+    }, [stopReorder]);
 
     const activeNotebooks = notebooks.filter((n) => !n.archived);
     const archivedNotebooks = notebooks.filter((n) => n.archived);
@@ -146,7 +75,7 @@ export default function NotebookSwitcher({
     const deleteTarget = notebooks.find((n) => n.id === deleteTargetId);
     const archiveTarget = notebooks.find((n) => n.id === archiveTargetId);
     const unarchiveTarget = notebooks.find((n) => n.id === unarchiveTargetId);
-    const displayNotebooks = isReordering ? localNotebooks : activeNotebooks;
+    const displayNotebooks = isReordering ? reorderItems : activeNotebooks;
 
     useBodyScrollLock(Boolean(deleteTarget) || Boolean(archiveTarget) || Boolean(unarchiveTarget));
 
@@ -157,11 +86,7 @@ export default function NotebookSwitcher({
 
         function handleClick(e: MouseEvent | TouchEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-                setOpen(false);
-                setAdding(false);
-                setNewName("");
-                setEditingId(null);
-                setIsReordering(false);
+                closeMenu();
             }
         }
         function handleScroll(e: Event) {
@@ -171,19 +96,11 @@ export default function NotebookSwitcher({
             if (dropdownRef.current?.contains(document.activeElement)) {
                 return;
             }
-            setOpen(false);
-            setAdding(false);
-            setNewName("");
-            setEditingId(null);
-            setIsReordering(false);
+            closeMenu();
         }
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === "Escape") {
-                setOpen(false);
-                setAdding(false);
-                setNewName("");
-                setEditingId(null);
-                setIsReordering(false);
+                closeMenu();
             }
         }
         if (open) {
@@ -210,7 +127,7 @@ export default function NotebookSwitcher({
                 }
             };
         }
-    }, [open]);
+    }, [open, closeMenu]);
 
     // Focus input when adding
     useEffect(() => {
@@ -250,6 +167,12 @@ export default function NotebookSwitcher({
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [deleteTargetId, archiveTargetId, unarchiveTargetId]);
 
+    const selectNotebook = (id: string) => {
+        triggerHaptic("selection");
+        onSelect?.(id);
+        setOpen(false);
+    };
+
     const handleAdd = () => {
         const trimmed = newName.trim();
         if (trimmed) {
@@ -259,6 +182,11 @@ export default function NotebookSwitcher({
             setAdding(false);
             setOpen(false);
         }
+    };
+
+    const cancelAdd = () => {
+        setAdding(false);
+        setNewName("");
     };
 
     const startEdit = (notebook: Notebook) => {
@@ -282,17 +210,30 @@ export default function NotebookSwitcher({
         setOpen(false);
     };
 
+    const confirmArchive = () => {
+        if (!archiveTargetId) return;
+        triggerHaptic("success");
+        onArchive?.(archiveTargetId, true);
+        setArchiveTargetId(null);
+        setOpen(false);
+    };
+
+    const confirmUnarchive = () => {
+        if (!unarchiveTargetId) return;
+        triggerHaptic("success");
+        onArchive?.(unarchiveTargetId, false);
+        setUnarchiveTargetId(null);
+        setOpen(false);
+    };
+
     return (
         <div ref={dropdownRef} className="relative inline-flex">
             {/* Trigger */}
             <button
                 onClick={() => {
                     triggerHaptic("selection");
+                    closeMenu();
                     setOpen(!open);
-                    setAdding(false);
-                    setNewName("");
-                    setEditingId(null);
-                    setIsReordering(false);
                 }}
                 className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl cursor-pointer transition-all duration-300 active:scale-[0.97]"
                 style={{
@@ -347,7 +288,7 @@ export default function NotebookSwitcher({
                                 {t("dashboard.empty.title")}
                             </p>
                         ) : isReordering ? (
-                            displayNotebooks.map((notebook, index) => {
+                            reorderItems.map((notebook, index) => {
                                 const isDraggingThis = draggedId === notebook.id;
                                 return (
                                     <div
@@ -365,8 +306,8 @@ export default function NotebookSwitcher({
                                         }}
                                     >
                                         <div
-                                            onMouseDown={(e) => handleDragStart(e, index, notebook.id)}
-                                            onTouchStart={(e) => handleDragStart(e, index, notebook.id)}
+                                            onMouseDown={(e) => startDrag(e, index, notebook.id)}
+                                            onTouchStart={(e) => startDrag(e, index, notebook.id)}
                                             className="p-1 -m-1 text-(--text-tertiary) cursor-grab active:cursor-grabbing shrink-0 touch-none"
                                         >
                                             <GripVertical size={16} />
@@ -383,44 +324,14 @@ export default function NotebookSwitcher({
                         ) : (
                             displayNotebooks.map((notebook) =>
                                 editingId === notebook.id ? (
-                                    <div key={notebook.id} className="px-3 py-2 flex items-center gap-2">
-                                        <div className="relative flex-1">
-                                            <input
-                                                ref={editInputRef}
-                                                type="text"
-                                                value={editName}
-                                                onChange={(e) => setEditName(e.target.value)}
-                                                maxLength={20}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Enter") handleEdit();
-                                                    if (e.key === "Escape") {
-                                                        e.stopPropagation();
-                                                        setEditingId(null);
-                                                    }
-                                                }}
-                                                className="glass-input py-1.5 pl-3 pr-11 text-sm w-full"
-                                            />
-                                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-(--text-tertiary) pointer-events-none select-none">
-                                                {editName.length}/20
-                                            </span>
-                                        </div>
-                                        <button
-                                            onClick={handleEdit}
-                                            disabled={!editName.trim()}
-                                            className="p-1.5 rounded-lg bg-primary-800/80 dark:bg-primary-500/70 text-white disabled:opacity-40 cursor-pointer"
-                                        >
-                                            <Check size={14} />
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                triggerHaptic("light");
-                                                setEditingId(null);
-                                            }}
-                                            className="p-1.5 rounded-lg text-(--text-tertiary) active:bg-white/10 cursor-pointer"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    </div>
+                                    <NotebookEditRow
+                                        key={notebook.id}
+                                        editName={editName}
+                                        onEditNameChange={setEditName}
+                                        onConfirm={handleEdit}
+                                        onCancel={() => setEditingId(null)}
+                                        inputRef={editInputRef}
+                                    />
                                 ) : (
                                     <div
                                         key={notebook.id}
@@ -430,11 +341,7 @@ export default function NotebookSwitcher({
                                             }`}
                                     >
                                         <button
-                                            onClick={() => {
-                                                triggerHaptic("selection");
-                                                onSelect?.(notebook.id);
-                                                setOpen(false);
-                                            }}
+                                            onClick={() => selectNotebook(notebook.id)}
                                             className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
                                         >
                                             <BookOpen size={16} className="shrink-0 text-(--text-tertiary)" />
@@ -489,67 +396,22 @@ export default function NotebookSwitcher({
                     </div>
 
                     {/* Collapsible Archived Section inside scroll container */}
-                    {showArchived && archivedNotebooks.length > 0 && (
-                        <div
-                            ref={archivedSectionRef}
-                            className="border-t border-(--border)/30 mt-2 pt-1 bg-black/5 dark:bg-white/2 divide-y divide-(--border)/30"
-                        >
-                            <div className="px-4 pt-1.5 pb-2.5 text-[10px] font-bold uppercase tracking-wider text-(--text-tertiary) select-none">
-                                {t("notebook.archivedSection")} ({archivedNotebooks.length})
-                            </div>
-                            {archivedNotebooks.map((notebook) => (
-                                <div
-                                    key={notebook.id}
-                                    className={`w-full flex items-center justify-between px-4 py-2.5 transition-all duration-200 ${notebook.id === activeNotebookId
-                                        ? "bg-primary-500/12 text-primary-700 dark:text-primary-300"
-                                        : "text-(--text-secondary)"
-                                        }`}
-                                >
-                                    <button
-                                        onClick={() => {
-                                            triggerHaptic("selection");
-                                            onSelect?.(notebook.id);
-                                            setOpen(false);
-                                        }}
-                                        className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
-                                    >
-                                        <Archive size={14} className="shrink-0 text-(--text-tertiary)" />
-                                        <span className="text-sm font-medium truncate flex-1">
-                                            {notebook.name}
-                                        </span>
-                                        {isItemPending?.(notebook.id) && (
-                                            <CloudOff size={11} className="text-warning-500 shrink-0" />
-                                        )}
-                                    </button>
-                                    <div className="flex items-center gap-1 shrink-0 ml-2">
-                                        {onArchive && (
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    triggerHaptic("warning");
-                                                    setUnarchiveTargetId(notebook.id);
-                                                }}
-                                                className="p-1 rounded-md text-primary-600 hover:bg-primary-500/10 transition-all cursor-pointer"
-                                                title={t("notebook.unarchive")}
-                                            >
-                                                <ArchiveRestore size={13} />
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                triggerHaptic("warning");
-                                                setDeleteTargetId(notebook.id);
-                                            }}
-                                            className="p-1 rounded-md text-danger-500/60 hover:bg-danger-500/10 transition-all cursor-pointer"
-                                            title={t("notebook.delete")}
-                                        >
-                                            <Trash2 size={13} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                    {showArchived && (
+                        <NotebookArchivedSection
+                            notebooks={archivedNotebooks}
+                            activeNotebookId={activeNotebookId}
+                            isItemPending={isItemPending}
+                            onSelect={selectNotebook}
+                            onUnarchive={onArchive ? (id) => {
+                                triggerHaptic("warning");
+                                setUnarchiveTargetId(id);
+                            } : undefined}
+                            onDelete={(id) => {
+                                triggerHaptic("warning");
+                                setDeleteTargetId(id);
+                            }}
+                            sectionRef={archivedSectionRef}
+                        />
                     )}
                 </div>
 
@@ -561,7 +423,7 @@ export default function NotebookSwitcher({
                                 e.preventDefault();
                                 e.stopPropagation();
                                 triggerHaptic("selection");
-                                setIsReordering(false);
+                                stopReorder();
                             }}
                             className="w-full flex items-center justify-center gap-2 px-4 py-3.5 text-center text-primary-600 dark:text-primary-400 hover:bg-primary-500/5 transition-all duration-200 cursor-pointer font-semibold text-sm"
                             tabIndex={0}
@@ -627,8 +489,7 @@ export default function NotebookSwitcher({
                                                 onSelect?.(activeNotebooks[0].id);
                                             }
 
-                                            setLocalNotebooks(activeNotebooks);
-                                            setIsReordering(true);
+                                            beginReorder(activeNotebooks);
                                         }}
                                         className="px-4 flex items-center justify-center text-(--text-secondary) active:text-primary-500 transition-all duration-200 cursor-pointer"
                                         title={t("notebook.reorder")}
@@ -640,199 +501,31 @@ export default function NotebookSwitcher({
                             </div>
 
                             {/* add input panel */}
-                            <div className={`absolute inset-0 p-3 flex items-center gap-2 transition-all duration-300 ease-out ${adding ? "opacity-100 translate-y-0 scale-100" : "opacity-0 -translate-y-2 pointer-events-none scale-95"}`}>
-                                <div className="relative flex-1">
-                                    <input
-                                        ref={inputRef}
-                                        type="text"
-                                        value={newName}
-                                        onChange={(e) => setNewName(e.target.value)}
-                                        maxLength={20}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") handleAdd();
-                                            if (e.key === "Escape") {
-                                                e.stopPropagation();
-                                                setAdding(false);
-                                                setNewName("");
-                                            }
-                                        }}
-                                        placeholder={t("notebook.namePlaceholder")}
-                                        className="glass-input py-2 pl-3.5 pr-11 text-sm w-full"
-                                        tabIndex={adding ? 0 : -1}
-                                    />
-                                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-medium text-(--text-tertiary) pointer-events-none select-none">
-                                        {newName.length}/20
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={handleAdd}
-                                    disabled={!newName.trim()}
-                                    className="p-2 rounded-xl bg-primary-800/80 dark:bg-primary-500/70 text-white transition-all duration-200 disabled:opacity-40 cursor-pointer shrink-0"
-                                    tabIndex={adding ? 0 : -1}
-                                >
-                                    <Plus size={16} />
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        triggerHaptic("light");
-                                        setAdding(false);
-                                        setNewName("");
-                                    }}
-                                    className="p-2 rounded-xl text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer shrink-0"
-                                    tabIndex={adding ? 0 : -1}
-                                >
-                                    <X size={16} />
-                                </button>
-                            </div>
+                            <NotebookAddPanel
+                                visible={adding}
+                                newName={newName}
+                                onNameChange={setNewName}
+                                onConfirm={handleAdd}
+                                onCancel={cancelAdd}
+                                inputRef={inputRef}
+                            />
                         </>
                     )}
                 </div>
             </div>
 
-            {/* Delete Notebook Confirmation */}
-            {deleteTarget && createPortal(
-                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center">
-                    <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                        onClick={() => {
-                            triggerHaptic("light");
-                            setDeleteTargetId(null);
-                        }}
-                    />
-                    <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
-                        <div className="p-5 text-center">
-                            <div className="inline-flex p-3 rounded-full bg-danger-500/10 mb-3">
-                                <Trash2 size={22} className="text-danger-500" />
-                            </div>
-                            <h3 className="text-base font-bold mb-1">{t("notebook.delete")}</h3>
-                            <p className="text-sm text-(--text-secondary)">
-                                {t("notebook.deleteConfirm")}
-                            </p>
-                            <p className="text-sm font-semibold mt-2 break-words whitespace-normal">{deleteTarget.name}</p>
-                        </div>
-                        <div className="flex border-t border-(--border)">
-                            <button
-                                onClick={() => {
-                                    triggerHaptic("light");
-                                    setDeleteTargetId(null);
-                                }}
-                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
-                            >
-                                {t("common.cancel")}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    confirmDelete();
-                                }}
-                                className="flex-1 py-3.5 text-sm font-semibold text-danger-500 border-l border-(--border) transition-all active:bg-danger-500/10 cursor-pointer"
-                            >
-                                {t("common.delete")}
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
-
-            {/* Archive Notebook Confirmation */}
-            {archiveTarget && createPortal(
-                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center">
-                    <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                        onClick={() => {
-                            triggerHaptic("light");
-                            setArchiveTargetId(null);
-                        }}
-                    />
-                    <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
-                        <div className="p-5 text-center">
-                            <div className="inline-flex p-3 rounded-full bg-warning-500/10 mb-3">
-                                <Archive size={22} className="text-warning-500" />
-                            </div>
-                            <h3 className="text-base font-bold mb-1">{t("notebook.archive")}</h3>
-                            <p className="text-sm text-(--text-secondary)">
-                                {t("notebook.archiveConfirm")}
-                            </p>
-                            <p className="text-sm font-semibold mt-2 break-words whitespace-normal">{archiveTarget.name}</p>
-                        </div>
-                        <div className="flex border-t border-(--border)">
-                            <button
-                                onClick={() => {
-                                    triggerHaptic("light");
-                                    setArchiveTargetId(null);
-                                }}
-                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
-                            >
-                                {t("common.cancel")}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (archiveTargetId) {
-                                        triggerHaptic("success");
-                                        onArchive?.(archiveTargetId, true);
-                                        setArchiveTargetId(null);
-                                        setOpen(false);
-                                    }
-                                }}
-                                className="flex-1 py-3.5 text-sm font-semibold text-warning-500 border-l border-(--border) transition-all active:bg-warning-500/10 cursor-pointer"
-                            >
-                                {t("common.archive")}
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
-
-            {/* Unarchive/Restore Notebook Confirmation */}
-            {unarchiveTarget && createPortal(
-                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center">
-                    <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                        onClick={() => {
-                            triggerHaptic("light");
-                            setUnarchiveTargetId(null);
-                        }}
-                    />
-                    <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
-                        <div className="p-5 text-center">
-                            <div className="inline-flex p-3 rounded-full bg-warning-500/10 mb-3">
-                                <ArchiveRestore size={22} className="text-warning-500" />
-                            </div>
-                            <h3 className="text-base font-bold mb-1">{t("notebook.unarchive")}</h3>
-                            <p className="text-sm text-(--text-secondary)">
-                                {t("notebook.unarchiveConfirm")}
-                            </p>
-                            <p className="text-sm font-semibold mt-2 break-words whitespace-normal">{unarchiveTarget.name}</p>
-                        </div>
-                        <div className="flex border-t border-(--border)">
-                            <button
-                                onClick={() => {
-                                    triggerHaptic("light");
-                                    setUnarchiveTargetId(null);
-                                }}
-                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
-                            >
-                                {t("common.cancel")}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (unarchiveTargetId) {
-                                        triggerHaptic("success");
-                                        onArchive?.(unarchiveTargetId, false);
-                                        setUnarchiveTargetId(null);
-                                        setOpen(false);
-                                    }
-                                }}
-                                className="flex-1 py-3.5 text-sm font-semibold text-warning-500 border-l border-(--border) transition-all active:bg-warning-500/10 cursor-pointer"
-                            >
-                                {t("common.restore")}
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+            {/* Confirmation modals */}
+            <NotebookConfirmModals
+                deleteTarget={deleteTarget}
+                archiveTarget={archiveTarget}
+                unarchiveTarget={unarchiveTarget}
+                onDeleteCancel={() => setDeleteTargetId(null)}
+                onDeleteConfirm={confirmDelete}
+                onArchiveCancel={() => setArchiveTargetId(null)}
+                onArchiveConfirm={confirmArchive}
+                onUnarchiveCancel={() => setUnarchiveTargetId(null)}
+                onUnarchiveConfirm={confirmUnarchive}
+            />
         </div>
     );
 }

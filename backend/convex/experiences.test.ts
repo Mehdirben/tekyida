@@ -4,13 +4,24 @@ import schema from "./schema";
 import { api } from "./_generated/api";
 
 describe("experiences", () => {
-  it("list - returns empty when unauthenticated", async () => {
+  it("list - returns empty when unauthenticated, other user, or notebook not found", async () => {
     const t = convexTest(schema);
     const userId = await t.run((ctx) => ctx.db.insert("users", { name: "User" }));
+    const otherUser = await t.run((ctx) => ctx.db.insert("users", { name: "Other" }));
     const nbId = await t.run((ctx) => ctx.db.insert("notebooks", { userId, name: "Book", createdAt: 1 }));
+    const asOther = t.withIdentity({ subject: otherUser });
 
-    const list = await t.query(api.experiences.list, { notebookId: nbId });
-    expect(list).toEqual([]);
+    // Unauthenticated
+    expect(await t.query(api.experiences.list, { notebookId: nbId })).toEqual([]);
+    // Different user
+    expect(await asOther.query(api.experiences.list, { notebookId: nbId })).toEqual([]);
+    // Non-existent notebook
+    const fakeNbId = await t.run(async (ctx) => {
+      const tempId = await ctx.db.insert("notebooks", { userId, name: "Temp", createdAt: 1 });
+      await ctx.db.delete(tempId);
+      return tempId;
+    });
+    expect(await t.withIdentity({ subject: userId }).query(api.experiences.list, { notebookId: fakeNbId })).toEqual([]);
   });
 
   it("create, update, close, reopen, and list experiences", async () => {

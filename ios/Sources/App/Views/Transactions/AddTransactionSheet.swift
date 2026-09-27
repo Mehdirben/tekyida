@@ -1,0 +1,128 @@
+import SwiftUI
+
+// MARK: - Add / Edit Transaction Modal Sheet (Modern Liquid Glass HIG)
+public struct AddTransactionSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let initialTransaction: Transaction?
+    let onSave: (_ amount: Double, _ description: String?, _ date: Date) -> Void
+
+    @State private var amountString: String
+    @State private var isPositive: Bool
+    @State private var description: String
+    @State private var date: Date
+
+    public init(
+        transaction: Transaction? = nil,
+        onSave: @escaping (_ amount: Double, _ description: String?, _ date: Date) -> Void
+    ) {
+        self.initialTransaction = transaction
+        self.onSave = onSave
+        _amountString = State(initialValue: transaction.map { String(format: "%.2f", abs($0.amount)) } ?? "")
+        _isPositive = State(initialValue: transaction.map { $0.amount >= 0 } ?? true)
+        _description = State(initialValue: transaction?.description ?? "")
+        _date = State(initialValue: transaction?.date ?? Date())
+    }
+
+    public var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Transaction Form Fields
+                    VStack(spacing: 16) {
+                        // Direction Selector
+                        Picker(tr("transaction.direction"), selection: Binding(
+                            get: { isPositive },
+                            set: { newValue in
+                                UISelectionFeedbackGenerator().selectionChanged()
+                                isPositive = newValue
+                            }
+                        )) {
+                            Text(tr("transaction.theyOweYou")).tag(true)
+                            Text(tr("transaction.youOweThem")).tag(false)
+                        }
+                        .pickerStyle(.segmented)
+
+                        // Amount Field
+                        HStack(spacing: 12) {
+                            Text("MAD")
+                                .font(.subheadline.bold())
+                                .foregroundColor(isPositive ? AppTheme.accent : AppTheme.danger)
+
+                            TextField("0.00", text: $amountString)
+                                .keyboardType(.decimalPad)
+                                .font(.title3.weight(.bold))
+                        }
+                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+
+                        // Description Field
+                        GlassInputField(
+                            systemImage: "note.text",
+                            placeholder: tr("transaction.notePlaceholder"),
+                            text: $description
+                        )
+
+                        // Date Picker
+                        DatePicker(tr("transaction.dateAndTime"), selection: $date, displayedComponents: [.date, .hourAndMinute])
+                            .font(.subheadline)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
+                    }
+
+                    // Bottom Save Button
+                    GlassActionButton(
+                        isEditing ? tr("common.saveChanges") : tr("transaction.add"),
+                        systemImage: isEditing ? "checkmark" : "plus.circle.fill",
+                        isDisabled: invalidAmount
+                    ) {
+                        save()
+                    }
+                    .padding(.top, 4)
+
+                    Spacer(minLength: 24)
+                }
+                .padding(20)
+            }
+            .scrollDisabled(true)
+            .dismissKeyboardOnTap()
+            .navigationTitle(isEditing ? tr("transaction.edit") : tr("transaction.add"))
+            .navigationBarTitleDisplayMode(.inline)
+            .liquidGlassSheet(detents: [.medium])
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(tr("common.cancel")) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(isEditing ? tr("common.done") : tr("common.add")) {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        save()
+                    }
+                    .font(.body.bold())
+                    .disabled(invalidAmount)
+                }
+            }
+        }
+    }
+
+    private var isEditing: Bool {
+        initialTransaction != nil
+    }
+
+    private var invalidAmount: Bool {
+        guard let val = Double(amountString.replacingOccurrences(of: ",", with: ".")), val > 0 else {
+            return true
+        }
+        return false
+    }
+
+    private func save() {
+        guard let rawVal = Double(amountString.replacingOccurrences(of: ",", with: ".")), rawVal > 0 else { return }
+        let finalAmount = isPositive ? rawVal : -rawVal
+        onSave(finalAmount, description.isEmpty ? nil : description, date)
+        dismiss()
+    }
+}

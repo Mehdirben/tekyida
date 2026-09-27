@@ -1,13 +1,13 @@
 import SwiftUI
 
-// MARK: - Experiences Main View
+// MARK: - Experiences Main View (Modern Liquid Glass HIG)
 public struct ExperiencesView: View {
     @EnvironmentObject private var state: AppState
 
     @State private var filterMode: ExperienceFilter = .all
     @State private var showNotebookManager: Bool = false
     @State private var showAddExperience: Bool = false
-    @State private var selectedExperience: Experience?
+    @State private var navigatedExperience: Experience?
     @State private var editingExperience: Experience?
     @State private var transferringExperience: Experience?
     @State private var deletingExperience: Experience?
@@ -16,6 +16,14 @@ public struct ExperiencesView: View {
         case all = "All"
         case active = "Active"
         case closed = "Closed"
+
+        public var localizedName: String {
+            switch self {
+            case .all: return tr("filter.all")
+            case .active: return tr("filter.active")
+            case .closed: return tr("filter.closed")
+            }
+        }
     }
 
     public init() {}
@@ -27,30 +35,30 @@ public struct ExperiencesView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Top Header (Logo + Sync dot left, Notebook Switcher right)
-                        DashboardHeaderView(
-                            notebookName: state.activeNotebook?.name ?? "Select Notebook",
-                            onSelectNotebook: { showNotebookManager = true }
-                        )
+                        TekyidaScrollHeader(onManageNotebooks: { showNotebookManager = true })
 
                         // Open Experiences Total Balance Card
                         if let activeNb = state.activeNotebook {
                             totalBalanceCard(notebookId: activeNb.id)
                         }
 
-                        // Filter Segmented Control
+                        // Modern Liquid Glass Filter Segmented Control
                         filterSegmentedControl
 
                         // Experiences List
                         experiencesList
                     }
                     .padding(.horizontal, 16)
-                    .padding(.top, 12)
                     .padding(.bottom, 96)
                 }
+                .tabBarMinimizeBehaviorOnScroll()
             }
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
+            .sheet(item: $navigatedExperience) { exp in
+                ExperienceDetailView(experience: exp)
+                    .environmentObject(state)
+                    .liquidGlassSheet(detents: [.fraction(0.94)])
+            }
             .sheet(isPresented: $showNotebookManager) {
                 NotebookManagerSheet()
             }
@@ -61,9 +69,6 @@ public struct ExperiencesView: View {
                         state.createExperience(notebookId: activeNb.id, name: name, contactId: contactId)
                     }
                 }
-            }
-            .sheet(item: $selectedExperience) { exp in
-                ExperienceDetailSheet(experience: exp)
             }
             .sheet(item: $editingExperience) { exp in
                 let nbContacts = state.contacts.filter { $0.notebookId == exp.notebookId }
@@ -76,20 +81,14 @@ public struct ExperiencesView: View {
                     state.transferExperience(id: exp.id, to: targetNotebookId)
                 }
             }
-            .alert("Delete Experience?", isPresented: Binding(
-                get: { deletingExperience != nil },
-                set: { if !$0 { deletingExperience = nil } }
-            )) {
-                Button("Cancel", role: .cancel) { deletingExperience = nil }
-                Button("Delete", role: .destructive) {
-                    if let exp = deletingExperience {
-                        state.deleteExperience(id: exp.id)
-                        deletingExperience = nil
-                    }
+            .confirmableDelete(
+                item: $deletingExperience,
+                title: tr("experiences.deleteTitle"),
+                message: { String(format: tr("experiences.deleteMessage"), $0?.name ?? "") },
+                onDelete: { exp in
+                    state.deleteExperience(id: exp.id)
                 }
-            } message: {
-                Text("Deleting '\(deletingExperience?.name ?? "")' will remove all its transactions.")
-            }
+            )
         }
     }
 
@@ -97,20 +96,19 @@ public struct ExperiencesView: View {
         let total = state.totalExperiencesBalance(for: notebookId)
         return HStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(AppTheme.primary.opacity(0.12))
-                    .frame(width: 40, height: 40)
+                ConcentricRectangle(cornerRadius: 14)
+                    .fill(AppTheme.primary.opacity(0.14))
+                    .frame(width: 44, height: 44)
 
                 Image(systemName: "safari.fill")
-                    .font(.system(size: 18))
+                    .font(.system(size: 20))
                     .foregroundColor(AppTheme.primary)
             }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Open Experiences Total")
-                    .font(.caption2.bold())
+                Text(tr("experiences.openTotal"))
+                    .font(.caption.bold())
                     .foregroundColor(.secondary)
-                    .textCase(.uppercase)
 
                 AmountView(
                     amount: total,
@@ -129,32 +127,18 @@ public struct ExperiencesView: View {
     }
 
     private var filterSegmentedControl: some View {
-        HStack(spacing: 6) {
+        Picker(tr("experiences.title"), selection: Binding(
+            get: { filterMode },
+            set: { newValue in
+                UISelectionFeedbackGenerator().selectionChanged()
+                filterMode = newValue
+            }
+        )) {
             ForEach(ExperienceFilter.allCases, id: \.self) { filter in
-                let isSelected = filterMode == filter
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                        filterMode = filter
-                    }
-                }) {
-                    Text(filter.rawValue)
-                        .font(.subheadline.bold())
-                        .foregroundColor(isSelected ? .white : .secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                        .background {
-                            if isSelected {
-                                RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous)
-                                    .fill(AppTheme.primary)
-                                    .shadow(color: AppTheme.primary.opacity(0.3), radius: 6, x: 0, y: 2)
-                            }
-                        }
-                }
+                Text(filter.localizedName).tag(filter)
             }
         }
-        .padding(4)
-        .liquidGlassFlat(cornerRadius: AppTheme.radiusInput + 4)
+        .pickerStyle(.segmented)
     }
 
     private var experiencesList: some View {
@@ -171,48 +155,51 @@ public struct ExperiencesView: View {
         .sorted { $0.createdAt > $1.createdAt }
 
         return VStack(spacing: 12) {
+            SectionHeaderView(
+                title: tr("experiences.title"),
+                count: filtered.count,
+                addButtonTitle: tr("common.add"),
+                addButtonSystemImage: "plus",
+                addAction: { showAddExperience = true }
+            )
+
             if filtered.isEmpty {
                 GlassEmptyStateView(
                     systemImage: "safari",
-                    title: "No experiences found",
-                    subtitle: "Group expenses and split bills with friends using experiences."
+                    title: tr("experiences.emptyTitle"),
+                    subtitle: tr("experiences.emptySubtitle")
                 )
             } else {
-                ForEach(filtered) { exp in
-                    let cName = exp.contactId.flatMap { cid in state.contacts.first(where: { $0.id == cid })?.name }
-                    let txCount = state.experienceTransactions(exp.id).count
+                LazyVStack(spacing: 12) {
+                    ForEach(filtered) { exp in
+                        let cName = exp.contactId.flatMap { cid in state.contacts.first(where: { $0.id == cid })?.name }
+                        let txCount = state.experienceTransactions(exp.id).count
 
-                    ExperienceRowView(
-                        experience: exp,
-                        contactName: cName,
-                        balance: state.experienceBalance(exp.id),
-                        transactionCount: txCount,
-                        isMasked: state.isAmountsHidden,
-                        onTap: {
-                            selectedExperience = exp
-                        },
-                        onToggleClosed: {
-                            state.toggleExperienceClosed(id: exp.id)
-                        },
-                        onEdit: {
-                            editingExperience = exp
-                        },
-                        onTransfer: {
-                            transferringExperience = exp
-                        },
-                        onDelete: {
-                            deletingExperience = exp
-                        }
-                    )
+                        ExperienceRowView(
+                            experience: exp,
+                            contactName: cName,
+                            balance: state.experienceBalance(exp.id),
+                            transactionCount: txCount,
+                            isMasked: state.isAmountsHidden,
+                            onTap: {
+                                navigatedExperience = exp
+                            },
+                            onToggleClosed: {
+                                state.toggleExperienceClosed(id: exp.id)
+                            },
+                            onEdit: {
+                                editingExperience = exp
+                            },
+                            onTransfer: {
+                                transferringExperience = exp
+                            },
+                            onDelete: {
+                                deletingExperience = exp
+                            }
+                        )
+                    }
                 }
             }
-
-            // Bottom Add Experience button (PWA mobile responsive placement)
-            ListAddBottomButton(
-                title: "Add Experience",
-                systemImage: "plus",
-                action: { showAddExperience = true }
-            )
         }
     }
 }

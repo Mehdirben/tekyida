@@ -5,6 +5,7 @@ public struct AmountView: View {
     let amount: Double
     let isHidden: Bool
     let showPlusSign: Bool
+    let showsCurrency: Bool
     let font: Font
     let fontWeight: Font.Weight
     let customColor: Color?
@@ -13,6 +14,7 @@ public struct AmountView: View {
         amount: Double,
         isHidden: Bool,
         showPlusSign: Bool = true,
+        showsCurrency: Bool = true,
         font: Font = .body,
         fontWeight: Font.Weight = .semibold,
         customColor: Color? = nil
@@ -20,6 +22,7 @@ public struct AmountView: View {
         self.amount = amount
         self.isHidden = isHidden
         self.showPlusSign = showPlusSign
+        self.showsCurrency = showsCurrency
         self.font = font
         self.fontWeight = fontWeight
         self.customColor = customColor
@@ -34,23 +37,22 @@ public struct AmountView: View {
     }
 
     private var displayText: String {
-        if isHidden {
-            return "•••• MAD"
-        }
-        let sign = (amount > 0 && showPlusSign) ? "+" : ""
-        return String(format: "%@%.2f MAD", sign, amount)
+        AmountFormatter.displayText(
+            amount: amount,
+            isHidden: isHidden,
+            showPlusSign: showPlusSign,
+            showsCurrency: showsCurrency
+        )
     }
 
     private var resolvedColor: Color {
         if let custom = customColor {
             return custom
         }
-        if amount > 0 {
-            return AppTheme.accent
-        } else if amount < 0 {
-            return AppTheme.danger
-        } else {
-            return .primary
+        switch AmountFormatter.tone(for: amount) {
+        case .accent: return AppTheme.accent
+        case .danger: return AppTheme.danger
+        case .neutral: return .primary
         }
     }
 }

@@ -13,12 +13,16 @@ export const list = query({
 
         let transactions;
         if (args.experienceId) {
+            const experience = await ctx.db.get(args.experienceId);
+            if (!experience || experience.userId !== userId) return [];
             transactions = await ctx.db
                 .query("transactions")
                 .withIndex("by_experience", (q) => q.eq("experienceId", args.experienceId))
                 .order("desc")
                 .collect();
         } else if (args.contactId) {
+            const contact = await ctx.db.get(args.contactId);
+            if (!contact || contact.userId !== userId) return [];
             const allContactTx = await ctx.db
                 .query("transactions")
                 .withIndex("by_contact", (q) => q.eq("contactId", args.contactId!))
@@ -64,7 +68,7 @@ export const create = mutation({
         // Verify contact belongs to this notebook (if provided)
         if (args.contactId) {
             const contact = await ctx.db.get(args.contactId);
-            if (!contact || contact.notebookId !== args.notebookId) {
+            if (!contact || contact.userId !== userId || contact.notebookId !== args.notebookId) {
                 throw new Error("Contact not found");
             }
         }
@@ -74,6 +78,12 @@ export const create = mutation({
             const experience = await ctx.db.get(args.experienceId);
             if (!experience || experience.userId !== userId) {
                 throw new Error("Experience not found");
+            }
+            if (experience.notebookId !== args.notebookId) {
+                throw new Error("Experience must belong to the transaction notebook");
+            }
+            if (experience.contactId && args.contactId !== experience.contactId) {
+                throw new Error("Transaction contact must match the experience contact");
             }
             if (experience.closed) {
                 throw new Error("Experience is closed");

@@ -1,140 +1,222 @@
 import SwiftUI
 
-// MARK: - Notebook Manager Sheet
+// MARK: - Notebook Manager Sheet (Modern Liquid Glass HIG)
+// The custom drag-reorder experience lives in `NotebookReorderView.swift`,
+// the edit popup in `EditNotebookPopup.swift`, and the shared long-press drag
+// recognizer in `Components/LongPressDragRecognizer.swift`.
 public struct NotebookManagerSheet: View {
     @EnvironmentObject private var state: AppState
     @Environment(\.dismiss) private var dismiss
 
     @State private var newNotebookName: String = ""
     @State private var isCreating: Bool = false
-    @State private var editingNotebookId: String?
-    @State private var editingNotebookName: String = ""
+    @State private var editingNotebook: Notebook?
     @State private var showArchived: Bool = false
     @State private var deleteConfirmNotebook: Notebook?
+    @State private var isReordering: Bool = false
+    @State private var reorderedNotebooks: [Notebook] = []
+    @State private var reorderedArchivedNotebooks: [Notebook] = []
 
     public init() {}
 
     public var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Active Notebooks Section
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Active Notebooks")
-                            .font(.caption.bold())
-                            .foregroundColor(.secondary)
-                            .textCase(.uppercase)
-                            .padding(.horizontal, 4)
-
-                        ForEach(state.activeNotebooksList) { notebook in
-                            notebookRow(notebook, isArchived: false)
-                        }
-                    }
-
-                    // Create New Notebook Form / Button
-                    if isCreating {
-                        VStack(spacing: 12) {
-                            TextField("Notebook Name (max 20)", text: $newNotebookName)
-                                .glassInputStyle()
-                                .onChange(of: newNotebookName) { _, newVal in
-                                    if newVal.count > 20 { newNotebookName = String(newVal.prefix(20)) }
-                                }
-
-                            HStack(spacing: 8) {
-                                Button("Cancel") {
-                                    newNotebookName = ""
-                                    isCreating = false
-                                }
-                                .font(.subheadline.bold())
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 10)
-                                .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
-                                .foregroundColor(.secondary)
-
-                                Button("Create") {
-                                    createNotebook()
-                                }
-                                .font(.subheadline.bold())
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 10)
-                                .background(AppTheme.primary, in: RoundedRectangle(cornerRadius: AppTheme.radiusButton, style: .continuous))
-                                .foregroundColor(.white)
-                                .disabled(newNotebookName.trimmingCharacters(in: .whitespaces).isEmpty)
-                            }
-                        }
-                        .padding(14)
-                        .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
-                    } else {
-                        Button(action: { isCreating = true }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.headline)
-                                Text("New Notebook")
-                                    .font(.subheadline.bold())
-                            }
-                            .foregroundColor(AppTheme.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
-                        }
-                    }
-
-                    // Archived Notebooks Section
-                    if !state.archivedNotebooksList.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Button(action: {
-                                withAnimation { showArchived.toggle() }
-                            }) {
-                                HStack {
-                                    Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
-                                    Text(showArchived ? "Hide Archived (\(state.archivedNotebooksList.count))" : "Show Archived (\(state.archivedNotebooksList.count))")
-                                        .font(.caption.bold())
-                                    Spacer()
-                                    Image(systemName: showArchived ? "chevron.up" : "chevron.down")
-                                        .font(.caption)
-                                }
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, 4)
-                            }
-
-                            if showArchived {
-                                ForEach(state.archivedNotebooksList) { notebook in
-                                    notebookRow(notebook, isArchived: true)
-                                }
-                            }
-                        }
-                    }
+            Group {
+                if isReordering {
+                    NotebookReorderView(
+                        activeNotebooks: $reorderedNotebooks,
+                        archivedNotebooks: $reorderedArchivedNotebooks,
+                        onPersist: persistReorderedNotebooks
+                    )
+                    .transition(.opacity)
+                } else {
+                    managerContent
+                        .transition(.opacity)
                 }
-                .padding(20)
             }
-            .navigationTitle("Notebooks")
+            .scrollDismissesKeyboard(.immediately)
+            .topScrollEdgeDisabled()
+            .dismissKeyboardOnTap()
+            .navigationTitle(isReordering ? tr("notebook.reorder") : tr("notebooks.title"))
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium, .large])
+            .liquidGlassSheet(detents: [.fraction(0.94)])
+            .interactiveDismissDisabled(isReordering)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                if isReordering {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(tr("notebook.reorderDone")) {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                isReordering = false
+                            }
+                        }
                         .font(.body.bold())
-                }
-            }
-            .alert(
-                "Delete Notebook?",
-                isPresented: Binding(
-                    get: { deleteConfirmNotebook != nil },
-                    set: { if !$0 { deleteConfirmNotebook = nil } }
-                ),
-                actions: {
-                    Button("Cancel", role: .cancel) { deleteConfirmNotebook = nil }
-                    Button("Delete", role: .destructive) {
-                        if let nb = deleteConfirmNotebook {
-                            state.deleteNotebook(id: nb.id)
-                            deleteConfirmNotebook = nil
+                    }
+                } else {
+                    ToolbarItemGroup(placement: .topBarLeading) {
+                        if state.activeNotebooksList.count + state.archivedNotebooksList.count > 1 {
+                            Button(tr("notebook.reorder")) {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                reorderedNotebooks = state.activeNotebooksList
+                                reorderedArchivedNotebooks = state.archivedNotebooksList
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    isReordering = true
+                                }
+                            }
                         }
                     }
-                },
-                message: {
-                    Text("This will permanently delete '\(deleteConfirmNotebook?.name ?? "")' and all its contacts, experiences, and transactions.")
+
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(tr("common.done")) {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            dismiss()
+                        }
+                        .font(.body.bold())
+                    }
+                }
+            }
+            .sheet(item: $editingNotebook) { notebook in
+                EditNotebookPopup(notebook: notebook) { name in
+                    Task { await state.updateNotebook(id: notebook.id, name: name) }
+                }
+            }
+            .confirmableDelete(
+                item: $deleteConfirmNotebook,
+                title: tr("notebooks.deleteTitle"),
+                message: { String(format: tr("notebooks.deleteMessage"), $0?.name ?? "") },
+                onDelete: { nb in
+                    Task { await state.deleteNotebook(id: nb.id) }
                 }
             )
+        }
+    }
+
+    private var managerContent: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // Active Notebooks Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(tr("notebooks.activeSection"))
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                        .padding(.horizontal, 4)
+
+                    GlassEffectContainer {
+                        LazyVStack(spacing: 10) {
+                            ForEach(state.activeNotebooksList) { notebook in
+                                notebookRow(notebook, isArchived: false)
+                            }
+                        }
+                    }
+                }
+
+                // Create New Notebook Form / Button
+                if isCreating {
+                    createForm
+                } else {
+                    createButton
+                }
+
+                // Archived Notebooks Section
+                if !state.archivedNotebooksList.isEmpty {
+                    archivedSection
+                }
+            }
+            .padding(20)
+        }
+    }
+
+    private var createForm: some View {
+        VStack(spacing: 12) {
+            GlassInputField(
+                placeholder: tr("notebooks.namePlaceholder"),
+                text: $newNotebookName,
+                autocapitalization: .sentences,
+                characterLimit: 20
+            )
+
+            HStack(spacing: 10) {
+                Button(tr("common.cancel")) {
+                    newNotebookName = ""
+                    isCreating = false
+                }
+                .buttonStyle(
+                    .liquidGlass(
+                        variant: .glass,
+                        size: .regular,
+                        cornerRadius: AppTheme.radiusButton
+                    )
+                )
+
+                Button(tr("common.create")) {
+                    createNotebook()
+                }
+                .buttonStyle(
+                    .liquidGlass(
+                        variant: .prominent,
+                        size: .regular,
+                        cornerRadius: AppTheme.radiusButton
+                    )
+                )
+                .disabled(newNotebookName.trimmingCharacters(in: .whitespaces).isEmpty)
+                .opacity(newNotebookName.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
+            }
+        }
+        .padding(14)
+        .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
+    }
+
+    private var createButton: some View {
+        Button(action: {
+            isCreating = true
+        }) {
+            HStack(spacing: 8) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.headline)
+                Text(tr("notebooks.new"))
+                    .font(.subheadline.bold())
+            }
+            .foregroundColor(.primary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+            .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
+        }
+        .buttonStyle(ScaleTouchStyle())
+    }
+
+    private var archivedSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button(action: {
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
+                    showArchived.toggle()
+                }
+            }) {
+                HStack {
+                    Image(systemName: showArchived ? "archivebox.fill" : "archivebox")
+                    Text(showArchived
+                         ? String(format: tr("notebooks.hideArchived"), state.archivedNotebooksList.count)
+                         : String(format: tr("notebooks.showArchived"), state.archivedNotebooksList.count))
+                        .font(.subheadline.bold())
+                    Spacer()
+                    Image(systemName: showArchived ? "chevron.up" : "chevron.down")
+                        .font(.caption.bold())
+                }
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 4)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(ScaleTouchStyle())
+
+            if showArchived {
+                GlassEffectContainer {
+                    LazyVStack(spacing: 10) {
+                        ForEach(state.archivedNotebooksList) { notebook in
+                            notebookRow(notebook, isArchived: true)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -143,12 +225,11 @@ public struct NotebookManagerSheet: View {
         let balance = state.notebookBalance(notebook.id)
 
         return HStack(spacing: 12) {
-            Button(action: {
-                if !isArchived {
-                    state.activeNotebookId = notebook.id
-                    dismiss()
-                }
-            }) {
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                state.selectNotebook(notebook.id)
+                dismiss()
+            } label: {
                 HStack(spacing: 12) {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "book.closed")
                         .font(.title3)
@@ -156,15 +237,14 @@ public struct NotebookManagerSheet: View {
                         .foregroundColor(isSelected ? AppTheme.primary : .secondary)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        if editingNotebookId == notebook.id {
-                            TextField("Name", text: $editingNotebookName)
-                                .textFieldStyle(.plain)
-                                .font(.headline)
-                                .onSubmit { saveEdit(notebook.id) }
-                        } else {
+                        HStack(spacing: 4) {
                             Text(notebook.name)
                                 .font(.headline)
                                 .foregroundColor(.primary)
+
+                            if state.isItemPendingSync(id: notebook.id) {
+                                PendingSyncIndicator(size: 11)
+                            }
                         }
 
                         AmountView(
@@ -174,67 +254,67 @@ public struct NotebookManagerSheet: View {
                             fontWeight: .semibold
                         )
                     }
-
-                    Spacer()
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .contentShape(.rect)
             }
+            .buttonStyle(.plain)
 
-            // Actions
-            HStack(spacing: 4) {
-                if editingNotebookId == notebook.id {
-                    Button(action: { saveEdit(notebook.id) }) {
-                        Image(systemName: "checkmark")
-                            .font(.caption.bold())
-                            .foregroundColor(AppTheme.accent)
-                            .frame(width: 28, height: 28)
-                            .background(AppTheme.accentBg, in: Circle())
-                    }
-                } else {
-                    Button(action: {
-                        editingNotebookId = notebook.id
-                        editingNotebookName = notebook.name
-                    }) {
-                        Image(systemName: "pencil")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .frame(width: 28, height: 28)
-                            .background(Color.white.opacity(0.08), in: Circle())
-                    }
-                }
-
-                Button(action: {
-                    state.archiveNotebook(id: notebook.id, archived: !isArchived)
-                }) {
-                    Image(systemName: isArchived ? "tray.and.arrow.up" : "archivebox")
-                        .font(.caption)
+            HStack(spacing: 6) {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    editingNotebook = notebook
+                } label: {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.secondary)
-                        .frame(width: 28, height: 28)
-                        .background(Color.white.opacity(0.08), in: Circle())
+                        .frame(width: 30, height: 30)
+                        .contentShape(Circle())
+                        .liquidGlassPill()
                 }
+                .buttonStyle(.plain)
 
-                Button(action: {
-                    deleteConfirmNotebook = notebook
-                }) {
-                    Image(systemName: "trash")
-                        .font(.caption)
-                        .foregroundColor(AppTheme.danger.opacity(0.8))
-                        .frame(width: 28, height: 28)
-                        .background(AppTheme.danger.opacity(0.1), in: Circle())
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    Task { await state.archiveNotebook(id: notebook.id, archived: !isArchived) }
+                } label: {
+                    Image(systemName: isArchived ? "tray.and.arrow.up" : "archivebox")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 30, height: 30)
+                        .contentShape(Circle())
+                        .liquidGlassPill()
                 }
+                .buttonStyle(.plain)
+
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    deleteConfirmNotebook = notebook
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AppTheme.danger.opacity(0.85))
+                        .frame(width: 30, height: 30)
+                        .contentShape(Circle())
+                        .liquidGlassPill()
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(14)
         .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
     }
 
-    private func createNotebook() {
-        state.createNotebook(name: newNotebookName)
-        newNotebookName = ""
-        isCreating = false
+    private func persistReorderedNotebooks() {
+        state.reorderNotebooks(orderedIds: reorderedNotebooks.map(\.id) + reorderedArchivedNotebooks.map(\.id))
     }
 
-    private func saveEdit(_ id: String) {
-        state.updateNotebook(id: id, name: editingNotebookName)
-        editingNotebookId = nil
+    private func createNotebook() {
+        let name = newNotebookName
+        Task {
+            await state.createNotebook(name: name)
+            newNotebookName = ""
+            isCreating = false
+        }
     }
 }

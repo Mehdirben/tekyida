@@ -1,7 +1,8 @@
 import SwiftUI
 
-// MARK: - Contact Row View
+// MARK: - Contact Row View (Modern Liquid Glass HIG)
 public struct ContactRowView: View {
+    @EnvironmentObject private var state: AppState
     let contact: Contact
     let balance: Double
     let isMasked: Bool
@@ -26,92 +27,58 @@ public struct ContactRowView: View {
     }
 
     public var body: some View {
-        HStack(spacing: 12) {
-            // Main tappable area
-            Button(action: {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                onTap()
-            }) {
-                HStack(spacing: 12) {
-                    // Squircle User Icon
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(AppTheme.primary.opacity(0.12))
-                            .frame(width: 38, height: 38)
+        // The whole card surface is tappable; action buttons are nested inside
+        // and take precedence for their own taps
+        Button(action: {
+            onTap()
+        }) {
+            HStack(spacing: 12) {
+                // Concentric Squircle User Icon
+                ZStack {
+                    ConcentricRectangle(cornerRadius: 14)
+                        .fill(AppTheme.primary.opacity(0.14))
+                        .frame(width: 42, height: 42)
 
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 15))
-                            .foregroundColor(AppTheme.primary)
-                    }
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(AppTheme.primary)
+                }
 
-                    // Name, Phone & Inline Balance
-                    VStack(alignment: .leading, spacing: 3) {
+                // Contact Info: name with amount below
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 4) {
                         Text(contact.name)
-                            .font(.subheadline.bold())
+                            .font(.headline)
                             .foregroundColor(.primary)
                             .lineLimit(1)
 
-                        HStack(spacing: 6) {
-                            if let phone = contact.phone, !phone.isEmpty {
-                                HStack(spacing: 3) {
-                                    Image(systemName: "phone.fill")
-                                        .font(.system(size: 9))
-                                    Text(phone)
-                                        .font(.caption2)
-                                }
-                                .foregroundColor(.secondary)
-                            }
-
-                            AmountView(
-                                amount: balance,
-                                isHidden: isMasked,
-                                font: .caption2,
-                                fontWeight: .bold
-                            )
+                        if state.isItemPendingSync(id: contact.id) {
+                            PendingSyncIndicator(size: 11)
                         }
                     }
 
-                    Spacer()
+                    AmountView(
+                        amount: balance,
+                        isHidden: isMasked,
+                        font: .subheadline,
+                        fontWeight: .semibold
+                    )
                 }
+
+                Spacer()
+
+                // Circular Glass Action Buttons
+                RowActionButtons(
+                    onEdit: onEdit,
+                    onDelete: onDelete,
+                    showsChevron: true
+                )
             }
-            .buttonStyle(ScaleTouchStyle())
-
-            // Right Actions: Edit, Delete, Chevron
-            HStack(spacing: 4) {
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onEdit()
-                }) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .padding(6)
-                }
-
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    onDelete()
-                }) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(AppTheme.danger.opacity(0.8))
-                        .padding(6)
-                }
-
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onTap()
-                }) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.secondary.opacity(0.6))
-                        .padding(.vertical, 6)
-                        .padding(.leading, 2)
-                }
-            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .contentShape(.rect)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .buttonStyle(ScaleTouchStyle())
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
 }

@@ -1,165 +1,114 @@
 import SwiftUI
 
-// MARK: - Experience Detail Sheet
-public struct ExperienceDetailSheet: View {
+// MARK: - Experience Detail View (Modern Liquid Glass HIG)
+public struct ExperienceDetailView: View {
     @EnvironmentObject private var state: AppState
-    @Environment(\.dismiss) private var dismiss
     let experience: Experience
 
-    @State private var isLocalMasked: Bool = false
-    @State private var isAddingTransaction: Bool = false
+    @State private var isLocalMasked: Bool? = nil
+    @State private var showAddTransaction: Bool = false
     @State private var editingTransaction: Transaction?
     @State private var deletingTransaction: Transaction?
-    @State private var isEditingExperience: Bool = false
-    @State private var isTransferringExperience: Bool = false
-    @State private var isConfirmingDeleteExperience: Bool = false
 
     public init(experience: Experience) {
         self.experience = experience
     }
 
+    private var shouldMaskAmounts: Bool {
+        isLocalMasked ?? state.isAmountsHidden
+    }
+
+    private var isClosed: Bool {
+        state.experiences.first(where: { $0.id == experience.id })?.closed ?? experience.closed
+    }
+
     public var body: some View {
-        NavigationStack {
-            ZStack {
-                MeshGradientBackground()
+        // Transparent content so the glass sheet presentation shows through
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 16) {
+                    headerCard
 
-                VStack(spacing: 0) {
-                    ScrollView {
-                        VStack(spacing: 16) {
-                            headerCard
-
-                            if experience.closed {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "lock.fill")
-                                        .foregroundColor(AppTheme.warning)
-                                    Text("This experience is closed. Reopen it to make changes.")
-                                        .font(.caption.bold())
-                                        .foregroundColor(AppTheme.warning)
-                                }
-                                .padding(12)
-                                .frame(maxWidth: .infinity)
-                                .background(AppTheme.warningBg, in: RoundedRectangle(cornerRadius: AppTheme.radiusInput, style: .continuous))
-                            }
-
-                            HStack {
-                                Text("Transactions")
-                                    .font(.caption.bold())
-                                    .foregroundColor(.secondary)
-                                    .textCase(.uppercase)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 4)
-
-                            let txs = state.experienceTransactions(experience.id)
-                            if txs.isEmpty && !isAddingTransaction {
-                                GlassEmptyStateView(
-                                    systemImage: "doc.text.magnifyingglass",
-                                    title: "No transactions in this experience",
-                                    subtitle: "Tap the button below to add expenses or payments to this experience."
-                                )
-                            } else {
-                                ForEach(txs) { tx in
-                                    TransactionRowView(
-                                        transaction: tx,
-                                        isMasked: isLocalMasked || state.isAmountsHidden,
-                                        onEdit: { editingTransaction = tx },
-                                        onDelete: { deletingTransaction = tx }
-                                    )
-                                }
-                            }
+                    if isClosed {
+                        HStack(spacing: 8) {
+                            Image(systemName: "lock.fill")
+                                .foregroundColor(AppTheme.warning)
+                            Text(tr("experience.closedNotice"))
+                                .font(.caption.bold())
+                                .foregroundColor(AppTheme.warning)
                         }
-                        .padding(16)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 10)
+                        .frame(maxWidth: .infinity)
+                        .background(AppTheme.warningBg, in: ConcentricRectangle(cornerRadius: AppTheme.radiusInput))
+                        .overlay {
+                            ConcentricRectangle(cornerRadius: AppTheme.radiusInput)
+                                .stroke(AppTheme.warning.opacity(0.3), lineWidth: 1)
+                        }
                     }
 
-                    if !experience.closed {
-                        AddTransactionView(isAdding: $isAddingTransaction) { amount, desc, date in
-                            state.createTransaction(
-                                notebookId: experience.notebookId,
-                                contactId: experience.contactId,
-                                experienceId: experience.id,
-                                amount: amount,
-                                description: desc,
-                                date: date
-                            )
-                        }
-                        .padding(16)
-                    }
-                }
-            }
-            .navigationTitle(experience.name)
-            .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.large])
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                        .font(.body.bold())
-                }
-
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button(action: {
-                            state.toggleExperienceClosed(id: experience.id)
-                        }) {
-                            Label(experience.closed ? "Reopen Experience" : "Close Experience",
-                                  systemImage: experience.closed ? "lock.open" : "lock")
-                        }
-                        Button(action: { isEditingExperience = true }) {
-                            Label("Edit Experience", systemImage: "pencil")
-                        }
-                        Button(action: { isTransferringExperience = true }) {
-                            Label("Transfer to Notebook", systemImage: "arrow.right.arrow.left")
-                        }
-                        Button(role: .destructive, action: { isConfirmingDeleteExperience = true }) {
-                            Label("Delete Experience", systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
+                    // Title-Style Section Header
+                    HStack {
+                        Text(tr("experience.transactionsTitle"))
                             .font(.headline)
-                            .symbolRenderingMode(.hierarchical)
+                            .foregroundColor(.primary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 4)
+                    .padding(.top, 4)
+
+                    let txs = state.experienceTransactions(experience.id)
+                    if txs.isEmpty {
+                        GlassEmptyStateView(
+                            systemImage: "doc.text.magnifyingglass",
+                            title: tr("experience.emptyTitle"),
+                            subtitle: tr("experience.emptySubtitle")
+                        )
+                    } else {
+                        LazyVStack(spacing: 10) {
+                            ForEach(txs) { tx in
+                                TransactionRowView(
+                                    transaction: tx,
+                                    isMasked: shouldMaskAmounts,
+                                    showsActions: !isClosed,
+                                    onEdit: { editingTransaction = tx },
+                                    onDelete: { deletingTransaction = tx }
+                                )
+                            }
+                        }
                     }
                 }
+                .padding(16)
             }
-            .sheet(isPresented: $isEditingExperience) {
-                let nbContacts = state.contacts.filter { $0.notebookId == experience.notebookId }
-                AddExperienceSheet(contacts: nbContacts, experience: experience) { name, contactId in
-                    state.updateExperience(id: experience.id, name: name, contactId: contactId)
+
+            if !isClosed {
+                // Floating Liquid Glass Action Bar
+                GlassActionButton(
+                    tr("transaction.add"),
+                    systemImage: "plus.circle.fill"
+                ) {
+                    showAddTransaction = true
                 }
-            }
-            .sheet(isPresented: $isTransferringExperience) {
-                TransferExperienceSheet(experience: experience) { targetNotebookId in
-                    state.transferExperience(id: experience.id, to: targetNotebookId)
-                    dismiss()
-                }
-            }
-            .transactionModals(
-                editingTransaction: $editingTransaction,
-                deletingTransaction: $deletingTransaction,
-                onSave: { id, amount, desc, date in
-                    state.updateTransaction(id: id, amount: amount, description: desc, date: date)
-                },
-                onDelete: { id in
-                    state.deleteTransaction(id: id)
-                }
-            )
-            .alert("Delete Experience?", isPresented: $isConfirmingDeleteExperience) {
-                Button("Cancel", role: .cancel) {}
-                Button("Delete", role: .destructive) {
-                    state.deleteExperience(id: experience.id)
-                    dismiss()
-                }
-            } message: {
-                Text("Deleting this experience will remove all of its associated transactions.")
+                .padding(16)
             }
         }
+        .transactionActions(
+            isAdding: $showAddTransaction,
+            editing: $editingTransaction,
+            deleting: $deletingTransaction,
+            notebookId: experience.notebookId,
+            contactId: experience.contactId,
+            experienceId: experience.id
+        )
     }
 
     private var headerCard: some View {
         let balance = state.experienceBalance(experience.id)
         return HStack(spacing: 16) {
             ZStack {
-                Circle()
+                ConcentricRectangle(cornerRadius: 18)
                     .fill(AppTheme.primary.opacity(0.15))
-                    .frame(width: 52, height: 52)
+                    .frame(width: 56, height: 56)
 
                 Image(systemName: "safari.fill")
                     .font(.title2)
@@ -173,13 +122,14 @@ public struct ExperienceDetailSheet: View {
 
                 HStack(spacing: 6) {
                     Button(action: {
+                        UIImpactFeedbackGenerator(style: isClosed ? .light : .medium).impactOccurred()
                         state.toggleExperienceClosed(id: experience.id)
                     }) {
                         StatusBadge(
-                            title: experience.closed ? "Closed" : "Open",
-                            systemImage: experience.closed ? "lock.fill" : "lock.open.fill",
-                            color: experience.closed ? AppTheme.warning : AppTheme.accent,
-                            backgroundColor: experience.closed ? AppTheme.warningBg : AppTheme.accentBg
+                            title: isClosed ? tr("experience.statusClosed") : tr("experience.statusOpen"),
+                            systemImage: isClosed ? "lock.fill" : "lock.open.fill",
+                            color: isClosed ? AppTheme.warning : AppTheme.accent,
+                            backgroundColor: isClosed ? AppTheme.warningBg : AppTheme.accentBg
                         )
                     }
 
@@ -188,14 +138,14 @@ public struct ExperienceDetailSheet: View {
                             title: c.name,
                             systemImage: "person.fill",
                             color: .secondary,
-                            backgroundColor: Color.white.opacity(0.1)
+                            backgroundColor: Color(uiColor: .secondarySystemFill)
                         )
                     }
                 }
 
                 AmountView(
                     amount: balance,
-                    isHidden: isLocalMasked || state.isAmountsHidden,
+                    isHidden: shouldMaskAmounts,
                     font: .headline,
                     fontWeight: .bold
                 )
@@ -203,9 +153,15 @@ public struct ExperienceDetailSheet: View {
 
             Spacer()
 
-            MaskToggleButton(isMasked: $isLocalMasked)
+            MaskToggleButton(isMasked: Binding(
+                get: { shouldMaskAmounts },
+                set: { isLocalMasked = $0 }
+            ))
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
 }
+
+// MARK: - Backwards Compatibility Alias
+public typealias ExperienceDetailSheet = ExperienceDetailView

@@ -4,6 +4,7 @@ import { Compass, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { triggerHaptic } from "@/lib/haptics";
+import { formatBalance, balanceColor } from "@/lib/money";
 
 interface ExperienceBalanceCardProps {
     balance: number;
@@ -13,17 +14,7 @@ export default function ExperienceBalanceCard({ balance }: ExperienceBalanceCard
     const { t } = useTranslation();
     const { hidden, toggle, mask } = useAmountsVisibility();
 
-    const formatBalance = (amount: number) => {
-        const sign = amount >= 0 ? "+" : "";
-        return mask(`${sign}${amount.toFixed(2)} MAD`);
-    };
-
-    const accentColor =
-        balance > 0
-            ? "text-accent-500"
-            : balance < 0
-                ? "text-danger-500"
-                : "text-(--text-primary)";
+    const accentColor = balanceColor(balance);
 
     return (
         <div className="liquid-glass-card p-5 flex items-center gap-4">
@@ -35,7 +26,7 @@ export default function ExperienceBalanceCard({ balance }: ExperienceBalanceCard
                     {t("experience.totalBalance")}
                 </p>
                 <p className={`text-xl font-bold mt-0.5 ${accentColor}`}>
-                    {formatBalance(balance)}
+                    {formatBalance(balance, mask)}
                 </p>
             </div>
             <button

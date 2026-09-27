@@ -1,32 +1,17 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { createPortal } from "react-dom";
-import {
-    ArrowDownLeft,
-    ArrowUpRight,
-    Plus,
-    Trash2,
-    Pencil,
-    X,
-    Receipt,
-    CloudOff,
-    Eye,
-    EyeOff,
-    Loader2,
-} from "lucide-react";
+import { X, Receipt, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useLocalAmountsVisibility } from "@/hooks/useLocalAmountsVisibility";
-import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import ExperienceContactCard from "@/components/app/ExperienceContactCard";
-import { toLocalDatetime } from "@/lib/dateUtils";
+import TransactionRow, { type TransactionRowData } from "@/components/app/TransactionRow";
 import BottomSheetModal from "@/components/ui/BottomSheetModal";
 import TransactionModals from "@/components/app/TransactionModals";
 import AddTransactionFooter from "@/components/app/AddTransactionFooter";
@@ -35,6 +20,7 @@ import { useTransactionMutations } from "@/hooks/useTransactionMutations";
 import { useSheetAnimation } from "@/hooks/useSheetAnimation";
 import { useTransactionEditor, useTransactionSheetEscape } from "@/hooks/useTransactionEditor";
 import { triggerHaptic } from "@/lib/haptics";
+import { formatBalance, balanceColor } from "@/lib/money";
 
 interface ExperienceForContact {
     _id: Id<"experiences">;
@@ -67,7 +53,7 @@ export default function TransactionList({
     const { t } = useTranslation();
     const { localHidden, localMask, toggleLocal } = useLocalAmountsVisibility();
     const router = useRouter();
-    const rawTransactions = useCachedQuery<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[]>("transactions.list", api.transactions.list, { contactId });
+    const rawTransactions = useCachedQuery<TransactionRowData[]>("transactions.list", api.transactions.list, { contactId });
     // For offline-created contacts (temp_ IDs), there are no server transactions yet — treat undefined as empty
     const transactions = rawTransactions ?? (contactId.startsWith("temp_") ? [] : undefined);
     const { createTransaction, deleteTransaction, updateTransaction, offlineMutation, isItemPending } = useTransactionMutations();
@@ -119,18 +105,6 @@ export default function TransactionList({
         setDeleteTargetId(null);
     };
 
-
-
-    const formatDate = (ts: number) => {
-        return new Date(ts).toLocaleString(undefined, {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    };
-
     const directBalance =
         transactions?.reduce((sum, t) => sum + t.amount, 0) ?? 0;
     const experienceBalance =
@@ -153,15 +127,11 @@ export default function TransactionList({
                                 toggleLocal();
                                 triggerHaptic("selection");
                             }}
-                            className={`flex items-center gap-1.5 text-sm font-semibold mt-0.5 cursor-pointer group ${balance > 0
-                                ? "text-accent-500"
-                                : balance < 0
-                                    ? "text-danger-500"
-                                    : "text-(--text-secondary)"
+                            className={`flex items-center gap-1.5 text-sm font-semibold mt-0.5 cursor-pointer group ${balanceColor(balance, "text-(--text-secondary)")
                                 }`}
                             aria-label={localHidden ? "Show amounts" : "Hide amounts"}
                         >
-                            {localMask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
+                            {formatBalance(balance, localMask)}
                             {localHidden ? <EyeOff size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" /> : <Eye size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" />}
                         </button>
                     </div>
@@ -193,7 +163,6 @@ export default function TransactionList({
                         <TimelineMerged
                             transactions={transactions}
                             experiences={experiences}
-                            formatDate={formatDate}
                             mask={localMask}
                             isItemPending={isItemPending}
                             openEditTx={txEditor.handleOpenEdit}
@@ -222,25 +191,23 @@ export default function TransactionList({
 // ─── Merged timeline component ──────────────────────────────────────────
 
 type TimelineItem =
-    | { type: "transaction"; sortDate: number; data: { _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number } }
+    | { type: "transaction"; sortDate: number; data: TransactionRowData }
     | { type: "experience"; sortDate: number; data: ExperienceForContact };
 
 function TimelineMerged({
     transactions,
     experiences,
-    formatDate,
     mask,
     isItemPending,
     openEditTx,
     setDeleteTargetId,
     onExperienceClick,
 }: {
-    transactions: { _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[];
+    transactions: TransactionRowData[];
     experiences?: ExperienceForContact[];
-    formatDate: (ts: number) => string;
     mask: (s: string) => string;
     isItemPending: (id: string) => boolean;
-    openEditTx: (tx: { _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }) => void;
+    openEditTx: (tx: TransactionRowData) => void;
     setDeleteTargetId: (id: Id<"transactions">) => void;
     onExperienceClick: (expId: string) => void;
 }) {
@@ -275,65 +242,16 @@ function TimelineMerged({
                     );
                 }
 
-                const tx = item.data as { _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number };
+                const tx = item.data as TransactionRowData;
                 return (
-                    <div
+                    <TransactionRow
                         key={tx._id}
-                        className="liquid-glass-card-flat p-3.5 flex items-center gap-3"
-                    >
-                        <div
-                            className={`p-1.5 rounded-lg ${tx.amount > 0
-                                ? "bg-accent-500/10"
-                                : "bg-danger-500/10"
-                                }`}
-                        >
-                            {tx.amount > 0 ? (
-                                <ArrowDownLeft size={16} className="text-accent-500" />
-                            ) : (
-                                <ArrowUpRight size={16} className="text-danger-500" />
-                            )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-xs text-(--text-tertiary)">
-                                {formatDate(tx.date ?? tx.createdAt)}
-                            </p>
-                            {tx.description && (
-                                <p className="text-sm text-(--text-primary) whitespace-normal break-words mt-0.5">
-                                    {tx.description}
-                                </p>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                            {isItemPending(tx._id) && (
-                                <CloudOff size={12} className="text-warning-500" />
-                            )}
-                            <span
-                                className={`text-sm font-bold ${tx.amount > 0
-                                    ? "text-accent-500"
-                                    : "text-danger-500"
-                                    }`}
-                            >
-                                {mask(`${tx.amount > 0 ? "+" : ""}${tx.amount.toFixed(2)}`)}
-                            </span>
-                            <button
-                                onClick={() => {
-                                    openEditTx(tx);
-                                }}
-                                className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
-                            >
-                                <Pencil size={12} />
-                            </button>
-                            <button
-                                onClick={() => {
-                                    triggerHaptic("warning");
-                                    setDeleteTargetId(tx._id);
-                                }}
-                                className="p-1 rounded-md text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
-                            >
-                                <Trash2 size={12} />
-                            </button>
-                        </div>
-                    </div>
+                        transaction={tx}
+                        mask={mask}
+                        isPending={isItemPending(tx._id)}
+                        onEdit={openEditTx}
+                        onDelete={setDeleteTargetId}
+                    />
                 );
             })}
         </>

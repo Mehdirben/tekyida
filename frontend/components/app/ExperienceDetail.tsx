@@ -1,34 +1,19 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
-import { createPortal } from "react-dom";
-import {
-    ArrowDownLeft,
-    ArrowUpRight,
-    Plus,
-    Trash2,
-    Pencil,
-    X,
-    Receipt,
-    CloudOff,
-    Lock,
-    Unlock,
-    Eye,
-    EyeOff,
-} from "lucide-react";
+import { useState, useMemo } from "react";
+import { X, Receipt, Lock, Unlock, Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useLocalAmountsVisibility } from "@/hooks/useLocalAmountsVisibility";
-import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import { triggerHaptic } from "@/lib/haptics";
-import { toLocalDatetime } from "@/lib/dateUtils";
+import { formatBalance, balanceColor } from "@/lib/money";
 import BottomSheetModal from "@/components/ui/BottomSheetModal";
 import TransactionModals from "@/components/app/TransactionModals";
+import TransactionRow, { type TransactionRowData } from "@/components/app/TransactionRow";
 import AddTransactionFooter from "@/components/app/AddTransactionFooter";
 import { useTransactionCreator } from "@/hooks/useTransactionCreator";
 import { useTransactionMutations } from "@/hooks/useTransactionMutations";
@@ -60,7 +45,7 @@ export default function ExperienceDetail({
 
     const { t } = useTranslation();
     const { localHidden, localMask, toggleLocal } = useLocalAmountsVisibility();
-    const rawTransactions = useCachedQuery<{ _id: Id<"transactions">; amount: number; description?: string; date?: number; createdAt: number }[]>(
+    const rawTransactions = useCachedQuery<TransactionRowData[]>(
         "transactions.list",
         api.transactions.list,
         { experienceId }
@@ -119,18 +104,6 @@ export default function ExperienceDetail({
         setDeleteTargetId(null);
     };
 
-
-
-    const formatDate = (ts: number) => {
-        return new Date(ts).toLocaleString(undefined, {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    };
-
     const balance = transactions.reduce((sum, t) => sum + t.amount, 0);
 
     return (
@@ -150,15 +123,11 @@ export default function ExperienceDetail({
                                     toggleLocal();
                                     triggerHaptic("selection");
                                 }}
-                                className={`flex items-center gap-1.5 text-sm font-semibold cursor-pointer group ${balance > 0
-                                    ? "text-accent-500"
-                                    : balance < 0
-                                        ? "text-danger-500"
-                                        : "text-(--text-secondary)"
+                                className={`flex items-center gap-1.5 text-sm font-semibold cursor-pointer group ${balanceColor(balance, "text-(--text-secondary)")
                                     }`}
                                 aria-label={localHidden ? "Show amounts" : "Hide amounts"}
                             >
-                                {localMask(`${balance >= 0 ? "+" : ""}${balance.toFixed(2)} MAD`)}
+                                {formatBalance(balance, localMask)}
                                 {localHidden ? <EyeOff size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" /> : <Eye size={13} className="opacity-50 group-hover:opacity-80 transition-opacity" />}
                             </button>
                             <span className="text-[11px] text-(--text-tertiary)">·</span>
@@ -208,73 +177,14 @@ export default function ExperienceDetail({
                         </div>
                     ) : (
                         transactions.map((tx) => (
-                            <div
+                            <TransactionRow
                                 key={tx._id}
-                                className="liquid-glass-card-flat p-3.5 flex items-center gap-3"
-                            >
-                                <div
-                                    className={`p-1.5 rounded-lg ${tx.amount > 0
-                                        ? "bg-accent-500/10"
-                                        : "bg-danger-500/10"
-                                        }`}
-                                >
-                                    {tx.amount > 0 ? (
-                                        <ArrowDownLeft
-                                            size={16}
-                                            className="text-accent-500"
-                                        />
-                                    ) : (
-                                        <ArrowUpRight
-                                            size={16}
-                                            className="text-danger-500"
-                                        />
-                                    )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-(--text-tertiary)">
-                                        {formatDate(tx.date ?? tx.createdAt)}
-                                    </p>
-                                    {tx.description && (
-                                        <p className="text-sm text-(--text-primary) whitespace-normal break-words mt-0.5">
-                                            {tx.description}
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                    {isItemPending(tx._id) && (
-                                        <CloudOff size={12} className="text-warning-500" />
-                                    )}
-                                    <span
-                                        className={`text-sm font-bold ${tx.amount > 0
-                                            ? "text-accent-500"
-                                            : "text-danger-500"
-                                            }`}
-                                    >
-                                        {localMask(`${tx.amount > 0 ? "+" : ""}${tx.amount.toFixed(2)}`)}
-                                    </span>
-                                    {!closed && (
-                                        <>
-                                            <button
-                                                onClick={() => {
-                                                    txEditor.handleOpenEdit(tx);
-                                                }}
-                                                className="p-1 rounded-md text-(--text-tertiary) active:bg-white/10 transition-all cursor-pointer"
-                                            >
-                                                <Pencil size={12} />
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    triggerHaptic("warning");
-                                                    setDeleteTargetId(tx._id);
-                                                }}
-                                                className="p-1 rounded-md text-danger-500/60 active:bg-danger-500/10 transition-all cursor-pointer"
-                                            >
-                                                <Trash2 size={12} />
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                                transaction={tx}
+                                mask={localMask}
+                                isPending={isItemPending(tx._id)}
+                                onEdit={!closed ? (t2) => txEditor.handleOpenEdit(t2) : undefined}
+                                onDelete={!closed ? setDeleteTargetId : undefined}
+                            />
                         ))
                     )}
                 </div>

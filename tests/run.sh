@@ -196,17 +196,28 @@ fi
 ios_status="READY"
 if [ "$do_ios" = true ]; then
   if [[ "$OSTYPE" == "darwin"* ]] && command -v xcodebuild >/dev/null 2>&1; then
-    echo "🍏 macOS detected: Running native iOS tests..."
+    echo "🍏 macOS detected: Running native iOS tests with coverage..."
     cd "$ROOT_DIR/ios"
     if command -v xcodegen >/dev/null 2>&1; then
       xcodegen generate
     fi
+    mkdir -p build
     xcodebuild test \
       -project Tekyida.xcodeproj \
       -scheme Tekyida \
       -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+      -enableCodeCoverage YES \
+      -resultBundlePath build/TekyidaTests.xcresult \
       CODE_SIGNING_ALLOWED=NO
     echo "✓ iOS simulator tests passed."
+
+    echo "      • Enforcing iOS logic coverage gate (100% on Services/Models/logic)..."
+    mkdir -p "$REPORTS_DIR/ios"
+    xcrun xccov view --report build/TekyidaTests.xcresult
+    xcrun xccov view --report --json build/TekyidaTests.xcresult > "$REPORTS_DIR/ios/coverage.json"
+    chmod +x "$ROOT_DIR/tests/ios-coverage-gate.sh"
+    "$ROOT_DIR/tests/ios-coverage-gate.sh" "$REPORTS_DIR/ios/coverage.json"
+    echo "✓ iOS logic coverage gate passed."
     ios_status="PASSED"
   else
     echo "ℹ Non-macOS environment detected ($(uname -s)). Skipping native iOS test execution."
@@ -247,6 +258,19 @@ b_status="PASSED"
 f_status="PASSED"
 [ "$do_frontend" = false ] && f_status="SKIPPED"
 
+ios_logic_cov="n/a"
+if [ -f "$REPORTS_DIR/ios/coverage.json" ]; then
+  ios_logic_cov=$(node -e '
+    const r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+    const t = (r.targets || []).find((t) => (t.name || "").startsWith("Tekyida"));
+    const files = (t && t.files ? t.files : []).filter((f) =>
+      f.name.includes("Sources/App/Services/") || f.name.includes("Sources/App/Models/"));
+    const cov = files.reduce((a, f) => a + f.coveredLines, 0);
+    const exe = files.reduce((a, f) => a + f.executableLines, 0);
+    console.log(exe === 0 ? "n/a" : ((cov / exe) * 100).toFixed(2) + "%");
+  ' "$REPORTS_DIR/ios/coverage.json")
+fi
+
 echo "========================================================================"
 echo "                   TEKYIDA QUALITY & TEST DASHBOARD                     "
 echo "========================================================================"
@@ -270,6 +294,7 @@ printf " %-21s | %-18s | %-17s | %-7s \n" "TypeScript Integrity" "0 Type Errors"
 echo "-----------------------+--------------------+-------------------+--------"
 printf " %-21s | %-18s | %-17s | %-7s \n" "Android Unit & Sec" "JUnit Test Suite" "5 Tests Passed" "$android_status"
 printf " %-21s | %-18s | %-17s | %-7s \n" "iOS Unit & UI Tests" "Xcode Test Suite" "Configured" "$ios_status"
+printf " %-21s | %-18s | %-17s | %-7s \n" "iOS Logic Coverage" "100.00%" "$ios_logic_cov" "$ios_status"
 echo "========================================================================"
 echo ""
 echo "Centralized Reports Directory: tests/reports/"

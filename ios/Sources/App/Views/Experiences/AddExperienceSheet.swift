@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Add / Edit Experience Sheet
+// MARK: - Add / Edit Experience Sheet (Modern Liquid Glass HIG)
 public struct AddExperienceSheet: View {
     @Environment(\.dismiss) private var dismiss
     let contacts: [Contact]
@@ -26,74 +26,77 @@ public struct AddExperienceSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Experience Icon Banner
-                    ZStack {
-                        Circle()
-                            .fill(AppTheme.primary.opacity(0.12))
-                            .frame(width: 64, height: 64)
+                    // Experience Details Fields
+                    VStack(alignment: .leading, spacing: 16) {
+                        GlassInputField(
+                            systemImage: "flag.fill",
+                            placeholder: tr("experience.namePlaceholder"),
+                            text: $name,
+                            iconWidth: 24,
+                            autocapitalization: .sentences,
+                            characterLimit: 200
+                        )
 
-                        Image(systemName: "safari.fill")
-                            .font(.system(size: 34))
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundColor(AppTheme.primary)
-                    }
-                    .padding(.top, 8)
-
-                    // Experience Details Card
-                    VStack(alignment: .leading, spacing: 14) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "flag.fill")
-                                .foregroundColor(AppTheme.primary)
-                                .frame(width: 24)
-
-                            TextField("Experience Name (e.g. Summer Vacation)", text: $name)
-                                .textInputAutocapitalization(.sentences)
-                                .onChange(of: name) { _, newVal in
-                                    if newVal.count > 200 { name = String(newVal.prefix(200)) }
+                        GlassSelectorRow(
+                            title: tr("experience.linkedContact"),
+                            systemImage: "person",
+                            selectedTitle: selectedContactTitle
+                        ) {
+                            Picker(tr("experience.linkedContact"), selection: Binding(
+                                get: { selectedContactId },
+                                set: { newValue in
+                                    UISelectionFeedbackGenerator().selectionChanged()
+                                    selectedContactId = newValue
                                 }
-                        }
-                        .glassInputStyle()
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Linked Contact")
-                                .font(.caption.bold())
-                                .foregroundColor(.secondary)
-                                .textCase(.uppercase)
-
-                            Picker("Assign to Contact", selection: $selectedContactId) {
-                                Text("None (Standalone Experience)").tag("")
+                            )) {
+                                Text(tr("experience.noContact")).tag("")
                                 ForEach(contacts) { c in
                                     Text(c.name).tag(c.id)
                                 }
                             }
-                            .pickerStyle(.menu)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .liquidGlassFlat(cornerRadius: AppTheme.radiusInput)
                         }
                     }
-                    .padding(16)
-                    .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
+
+                    // Bottom Save Button
+                    GlassActionButton(
+                        initialExperience == nil ? tr("experience.save") : tr("experience.update"),
+                        systemImage: initialExperience == nil ? "plus" : "checkmark",
+                        isDisabled: name.trimmingCharacters(in: .whitespaces).isEmpty
+                    ) {
+                        save()
+                    }
+                    .padding(.top, 4)
 
                     Spacer(minLength: 24)
                 }
                 .padding(20)
+                .fittedLiquidGlassSheet(chrome: 60)
             }
-            .navigationTitle(initialExperience == nil ? "New Experience" : "Edit Experience")
+            .scrollDisabled(true)
+            .dismissKeyboardOnTap()
+            .navigationTitle(initialExperience == nil ? tr("experience.new") : tr("experience.edit"))
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium, .large])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(tr("common.cancel")) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(initialExperience == nil ? "Create" : "Done") { save() }
-                        .font(.body.bold())
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(initialExperience == nil ? tr("common.create") : tr("common.done")) {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        save()
+                    }
+                    .font(.body.bold())
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
         }
+    }
+
+    private var selectedContactTitle: String {
+        contacts.first(where: { $0.id == selectedContactId })?.name ?? tr("experience.noContact")
     }
 
     private func save() {

@@ -104,12 +104,8 @@ if [[ "$OSTYPE" == "darwin"* ]] && command -v xcodebuild >/dev/null 2>&1; then
   if command -v xcodegen >/dev/null 2>&1; then
     xcodegen generate
   fi
-  echo "Running iOS Unit & UI E2E tests in simulator..."
-  xcodebuild test \
-    -project Tekyida.xcodeproj \
-    -scheme Tekyida \
-    -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
-    CODE_SIGNING_ALLOWED=NO || true
+  # Tests (with the 100% logic-coverage gate) already ran in Step 1 via
+  # run.sh — do not run them twice; only the release archive is produced here.
   xcodebuild archive \
     -project Tekyida.xcodeproj \
     -scheme Tekyida \

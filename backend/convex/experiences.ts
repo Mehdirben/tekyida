@@ -1,16 +1,23 @@
-import { v } from "convex/values";
-import { query, mutation } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
 
 export const list = query({
     args: { notebookId: v.id("notebooks") },
-    handler: async (ctx, args) => {
+    handler: async (ctx, { notebookId }) => {
         const userId = await getAuthUserId(ctx);
-        if (!userId) return [];
+        if (!userId) {
+            return [];
+        }
+
+        const currentNotebook = await ctx.db.get(notebookId);
+        if (!currentNotebook || currentNotebook.userId !== userId) {
+            return [];
+        }
 
         const experiences = await ctx.db
             .query("experiences")
-            .withIndex("by_notebook", (q) => q.eq("notebookId", args.notebookId))
+            .withIndex("by_notebook", (q) => q.eq("notebookId", notebookId))
             .order("desc")
             .collect();
 
@@ -18,10 +25,10 @@ export const list = query({
             experiences
                 .filter((e) => e.userId === userId)
                 .map(async (experience) => {
-                    const transactions = await ctx.db
+                    const transactions = (await ctx.db
                         .query("transactions")
                         .withIndex("by_experience", (q) => q.eq("experienceId", experience._id))
-                        .collect();
+                        .collect()).filter((t) => t.userId === userId);
 
                     const balance = transactions.reduce((sum, t) => sum + t.amount, 0);
 
@@ -67,7 +74,7 @@ export const create = mutation({
 
         if (args.contactId) {
             const contact = await ctx.db.get(args.contactId);
-            if (!contact || contact.notebookId !== args.notebookId) {
+            if (!contact || contact.userId !== userId || contact.notebookId !== args.notebookId) {
                 throw new Error("Contact not found");
             }
         }
@@ -103,7 +110,7 @@ export const update = mutation({
 
         if (args.contactId) {
             const contact = await ctx.db.get(args.contactId);
-            if (!contact || contact.notebookId !== experience.notebookId) {
+            if (!contact || contact.userId !== userId || contact.notebookId !== experience.notebookId) {
                 throw new Error("Contact not found");
             }
         }

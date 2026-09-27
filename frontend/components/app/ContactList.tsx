@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { createPortal } from "react-dom";
 import { UserPlus, User, Phone, ChevronRight, Trash2, Pencil } from "lucide-react";
 import UnsyncedBadge from "@/components/ui/UnsyncedBadge";
-import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import EditModalDialog from "@/components/ui/EditModalDialog";
+import ModalTextInput from "@/components/ui/ModalTextInput";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { useMutation } from "convex/react";
@@ -14,7 +14,9 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useKeyboardInset } from "@/hooks/useKeyboardInset";
+import { useEscapeCascade } from "@/hooks/useEscapeCascade";
 import { triggerHaptic } from "@/lib/haptics";
+import { formatBalance, balanceColor } from "@/lib/money";
 
 interface Contact {
     _id: Id<"contacts">;
@@ -80,25 +82,19 @@ export default function ContactList({
     const keyboardInset = useKeyboardInset();
     const keyboardOffsetStyle = keyboardInset > 0 ? { paddingBottom: `${keyboardInset + 12}px` } : undefined;
 
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                if (deleteTarget) {
-                    triggerHaptic("light");
-                    setDeleteTarget(null);
-                } else if (editTarget) {
-                    handleCloseEdit();
-                } else if (adding) {
-                    triggerHaptic("light");
-                    setAdding(false);
-                    setNewName("");
-                    setNewPhone("");
-                }
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [deleteTarget, editTarget, adding, handleCloseEdit]);
+    useEscapeCascade(() => {
+        if (deleteTarget) {
+            triggerHaptic("light");
+            setDeleteTarget(null);
+        } else if (editTarget) {
+            handleCloseEdit();
+        } else if (adding) {
+            triggerHaptic("light");
+            setAdding(false);
+            setNewName("");
+            setNewPhone("");
+        }
+    });
 
     useEffect(() => {
         if (adding) nameRef.current?.focus();
@@ -160,18 +156,6 @@ export default function ContactList({
 
     const { mask } = useAmountsVisibility();
 
-    const formatBalance = (amount: number) => {
-        const sign = amount >= 0 ? "+" : "";
-        return mask(`${sign}${amount.toFixed(2)} MAD`);
-    };
-
-    const balanceColor = (amount: number) =>
-        amount > 0
-            ? "text-accent-500"
-            : amount < 0
-                ? "text-danger-500"
-                : "text-(--text-primary)";
-
     return (
         <div className="space-y-3">
             {/* Contact Cards */}
@@ -225,7 +209,7 @@ export default function ContactList({
                                     </span>
                                 )}
                                 <span className={`text-xs font-bold ${balanceColor(contact.balance)}`}>
-                                    {formatBalance(contact.balance)}
+                                    {formatBalance(contact.balance, mask)}
                                 </span>
                             </div>
                         </div>
@@ -272,7 +256,7 @@ export default function ContactList({
             ))}
 
             {/* Delete Confirmation Popup */}
-            <ConfirmDeleteModal
+            <ConfirmDialog
                 isOpen={!!deleteTarget}
                 title={t("contact.delete")}
                 description={t("contact.deleteConfirm")}
@@ -292,34 +276,21 @@ export default function ContactList({
                 saveDisabled={!editName.trim()}
                 style={keyboardOffsetStyle}
             >
-                <input
-                    ref={editNameRef}
-                    type="text"
+                <ModalTextInput
+                    inputRef={editNameRef}
                     value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter") handleEdit();
-                        if (e.key === "Escape") {
-                            e.stopPropagation();
-                            handleCloseEdit();
-                        }
-                    }}
+                    onChange={setEditName}
+                    onConfirm={handleEdit}
+                    onCancel={handleCloseEdit}
                     placeholder={t("contact.name")}
-                    className="glass-input py-2.5 text-sm"
                 />
-                <input
+                <ModalTextInput
                     type="tel"
                     value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter") handleEdit();
-                        if (e.key === "Escape") {
-                            e.stopPropagation();
-                            handleCloseEdit();
-                        }
-                    }}
+                    onChange={setEditPhone}
+                    onConfirm={handleEdit}
+                    onCancel={handleCloseEdit}
                     placeholder={t("contact.phone")}
-                    className="glass-input py-2.5 text-sm"
                 />
             </EditModalDialog>
 

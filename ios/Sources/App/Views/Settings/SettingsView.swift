@@ -1,13 +1,18 @@
 import SwiftUI
 
-// MARK: - Settings View
 public struct SettingsView: View {
     @EnvironmentObject private var state: AppState
 
-    @State private var pinSetupMode: PinSetupSheet.Mode?
-    @State private var showChangeEmail: Bool = false
-    @State private var newEmailText: String = ""
-    @State private var showSignOutConfirm: Bool = false
+    @State private var newEmail = ""
+    @State private var confirmEmail = ""
+    @State private var currentPassword = ""
+    @State private var newPassword = ""
+    @State private var confirmPassword = ""
+    @State private var isChangingEmail = false
+    @State private var isChangingPassword = false
+    @State private var emailMessage: String?
+    @State private var passwordMessage: String?
+    @State private var showSignOutConfirm = false
 
     public init() {}
 
@@ -15,166 +20,155 @@ public struct SettingsView: View {
         NavigationStack {
             ZStack {
                 MeshGradientBackground()
-
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Profile & Account
-                        profileSection
-
-                        // Security & App Lock
-                        securitySection
-
-                        // Preferences & Controls
+                        accountSection
+                        passwordSection
                         preferencesSection
-
-                        // Sign Out
                         signOutSection
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
                     .padding(.bottom, 96)
                 }
+                .scrollDismissesKeyboard(.immediately)
+                .dismissKeyboardOnTap()
+                .tabBarMinimizeBehaviorOnScroll()
             }
-            .navigationTitle("Settings")
+            .navigationTitle(tr("settings.title"))
             .navigationBarTitleDisplayMode(.large)
-            .sheet(item: Binding(
-                get: { pinSetupMode.map { IdentifiablePinMode(mode: $0) } },
-                set: { pinSetupMode = $0?.mode }
-            )) { identifiable in
-                PinSetupSheet(mode: identifiable.mode)
-            }
-            .alert("Change Email", isPresented: $showChangeEmail) {
-                TextField("New email address", text: $newEmailText)
-                    .textInputAutocapitalization(.never)
-                Button("Cancel", role: .cancel) { newEmailText = "" }
-                Button("Save") {
-                    if !newEmailText.isEmpty {
-                        state.userEmail = newEmailText
-                        newEmailText = ""
-                    }
+            .alert(tr("settings.signOutTitle"), isPresented: $showSignOutConfirm) {
+                Button(tr("common.cancel"), role: .cancel) {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 }
-            }
-            .alert("Sign Out?", isPresented: $showSignOutConfirm) {
-                Button("Cancel", role: .cancel) {}
-                Button("Sign Out", role: .destructive) {
-                    state.lockApp()
+                Button(tr("settings.signOut"), role: .destructive) {
+                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                    Task { await state.signOut() }
                 }
             } message: {
-                Text("Are you sure you want to sign out?")
+                Text(tr("settings.signOutMessage"))
             }
         }
     }
 
-    private var profileSection: some View {
+    private var accountSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("Account")
+            sectionHeader(tr("settings.email"))
 
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(AppTheme.primary.opacity(0.12))
-                        .frame(width: 48, height: 48)
+            Label(state.userEmail.isEmpty ? tr("settings.account") : state.userEmail, systemImage: "envelope")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.title)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundColor(AppTheme.primary)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Tekyida Account")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-
-                    Text(state.userEmail)
+            if !state.isOnline {
+                HStack(spacing: 6) {
+                    Image(systemName: "wifi.slash")
+                        .font(.caption)
+                        .foregroundColor(AppTheme.warning)
+                    Text(tr("settings.offlineEmail"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+            }
 
-                Spacer()
+            GlassInputField(
+                systemImage: "envelope",
+                placeholder: tr("settings.newEmail"),
+                text: $newEmail,
+                keyboard: .emailAddress,
+                contentType: .emailAddress,
+                autocapitalization: .never,
+                disablesAutocorrection: true,
+                isDisabled: !state.isOnline
+            )
+            .opacity(state.isOnline ? 1.0 : 0.6)
 
-                Button(action: {
-                    newEmailText = state.userEmail
-                    showChangeEmail = true
-                }) {
-                    Text("Change")
-                        .font(.caption.bold())
-                        .foregroundColor(AppTheme.primary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(AppTheme.primary.opacity(0.1), in: Capsule())
-                }
+            GlassInputField(
+                systemImage: "envelope.badge",
+                placeholder: tr("settings.confirmEmail"),
+                text: $confirmEmail,
+                keyboard: .emailAddress,
+                contentType: .emailAddress,
+                autocapitalization: .never,
+                disablesAutocorrection: true,
+                isDisabled: !state.isOnline
+            )
+            .opacity(state.isOnline ? 1.0 : 0.6)
+
+            if let emailMessage {
+                Text(emailMessage)
+                    .font(.caption)
+                    .foregroundStyle(emailMessage == tr("settings.emailUpdated") ? AppTheme.accent : AppTheme.danger)
+            }
+
+            GlassActionButton(
+                tr("settings.changeEmail"),
+                systemImage: "envelope.badge",
+                isDisabled: !state.isOnline || isChangingEmail || newEmail.isEmpty || confirmEmail.isEmpty
+            ) {
+                Task { await updateEmail() }
             }
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
 
-    private var securitySection: some View {
+    private var passwordSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("Security & Privacy")
+            sectionHeader(tr("settings.password"))
 
-            // App Lock Toggle Row
-            HStack {
-                HStack(spacing: 12) {
-                    Image(systemName: "lock.shield.fill")
-                        .foregroundColor(AppTheme.primary)
-                        .symbolRenderingMode(.hierarchical)
-                        .frame(width: 24)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("App Lock PIN")
-                            .font(.subheadline.bold())
-                            .foregroundColor(.primary)
-
-                        Text("Require 6-digit PIN on launch & resume")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
+            if !state.isOnline {
+                HStack(spacing: 6) {
+                    Image(systemName: "wifi.slash")
+                        .font(.caption)
+                        .foregroundColor(AppTheme.warning)
+                    Text(tr("settings.offlinePassword"))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
-
-                Spacer()
-
-                Toggle("", isOn: Binding(
-                    get: { state.isLockConfigured },
-                    set: { willEnable in
-                        if willEnable {
-                            pinSetupMode = .setup
-                        } else {
-                            pinSetupMode = .disable
-                        }
-                    }
-                ))
-                .labelsHidden()
             }
 
-            if state.isLockConfigured {
-                Divider().background(Color.white.opacity(0.1))
+            GlassInputField(
+                systemImage: "lock",
+                placeholder: tr("settings.currentPassword"),
+                text: $currentPassword,
+                isSecure: true,
+                contentType: .password,
+                isDisabled: !state.isOnline
+            )
+            .opacity(state.isOnline ? 1.0 : 0.6)
 
-                HStack {
-                    Button(action: { pinSetupMode = .change }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "key.fill")
-                            Text("Change PIN")
-                        }
-                        .font(.subheadline.bold())
-                        .foregroundColor(AppTheme.primary)
-                    }
+            GlassInputField(
+                systemImage: "key",
+                placeholder: tr("settings.newPassword"),
+                text: $newPassword,
+                isSecure: true,
+                contentType: .newPassword,
+                isDisabled: !state.isOnline
+            )
+            .opacity(state.isOnline ? 1.0 : 0.6)
 
-                    Spacer()
+            GlassInputField(
+                systemImage: "key.fill",
+                placeholder: tr("settings.confirmNewPassword"),
+                text: $confirmPassword,
+                isSecure: true,
+                contentType: .newPassword,
+                isDisabled: !state.isOnline
+            )
+            .opacity(state.isOnline ? 1.0 : 0.6)
 
-                    Button(action: { state.lockApp() }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "lock.fill")
-                            Text("Lock Now")
-                        }
-                        .font(.caption.bold())
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.08), in: Capsule())
-                    }
-                }
+            if let passwordMessage {
+                Text(passwordMessage)
+                    .font(.caption)
+                    .foregroundStyle(passwordMessage == tr("settings.passwordUpdated") ? AppTheme.accent : AppTheme.danger)
+            }
+
+            GlassActionButton(
+                tr("settings.changePassword"),
+                systemImage: "key.fill",
+                isDisabled: !state.isOnline || isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty
+            ) {
+                Task { await updatePassword() }
             }
         }
         .padding(16)
@@ -183,25 +177,19 @@ public struct SettingsView: View {
 
     private var preferencesSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            sectionHeader("Preferences")
+            sectionHeader(tr("settings.preferences"))
 
-            // Appearance Theme Mode
             HStack {
-                HStack(spacing: 12) {
-                    Image(systemName: "circle.lefthalf.filled")
-                        .foregroundColor(.secondary)
-                        .frame(width: 24)
-
-                    Text("Appearance")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                }
-
+                Label(tr("settings.appearance"), systemImage: "circle.lefthalf.filled")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 Spacer()
-
-                Picker("Theme", selection: Binding(
+                Picker(tr("settings.appearance"), selection: Binding(
                     get: { state.themeMode },
-                    set: { state.updateTheme($0) }
+                    set: { newValue in
+                        UISelectionFeedbackGenerator().selectionChanged()
+                        state.updateTheme(newValue)
+                    }
                 )) {
                     ForEach(AppThemeMode.allCases, id: \.self) { mode in
                         Text(mode.title).tag(mode)
@@ -211,88 +199,79 @@ public struct SettingsView: View {
                 .frame(maxWidth: 190)
             }
 
-            Divider().background(Color.white.opacity(0.1))
+            Divider()
 
-            // Language Selector
-            HStack {
-                HStack(spacing: 12) {
-                    Image(systemName: "globe")
-                        .foregroundColor(.secondary)
-                        .frame(width: 24)
-
-                    Text("Language")
-                        .font(.subheadline)
-                        .foregroundColor(.primary)
-                }
-
-                Spacer()
-
-                Picker("Language", selection: Binding(
+            GlassSelectorRow(
+                title: tr("settings.language"),
+                systemImage: "globe",
+                selectedTitle: state.language.title
+            ) {
+                Picker(tr("settings.language"), selection: Binding(
                     get: { state.language },
-                    set: { state.updateLanguage($0) }
+                    set: { newValue in
+                        UISelectionFeedbackGenerator().selectionChanged()
+                        state.updateLanguage(newValue)
+                    }
                 )) {
-                    ForEach(AppLanguage.allCases, id: \.self) { lang in
-                        Text(lang.title).tag(lang)
+                    ForEach(AppLanguage.allCases, id: \.self) { language in
+                        Text(language.title).tag(language)
                     }
                 }
-                .pickerStyle(.menu)
-                .foregroundColor(AppTheme.primary)
             }
 
-            Divider().background(Color.white.opacity(0.1))
+            Divider()
 
-            // Hide Amounts on Launch
             Toggle(isOn: Binding(
                 get: { state.amountsHiddenByDefault },
-                set: { state.updateAmountsHiddenDefault($0) }
+                set: { newValue in
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    state.updateAmountsHiddenDefault(newValue)
+                }
             )) {
-                HStack(spacing: 12) {
-                    Image(systemName: "eye.slash.fill")
-                        .foregroundColor(.secondary)
-                        .frame(width: 24)
-
+                Label {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Hide Amounts on Launch")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-
-                        Text("Mask currency figures by default")
+                        Text(tr("settings.hideAmounts"))
+                        Text(tr("settings.hideAmountsDesc"))
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
+                } icon: {
+                    Image(systemName: "eye.slash.fill").foregroundStyle(.secondary)
                 }
             }
 
-            Divider().background(Color.white.opacity(0.1))
+            Divider()
 
-            // Transfer Redirect Toggle
             Toggle(isOn: Binding(
                 get: { state.transferRedirect },
-                set: { state.updateTransferRedirect($0) }
+                set: { newValue in
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    state.updateTransferRedirect(newValue)
+                }
             )) {
-                HStack(spacing: 12) {
-                    Image(systemName: "arrow.right.arrow.left")
-                        .foregroundColor(.secondary)
-                        .frame(width: 24)
-
+                Label {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Navigate on Transfer")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
-
-                        Text("Switch active notebook when moving an experience")
+                        Text(tr("settings.transferRedirect"))
+                        Text(tr("settings.transferRedirectDesc"))
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
+                } icon: {
+                    Image(systemName: "arrow.right.arrow.left").foregroundStyle(.secondary)
                 }
             }
         }
+        .tint(AppTheme.primary)
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
 
     private var signOutSection: some View {
-        GlassButton("Sign Out", systemImage: "rectangle.portrait.and.arrow.right", style: .danger) {
+        GlassActionButton(
+            tr("settings.signOut"),
+            systemImage: "rectangle.portrait.and.arrow.right",
+            style: .danger
+        ) {
             showSignOutConfirm = true
         }
         .padding(.top, 4)
@@ -300,14 +279,62 @@ public struct SettingsView: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
-            .font(.caption.bold())
-            .foregroundColor(.secondary)
-            .textCase(.uppercase)
+            .font(.subheadline.bold())
+            .foregroundStyle(.primary)
     }
-}
 
-// MARK: - Identifiable Pin Mode Wrapper
-private struct IdentifiablePinMode: Identifiable {
-    let id = UUID()
-    let mode: PinSetupSheet.Mode
+    @MainActor
+    private func updateEmail() async {
+        emailMessage = nil
+        guard state.isOnline else {
+            emailMessage = tr("settings.emailOfflineError")
+            return
+        }
+        guard newEmail.range(of: #"^[^\s@]+@[^\s@]+\.[^\s@]+$"#, options: .regularExpression) != nil else {
+            emailMessage = tr("settings.emailInvalid")
+            return
+        }
+        guard newEmail == confirmEmail else {
+            emailMessage = tr("settings.emailMismatch")
+            return
+        }
+        isChangingEmail = true
+        defer { isChangingEmail = false }
+        do {
+            try await state.changeEmail(to: newEmail)
+            newEmail = ""
+            confirmEmail = ""
+            emailMessage = tr("settings.emailUpdated")
+        } catch {
+            emailMessage = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    private func updatePassword() async {
+        passwordMessage = nil
+        guard state.isOnline else {
+            passwordMessage = tr("settings.passwordOfflineError")
+            return
+        }
+        guard newPassword.count >= 8 else {
+            passwordMessage = tr("settings.passwordTooShort")
+            return
+        }
+        guard newPassword == confirmPassword else {
+            passwordMessage = tr("settings.passwordMismatch")
+            return
+        }
+        isChangingPassword = true
+        defer { isChangingPassword = false }
+        do {
+            try await state.changePassword(current: currentPassword, new: newPassword)
+            currentPassword = ""
+            newPassword = ""
+            confirmPassword = ""
+            passwordMessage = tr("settings.passwordUpdated")
+        } catch {
+            passwordMessage = error.localizedDescription
+        }
+    }
 }

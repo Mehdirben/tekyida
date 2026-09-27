@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Add / Edit Contact Modal Sheet
+// MARK: - Add / Edit Contact Modal Sheet (Modern Liquid Glass HIG)
 public struct AddContactSheet: View {
     @Environment(\.dismiss) private var dismiss
     let initialContact: Contact?
@@ -24,64 +24,71 @@ public struct AddContactSheet: View {
             ScrollView {
                 VStack(spacing: 20) {
                     // Contact Avatar Header
-                    ZStack {
-                        Circle()
-                            .fill(AppTheme.primary.opacity(0.12))
-                            .frame(width: 64, height: 64)
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 44))
+                        .foregroundColor(AppTheme.primary)
+                        .padding(.top, 12)
 
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(.system(size: 40))
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundColor(AppTheme.primary)
+                    // Modern Liquid Glass Form Group
+                    VStack(spacing: 16) {
+                        GlassInputField(
+                            systemImage: "person.fill",
+                            placeholder: tr("contact.namePlaceholder"),
+                            text: $name,
+                            iconWidth: 24,
+                            autocapitalization: .words,
+                            characterLimit: 200
+                        )
+
+                        GlassInputField(
+                            systemImage: "phone.fill",
+                            placeholder: tr("contact.phonePlaceholder"),
+                            text: $phone,
+                            iconColor: AppTheme.accent,
+                            iconWidth: 24,
+                            keyboard: .phonePad
+                        )
                     }
-                    .padding(.top, 8)
 
-                    // Apple Glass Form Group
-                    VStack(spacing: 14) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "person.fill")
-                                .foregroundColor(AppTheme.primary)
-                                .frame(width: 24)
-
-                            TextField("Full Name (e.g. Sarah Smith)", text: $name)
-                                .textInputAutocapitalization(.words)
-                                .onChange(of: name) { _, newVal in
-                                    if newVal.count > 200 { name = String(newVal.prefix(200)) }
-                                }
-                        }
-                        .glassInputStyle()
-
-                        HStack(spacing: 12) {
-                            Image(systemName: "phone.fill")
-                                .foregroundColor(AppTheme.accent)
-                                .frame(width: 24)
-
-                            TextField("Phone (optional)", text: $phone)
-                                .keyboardType(.phonePad)
-                        }
-                        .glassInputStyle()
-                    }
-                    .padding(16)
-                    .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
+                    saveButton
 
                     Spacer(minLength: 24)
                 }
                 .padding(20)
+                .fittedLiquidGlassSheet(chrome: 60)
             }
-            .navigationTitle(initialContact == nil ? "New Contact" : "Edit Contact")
+            .scrollDisabled(true)
+            .dismissKeyboardOnTap()
+            .navigationTitle(initialContact == nil ? tr("contact.new") : tr("contact.edit"))
             .navigationBarTitleDisplayMode(.inline)
-            .liquidGlassSheet(detents: [.medium, .large])
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(tr("common.cancel")) {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        dismiss()
+                    }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(initialContact == nil ? "Add" : "Done") { save() }
-                        .font(.body.bold())
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(initialContact == nil ? tr("common.add") : tr("common.done")) {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        save()
+                    }
+                    .font(.body.bold())
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
         }
+    }
+
+    private var saveButton: some View {
+        let isNameEmpty = name.trimmingCharacters(in: .whitespaces).isEmpty
+        return GlassActionButton(
+            initialContact == nil ? tr("contact.save") : tr("contact.update"),
+            systemImage: initialContact == nil ? "person.badge.plus" : "checkmark",
+            isDisabled: isNameEmpty,
+            action: save
+        )
+        .padding(.top, 4)
     }
 
     private func save() {

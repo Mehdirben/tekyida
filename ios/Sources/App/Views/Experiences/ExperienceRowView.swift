@@ -1,7 +1,8 @@
 import SwiftUI
 
-// MARK: - Experience Row View
+// MARK: - Experience Row View (Modern Liquid Glass HIG)
 public struct ExperienceRowView: View {
+    @EnvironmentObject private var state: AppState
     let experience: Experience
     let contactName: String?
     let balance: Double
@@ -38,29 +39,35 @@ public struct ExperienceRowView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 8) {
-            // Main Tappable Info Area
-            Button(action: {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                onTap()
-            }) {
+        // The whole card surface is tappable; action buttons are nested inside
+        // and take precedence for their own taps
+        Button(action: {
+            onTap()
+        }) {
+            VStack(spacing: 10) {
                 VStack(spacing: 6) {
                     // Row 1: Icon, Title & Balance
-                    HStack(spacing: 10) {
+                    HStack(spacing: 12) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(AppTheme.primary.opacity(0.12))
-                                .frame(width: 38, height: 38)
+                            ConcentricRectangle(cornerRadius: 14)
+                                .fill(AppTheme.primary.opacity(0.14))
+                                .frame(width: 42, height: 42)
 
                             Image(systemName: "safari.fill")
-                                .font(.system(size: 16))
+                                .font(.system(size: 17))
                                 .foregroundColor(AppTheme.primary)
                         }
 
-                        Text(experience.name)
-                            .font(.subheadline.bold())
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
+                        HStack(spacing: 5) {
+                            Text(experience.name)
+                                .font(.subheadline.bold())
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+
+                            if state.isItemPendingSync(id: experience.id) {
+                                PendingSyncIndicator(size: 11)
+                            }
+                        }
 
                         Spacer()
 
@@ -73,9 +80,9 @@ public struct ExperienceRowView: View {
                     }
 
                     // Row 2: Contact Chip & Transaction Count
-                    HStack(spacing: 6) {
+                    HStack(spacing: 8) {
                         if let contact = contactName {
-                            HStack(spacing: 3) {
+                            HStack(spacing: 4) {
                                 Image(systemName: "person.fill")
                                     .font(.system(size: 9))
                                 Text(contact)
@@ -88,86 +95,52 @@ public struct ExperienceRowView: View {
                                 .foregroundColor(.secondary)
                         }
 
-                        Text("\(transactionCount) transactions")
+                        Text("\(transactionCount) \(transactionCount == 1 ? tr("common.transaction") : tr("common.transactions"))")
                             .font(.caption2)
                             .foregroundColor(.secondary)
 
                         Spacer()
                     }
-                    .padding(.leading, 48)
+                    .padding(.leading, 54)
                 }
-            }
-            .buttonStyle(ScaleTouchStyle())
 
-            Divider().background(Color.white.opacity(0.08))
+                Divider()
 
-            // Action Buttons Bar
-            HStack(spacing: 8) {
-                // Lock / Unlock status toggle button
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    onToggleClosed()
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: experience.closed ? "lock.fill" : "lock.open.fill")
-                            .font(.system(size: 11, weight: .semibold))
-                        Text(experience.closed ? "Closed" : "Open")
-                            .font(.caption2.bold())
+                // Action Buttons Bar
+                HStack(spacing: 8) {
+                    // Lock / Unlock status toggle button
+                    Button(action: {
+                        onToggleClosed()
+                    }) {
+                        HStack(spacing: 5) {
+                            Image(systemName: experience.closed ? "lock.fill" : "lock.open.fill")
+                                .font(.system(size: 11, weight: .bold))
+                            Text(experience.closed ? tr("experience.statusClosed") : tr("experience.statusOpen"))
+                                .font(.caption2.bold())
+                        }
+                        .foregroundColor(experience.closed ? AppTheme.warning : AppTheme.accent)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .contentShape(Capsule())
+                        .liquidGlassPill()
                     }
-                    .foregroundColor(experience.closed ? AppTheme.warning : AppTheme.accent)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        (experience.closed ? AppTheme.warning : AppTheme.accent).opacity(0.12),
-                        in: Capsule()
+                    .buttonStyle(ScaleTouchStyle())
+
+                    Spacer()
+
+                    RowActionButtons(
+                        onEdit: onEdit,
+                        onTransfer: onTransfer,
+                        onDelete: onDelete,
+                        showsChevron: true
                     )
                 }
-
-                Spacer()
-
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onEdit()
-                }) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                        .padding(6)
-                }
-
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onTransfer()
-                }) {
-                    Image(systemName: "arrow.right.arrow.left")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                        .padding(6)
-                }
-
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    onDelete()
-                }) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 12))
-                        .foregroundColor(AppTheme.danger.opacity(0.8))
-                        .padding(6)
-                }
-
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    onTap()
-                }) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.secondary.opacity(0.6))
-                        .padding(6)
-                }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .contentShape(.rect)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .buttonStyle(ScaleTouchStyle())
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
 }

@@ -3,6 +3,8 @@
  * Stores the last-known results so they can be displayed when offline.
  */
 
+import { openStore, resetStore, txAsPromise } from "./indexeddb";
+
 const DB_NAME = "tekyida-cache";
 const DB_VERSION = 1;
 const STORE_NAME = "queries";
@@ -21,27 +23,8 @@ function notifyListeners(key: string) {
     listeners.forEach((l) => l(key));
 }
 
-let dbPromise: Promise<IDBDatabase> | null = null;
-
-export function openDB(): Promise<IDBDatabase> {
-    if (dbPromise) return dbPromise;
-
-    dbPromise = new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = () => {
-            const db = request.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                db.createObjectStore(STORE_NAME);
-            }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => {
-            dbPromise = null; // Allow retry on failure
-            reject(request.error);
-        };
-    });
-
-    return dbPromise;
+function openDB(): Promise<IDBDatabase> {
+    return openStore(DB_NAME, DB_VERSION, STORE_NAME);
 }
 
 /** Build a stable cache key from function path + args */
@@ -117,11 +100,8 @@ export async function set(key: string, data: unknown): Promise<void> {
     }
     try {
         const db = await openDB();
-        await new Promise<void>((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            tx.objectStore(STORE_NAME).put(data, key);
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
+        await txAsPromise(db, STORE_NAME, "readwrite", (store) => {
+            store.put(data, key);
         });
         notifyListeners(key);
     } catch {
@@ -161,11 +141,8 @@ export async function remove(key: string): Promise<void> {
     }
     try {
         const db = await openDB();
-        return await new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            tx.objectStore(STORE_NAME).delete(key);
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
+        await txAsPromise(db, STORE_NAME, "readwrite", (store) => {
+            store.delete(key);
         });
     } catch {
         // Silently fail
@@ -180,11 +157,8 @@ export async function clear(): Promise<void> {
     }
     try {
         const db = await openDB();
-        return await new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            tx.objectStore(STORE_NAME).clear();
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
+        await txAsPromise(db, STORE_NAME, "readwrite", (store) => {
+            store.clear();
         });
     } catch {
         // Silently fail
@@ -196,6 +170,6 @@ export function _resetPreloadStateForTesting(): void {
     preloadAborted = false;
     mutatedKeys.clear();
     preloadPromise = null;
-    dbPromise = null;
+    resetStore(DB_NAME);
     memoryCache.clear();
 }

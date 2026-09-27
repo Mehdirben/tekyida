@@ -1,20 +1,24 @@
 import SwiftUI
 
-// MARK: - Reusable Transaction Row View
+// MARK: - Reusable Transaction Row View (Modern Liquid Glass HIG)
 public struct TransactionRowView: View {
+    @EnvironmentObject private var state: AppState
     let transaction: Transaction
     let isMasked: Bool
+    let showsActions: Bool
     let onEdit: () -> Void
     let onDelete: () -> Void
 
     public init(
         transaction: Transaction,
         isMasked: Bool,
+        showsActions: Bool = true,
         onEdit: @escaping () -> Void,
         onDelete: @escaping () -> Void
     ) {
         self.transaction = transaction
         self.isMasked = isMasked
+        self.showsActions = showsActions
         self.onEdit = onEdit
         self.onDelete = onDelete
     }
@@ -23,9 +27,9 @@ public struct TransactionRowView: View {
         HStack(spacing: 12) {
             // Direction Icon Pill
             ZStack {
-                Circle()
+                ConcentricRectangle(cornerRadius: 12)
                     .fill(transaction.amount > 0 ? AppTheme.accentBg : AppTheme.dangerBg)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 38, height: 38)
 
                 Image(systemName: transaction.amount > 0 ? "arrow.down.left" : "arrow.up.right")
                     .font(.system(size: 14, weight: .bold))
@@ -34,9 +38,15 @@ public struct TransactionRowView: View {
 
             // Description & Date
             VStack(alignment: .leading, spacing: 3) {
-                Text(formattedDate(transaction.date))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                HStack(spacing: 4) {
+                    Text(formattedDate(transaction.date))
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+
+                    if state.isItemPendingSync(id: transaction.id) {
+                        PendingSyncIndicator(size: 9)
+                    }
+                }
 
                 if let desc = transaction.description, !desc.isEmpty {
                     Text(desc)
@@ -53,32 +63,22 @@ public struct TransactionRowView: View {
             AmountView(
                 amount: transaction.amount,
                 isHidden: isMasked,
+                showsCurrency: false,
                 font: .subheadline,
                 fontWeight: .bold
             )
 
             // Actions (Edit, Delete)
-            HStack(spacing: 4) {
-                Button(action: onEdit) {
-                    Image(systemName: "pencil")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(width: 28, height: 28)
-                        .background(Color.white.opacity(0.08), in: Circle())
-                }
-
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
-                        .font(.caption)
-                        .foregroundColor(AppTheme.danger.opacity(0.8))
-                        .frame(width: 28, height: 28)
-                        .background(AppTheme.danger.opacity(0.1), in: Circle())
-                }
+            if showsActions {
+                RowActionButtons(
+                    onEdit: onEdit,
+                    onDelete: onDelete
+                )
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .liquidGlassFlat(cornerRadius: AppTheme.radiusButton)
+        .liquidGlassFlat(cornerRadius: AppTheme.radiusCard)
     }
 
     private func formattedDate(_ date: Date) -> String {

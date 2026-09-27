@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Reusable Glass Empty State View
+// MARK: - Reusable Empty State (native ContentUnavailableView)
 public struct GlassEmptyStateView: View {
     let systemImage: String
     let title: String
@@ -13,20 +13,10 @@ public struct GlassEmptyStateView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: systemImage)
-                .font(.system(size: 32))
-                .foregroundColor(AppTheme.primary.opacity(0.6))
-            Text(title)
-                .font(.subheadline.bold())
-                .foregroundColor(.secondary)
+        ContentUnavailableView {
+            Label(title, systemImage: systemImage)
+        } description: {
             Text(subtitle)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity)
-        .padding(32)
-        .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
     }
 }

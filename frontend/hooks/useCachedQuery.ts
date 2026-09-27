@@ -54,27 +54,25 @@ export function useCachedQuery<T>(
             setIsOnline(navigator.onLine);
         }, 0);
 
-        const handleOnline = () => setIsOnline(true);
-        const handleOffline = () => setIsOnline(false);
+        const updateOnlineStatus = () => setIsOnline(navigator.onLine);
 
-        window.addEventListener("online", handleOnline);
-        window.addEventListener("offline", handleOffline);
+        window.addEventListener("online", updateOnlineStatus);
+        window.addEventListener("offline", updateOnlineStatus);
         return () => {
             clearTimeout(timer);
-            window.removeEventListener("online", handleOnline);
-            window.removeEventListener("offline", handleOffline);
+            window.removeEventListener("online", updateOnlineStatus);
+            window.removeEventListener("offline", updateOnlineStatus);
         };
     }, []);
 
     // Read from cache
-    const readCache = useCallback(() => {
-        if (!key) return;
-        queryCache.get<T>(key).then((cached) => {
+    const readCache = useCallback((cacheKey: string) => {
+        queryCache.get<T>(cacheKey).then((cached) => {
             if (cached !== undefined) {
                 setCachedData(cached);
             }
         });
-    }, [key]);
+    }, []);
 
     // Load cached data from IndexedDB if in-memory cache did not resolve
     useEffect(() => {
@@ -83,7 +81,7 @@ export function useCachedQuery<T>(
 
         const syncData = queryCache.getInMemory<T>(key);
         if (syncData === undefined) {
-            readCache();
+            readCache(key);
         }
     }, [key, readCache]);
 
@@ -92,7 +90,7 @@ export function useCachedQuery<T>(
         if (!key) return;
         const unsub = queryCache.subscribe((changedKey) => {
             if (changedKey === key) {
-                readCache();
+                readCache(key);
             }
         });
         return unsub;

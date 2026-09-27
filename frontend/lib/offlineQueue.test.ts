@@ -1,5 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { enqueue, getAll, remove, count, clear, resetDB } from "./offlineQueue";
+import { enqueue, getAll, remove, count, clear, resetDB, removeWhere, purgeOfflineItem, purgePendingUpdates } from "./offlineQueue";
+
+type MockRequest = {
+    error?: unknown;
+    result?: unknown;
+    onerror?: () => void;
+    onsuccess?: () => void;
+    onupgradeneeded?: () => void;
+};
+
+type MockTransaction = MockRequest & {
+    objectStore: () => Record<string, (...args: unknown[]) => unknown>;
+};
 
 describe("offlineQueue", () => {
   beforeEach(async () => {
@@ -50,12 +62,12 @@ describe("offlineQueue", () => {
     resetDB();
     const originalOpen = indexedDB.open;
     indexedDB.open = vi.fn().mockImplementation(() => {
-      const req: any = {};
+      const req: MockRequest = {};
       setTimeout(() => {
         req.error = new Error("DB Open Failure");
         req.onerror?.();
       }, 0);
-      return req;
+      return req as unknown as IDBOpenDBRequest;
     });
 
     await expect(getAll()).rejects.toThrow("DB Open Failure");
@@ -64,14 +76,14 @@ describe("offlineQueue", () => {
 
   it("handles transaction errors", async () => {
     const spy = vi.spyOn(IDBDatabase.prototype, "transaction").mockImplementation(() => {
-      const tx: any = {
+      const tx: MockTransaction = {
         objectStore: () => ({ add: vi.fn(), delete: vi.fn(), clear: vi.fn(), count: vi.fn(), getAll: vi.fn() }),
       };
       setTimeout(() => {
         tx.error = new Error("Tx Failed");
         tx.onerror?.();
       }, 0);
-      return tx;
+      return tx as unknown as IDBTransaction;
     });
 
     await expect(enqueue({ functionPath: "test", args: {}, queuedAt: 1 })).rejects.toThrow("Tx Failed");
@@ -84,14 +96,14 @@ describe("offlineQueue", () => {
     resetDB();
     const originalOpen = indexedDB.open;
     indexedDB.open = vi.fn().mockImplementation(() => {
-      const req: any = {
+      const req: MockRequest = {
         result: {
           objectStoreNames: { contains: () => true },
           createObjectStore: vi.fn(),
           transaction: () => ({
             objectStore: () => ({
               count: () => {
-                const r: any = {};
+                const r: MockRequest = {};
                 setTimeout(() => { r.result = 0; r.onsuccess?.(); }, 0);
                 return r;
               }
@@ -103,7 +115,7 @@ describe("offlineQueue", () => {
         req.onupgradeneeded?.();
         req.onsuccess?.();
       }, 0);
-      return req;
+      return req as unknown as IDBOpenDBRequest;
     });
 
     await count();
@@ -112,8 +124,8 @@ describe("offlineQueue", () => {
 
   it("handles request errors in getAll and count", async () => {
     const getAllSpy = vi.spyOn(IDBDatabase.prototype, "transaction").mockImplementationOnce(() => {
-      const req: any = {};
-      const tx: any = {
+      const req: MockRequest = {};
+      const tx: MockTransaction = {
         objectStore: () => ({
           getAll: () => {
             setTimeout(() => {
@@ -124,15 +136,15 @@ describe("offlineQueue", () => {
           },
         }),
       };
-      return tx;
+      return tx as unknown as IDBTransaction;
     });
 
     await expect(getAll()).rejects.toThrow("Request GetAll Failed");
     getAllSpy.mockRestore();
 
     const countSpy = vi.spyOn(IDBDatabase.prototype, "transaction").mockImplementationOnce(() => {
-      const req: any = {};
-      const tx: any = {
+      const req: MockRequest = {};
+      const tx: MockTransaction = {
         objectStore: () => ({
           count: () => {
             setTimeout(() => {
@@ -143,10 +155,158 @@ describe("offlineQueue", () => {
           },
         }),
       };
-      return tx;
+      return tx as unknown as IDBTransaction;
     });
 
     await expect(count()).rejects.toThrow("Request Count Failed");
     countSpy.mockRestore();
+
+    const removeWhereSpy = vi.spyOn(IDBDatabase.prototype, "transaction").mockImplementationOnce(() => {
+      const tx: MockTransaction = {
+        objectStore: () => ({
+          openCursor: () => ({ onsuccess: null }),
+        }),
+      };
+      setTimeout(() => {
+        tx.error = new Error("Transaction RemoveWhere Failed");
+        tx.onerror?.();
+      }, 0);
+      return tx as unknown as IDBTransaction;
+    });
+
+    await expect(removeWhere(() => true)).rejects.toThrow("Transaction RemoveWhere Failed");
+    removeWhereSpy.mockRestore();
+  });
+
+  it("removes mutations matching predicate with removeWhere", async () => {
+    await enqueue({
+      functionPath: "notebooks:create",
+      args: { name: "Book 1" },
+      queuedAt: 1,
+      tempId: "temp-1",
+    });
+    await enqueue({
+      functionPath: "notebooks:update",
+      args: { id: "server-1", name: "Book 2" },
+      queuedAt: 2,
+    });
+    await enqueue({
+      functionPath: "notebooks:update",
+      args: { id: "server-2", name: "Book 3" },
+      queuedAt: 3,
+    });
+
+    expect(await count()).toBe(3);
+
+    await removeWhere((m) => m.args?.id === "server-1");
+
+    const remaining = await getAll();
+    expect(remaining).toHaveLength(2);
+    expect(remaining.map((m) => m.functionPath)).toEqual(["notebooks:create", "notebooks:update"]);
+    expect(remaining[1].args?.id).toBe("server-2");
+  });
+
+  it("purges offline-created item and its cascading mutations with purgeOfflineItem", async () => {
+    const tempNbId = "temp_nb_123";
+    const tempContactId = "temp_c_456";
+
+    // Notebook creation
+    await enqueue({
+      functionPath: "notebooks:create",
+      args: { name: "Trip" },
+      queuedAt: 1,
+      tempId: tempNbId,
+    });
+    // Notebook update
+    await enqueue({
+      functionPath: "notebooks:update",
+      args: { id: tempNbId, name: "Trip 2" },
+      queuedAt: 2,
+    });
+    // Contact in that notebook
+    await enqueue({
+      functionPath: "contacts:create",
+      args: { notebookId: tempNbId, name: "Bob" },
+      queuedAt: 3,
+      tempId: tempContactId,
+    });
+    // Transaction in that notebook
+    await enqueue({
+      functionPath: "transactions:create",
+      args: { notebookId: tempNbId, contactId: tempContactId, amount: 100 },
+      queuedAt: 4,
+      tempId: "temp_tx_789",
+    });
+    // Unrelated notebook
+    await enqueue({
+      functionPath: "notebooks:create",
+      args: { name: "Personal" },
+      queuedAt: 5,
+      tempId: "temp_nb_unrelated",
+    });
+
+    expect(await count()).toBe(5);
+
+    // Purge the offline-created notebook
+    await purgeOfflineItem(tempNbId, "notebooks:remove");
+
+    const remaining = await getAll();
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].tempId).toBe("temp_nb_unrelated");
+  });
+
+  it("purges offline-created experience and contact cascades with purgeOfflineItem", async () => {
+    const tempExpId = "temp_exp_123";
+    const tempContactId = "temp_c_123";
+    await enqueue({
+      functionPath: "transactions:create",
+      args: { experienceId: tempExpId, amount: 50 },
+      queuedAt: 1,
+    });
+    await enqueue({
+      functionPath: "transactions:create",
+      args: { contactId: tempContactId, amount: 60 },
+      queuedAt: 2,
+    });
+    await enqueue({
+      functionPath: "transactions:create",
+      args: { otherId: "123" },
+      queuedAt: 3,
+    });
+    await purgeOfflineItem(tempExpId, "experiences:remove");
+    expect(await count()).toBe(2);
+    await purgeOfflineItem(tempContactId, "contacts:remove");
+    expect(await count()).toBe(1);
+  });
+
+  it("purges pending updates for existing server item with purgePendingUpdates", async () => {
+    const serverItemId = "jd789abc";
+
+    // Pending updates for serverItemId
+    await enqueue({
+      functionPath: "transactions:update",
+      args: { id: serverItemId, amount: 200 },
+      queuedAt: 1,
+    });
+    await enqueue({
+      functionPath: "transactions:update",
+      args: { id: serverItemId, amount: 250 },
+      queuedAt: 2,
+    });
+    // Pending update for another item
+    await enqueue({
+      functionPath: "transactions:update",
+      args: { id: "other_id", amount: 300 },
+      queuedAt: 3,
+    });
+
+    expect(await count()).toBe(3);
+
+    await purgePendingUpdates(serverItemId);
+
+    const remaining = await getAll();
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].args.id).toBe("other_id");
   });
 });
+

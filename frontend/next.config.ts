@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.1.27", "172.20.10.2"],
   output: "standalone",
+  outputFileTracingRoot: path.join(__dirname, "../"),
   async headers() {
     return [
       {

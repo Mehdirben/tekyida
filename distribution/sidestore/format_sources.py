@@ -7,7 +7,19 @@ identifiers, and release download URLs, while the app name remains simply "Tekyi
 
 import json
 import os
+import plistlib
 import sys
+
+def get_marketing_version():
+    plist_path = 'ios/Sources/App/Info.plist'
+    if os.path.exists(plist_path):
+        try:
+            with open(plist_path, 'rb') as f:
+                plist = plistlib.load(f)
+                return plist.get('CFBundleShortVersionString', '1.0')
+        except Exception:
+            pass
+    return '1.0'
 
 def format_feed(feed_file, feed_name, feed_id, app_name, release_tag, default_ver, desc, repo, run_number):
     existing = {}
@@ -24,8 +36,8 @@ def format_feed(feed_file, feed_name, feed_id, app_name, release_tag, default_ve
 
     if versions and release_tag:
         versions[0]['downloadURL'] = download_url
-        if default_ver == '1.0-beta':
-            versions[0]['version'] = f"1.0-beta.{run_number}"
+        versions[0]['version'] = default_ver
+        versions[0]['buildVersion'] = str(run_number)
     elif not versions:
         versions = [{
             'version': default_ver,
@@ -64,6 +76,8 @@ if __name__ == '__main__':
     stable_tag = sys.argv[3]
     beta_tag = sys.argv[4]
 
+    marketing_version = get_marketing_version()
+
     # Format Stable: Repo is "Tekyida (Stable)", App is "Tekyida"
     format_feed(
         feed_file='site-pages/ios/apps.json',
@@ -71,7 +85,7 @@ if __name__ == '__main__':
         feed_id='com.tekyida.ios.source',
         app_name='Tekyida',
         release_tag=stable_tag,
-        default_ver='1.0',
+        default_ver=marketing_version,
         desc='Modern IOU Tracker for iOS & Android',
         repo=repo,
         run_number=run_number
@@ -84,7 +98,7 @@ if __name__ == '__main__':
         feed_id='com.tekyida.ios.source.beta',
         app_name='Tekyida',
         release_tag=beta_tag,
-        default_ver='1.0-beta',
+        default_ver=marketing_version,
         desc='Tekyida Beta Preview Channel',
         repo=repo,
         run_number=run_number

@@ -1,12 +1,12 @@
 import SwiftUI
 
-// MARK: - Dashboard Main View
+// MARK: - Dashboard Main View (Modern Liquid Glass Architecture)
 public struct DashboardView: View {
     @EnvironmentObject private var state: AppState
 
     @State private var showNotebookManager: Bool = false
     @State private var showAddContact: Bool = false
-    @State private var selectedContact: Contact?
+    @State private var navigatedContact: Contact?
     @State private var editingContact: Contact?
     @State private var deletingContact: Contact?
 
@@ -19,11 +19,7 @@ public struct DashboardView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Top Header (Logo + Sync dot left, Notebook Switcher right)
-                        DashboardHeaderView(
-                            notebookName: state.activeNotebook?.name ?? "Select Notebook",
-                            onSelectNotebook: { showNotebookManager = true }
-                        )
+                        TekyidaScrollHeader(onManageNotebooks: { showNotebookManager = true })
 
                         // QuickStats Widgets
                         if let activeNb = state.activeNotebook {
@@ -42,12 +38,16 @@ public struct DashboardView: View {
                         contactsSection
                     }
                     .padding(.horizontal, 16)
-                    .padding(.top, 12)
                     .padding(.bottom, 96)
                 }
+                .tabBarMinimizeBehaviorOnScroll()
             }
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
+            .sheet(item: $navigatedContact) { contact in
+                ContactDetailView(contact: contact)
+                    .environmentObject(state)
+                    .liquidGlassSheet(detents: [.fraction(0.94)])
+            }
             .sheet(isPresented: $showNotebookManager) {
                 NotebookManagerSheet()
             }
@@ -58,28 +58,19 @@ public struct DashboardView: View {
                     }
                 }
             }
-            .sheet(item: $selectedContact) { contact in
-                ContactDetailSheet(contact: contact)
-            }
             .sheet(item: $editingContact) { contact in
                 AddContactSheet(contact: contact) { name, phone in
                     state.updateContact(id: contact.id, name: name, phone: phone)
                 }
             }
-            .alert("Delete Contact?", isPresented: Binding(
-                get: { deletingContact != nil },
-                set: { if !$0 { deletingContact = nil } }
-            )) {
-                Button("Cancel", role: .cancel) { deletingContact = nil }
-                Button("Delete", role: .destructive) {
-                    if let contact = deletingContact {
-                        state.deleteContact(id: contact.id)
-                        deletingContact = nil
-                    }
+            .confirmableDelete(
+                item: $deletingContact,
+                title: tr("contacts.deleteTitle"),
+                message: { String(format: tr("contacts.deleteMessage"), $0?.name ?? "") },
+                onDelete: { contact in
+                    state.deleteContact(id: contact.id)
                 }
-            } message: {
-                Text("Deleting '\(deletingContact?.name ?? "")' will remove all their direct transactions.")
-            }
+            )
         }
     }
 
@@ -93,41 +84,49 @@ public struct DashboardView: View {
             if (b1 > 0) != (b2 > 0) {
                 return b1 > 0
             }
-            return c1.name.localizedCaseInsensitiveCompare(c2.name) == .orderedAscending
+            let date1 = state.lastTransactionDate(for: c1.id) ?? .distantPast
+            let date2 = state.lastTransactionDate(for: c2.id) ?? .distantPast
+            if date1 != date2 {
+                return date1 > date2
+            }
+            return c1.createdAt > c2.createdAt
         }
 
         return VStack(spacing: 12) {
+            SectionHeaderView(
+                title: tr("contacts.title"),
+                count: sortedContacts.count,
+                addButtonTitle: tr("common.add"),
+                addButtonSystemImage: "person.badge.plus",
+                addAction: { showAddContact = true }
+            )
+
             if sortedContacts.isEmpty {
                 GlassEmptyStateView(
                     systemImage: "person.2.slash",
-                    title: "No contacts yet",
-                    subtitle: "Add your first contact to track money owed or lent."
+                    title: tr("contacts.emptyTitle"),
+                    subtitle: tr("contacts.emptySubtitle")
                 )
             } else {
-                ForEach(sortedContacts) { contact in
-                    ContactRowView(
-                        contact: contact,
-                        balance: state.contactBalance(contact.id),
-                        isMasked: state.isAmountsHidden,
-                        onTap: {
-                            selectedContact = contact
-                        },
-                        onEdit: {
-                            editingContact = contact
-                        },
-                        onDelete: {
-                            deletingContact = contact
-                        }
-                    )
+                LazyVStack(spacing: 12) {
+                    ForEach(sortedContacts) { contact in
+                        ContactRowView(
+                            contact: contact,
+                            balance: state.contactBalance(contact.id),
+                            isMasked: state.isAmountsHidden,
+                            onTap: {
+                                navigatedContact = contact
+                            },
+                            onEdit: {
+                                editingContact = contact
+                            },
+                            onDelete: {
+                                deletingContact = contact
+                            }
+                        )
+                    }
                 }
             }
-
-            // Bottom Add Contact button (PWA mobile responsive placement)
-            ListAddBottomButton(
-                title: "Add Contact",
-                systemImage: "person.badge.plus",
-                action: { showAddContact = true }
-            )
         }
     }
 }

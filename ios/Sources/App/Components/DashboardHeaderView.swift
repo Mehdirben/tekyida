@@ -1,44 +1,96 @@
 import SwiftUI
 
-// MARK: - Dashboard & Experiences Top Header
-public struct DashboardHeaderView: View {
-    let notebookName: String
-    let onSelectNotebook: () -> Void
+// MARK: - Scrolling Brand Header (plain, no glass)
+public struct BrandLogoHeader: View {
+    @EnvironmentObject private var state: AppState
 
-    public init(notebookName: String, onSelectNotebook: @escaping () -> Void) {
-        self.notebookName = notebookName
-        self.onSelectNotebook = onSelectNotebook
+    public init() {}
+
+    public var body: some View {
+        HStack(spacing: 7) {
+            Image("AppLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 26, height: 26)
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+
+            Text("Tekyida")
+                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                .foregroundColor(.primary)
+
+            if state.shouldShowSyncStatus {
+                syncStatusBadge
+            }
+        }
+        .fixedSize()
+    }
+
+    @ViewBuilder
+    private var syncStatusBadge: some View {
+        HStack(spacing: 4) {
+            if state.isSyncing {
+                ProgressView()
+                    .controlSize(.mini)
+            } else if !state.isOnline {
+                Image(systemName: "wifi.slash")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(AppTheme.warning)
+            } else if state.pendingSyncCount > 0 {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(AppTheme.warning)
+                if state.pendingSyncCount > 1 {
+                    Text("\(state.pendingSyncCount)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(AppTheme.warning)
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(syncStatusLabel)
+    }
+
+    private var syncStatusLabel: String {
+        SyncStatusPresenter.statusLabel(
+            isSyncing: state.isSyncing,
+            isOnline: state.isOnline,
+            pendingSyncCount: state.pendingSyncCount
+        )
+    }
+}
+
+// MARK: - Shared Scrolling Tekyida Header
+// Brand left + notebook menu right, placed in the page ScrollView so it scrolls with content.
+public struct TekyidaScrollHeader: View {
+    @EnvironmentObject private var state: AppState
+    let onManageNotebooks: () -> Void
+
+    public init(onManageNotebooks: @escaping () -> Void) {
+        self.onManageNotebooks = onManageNotebooks
     }
 
     public var body: some View {
-        HStack(alignment: .center) {
-            // Brand Logo & Online Sync Status
-            HStack(spacing: 8) {
-                Image("AppLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 28, height: 28)
-                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-
-                Text("Tekyida")
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundColor(.primary)
-
-                Circle()
-                    .fill(AppTheme.accent)
-                    .frame(width: 7, height: 7)
-                    .shadow(color: AppTheme.accent.opacity(0.6), radius: 3)
-            }
+        HStack(spacing: 12) {
+            BrandLogoHeader()
 
             Spacer()
 
-            // Notebook Switcher Pill Button
             NotebookHeaderButton(
-                notebookName: notebookName,
-                onTap: onSelectNotebook
+                notebooks: state.activeNotebooksList,
+                activeNotebook: state.activeNotebook,
+                activeNotebookId: Binding(
+                    get: { state.activeNotebookId },
+                    set: { id in
+                        if let id {
+                            state.selectNotebook(id)
+                        } else {
+                            state.activeNotebookId = nil
+                        }
+                    }
+                ),
+                onManage: onManageNotebooks
             )
         }
-        .padding(.horizontal, 2)
-        .padding(.bottom, 4)
+        .padding(.top, 8)
     }
 }

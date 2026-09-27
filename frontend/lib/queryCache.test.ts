@@ -8,10 +8,22 @@ import {
   cacheKey,
   subscribe,
   preloadCache,
-  openDB,
   initQueryCache,
   _resetPreloadStateForTesting,
 } from "./queryCache";
+import { openStore, resetStore } from "./indexeddb";
+
+type MockRequest = {
+  error?: unknown;
+  result?: unknown;
+  onerror?: () => void;
+  onsuccess?: () => void;
+  onupgradeneeded?: () => void;
+};
+
+type MockTransaction = MockRequest & {
+  objectStore: () => Record<string, (...args: unknown[]) => unknown>;
+};
 
 describe("queryCache", () => {
   beforeEach(async () => {
@@ -75,17 +87,18 @@ describe("queryCache", () => {
     expect(await get("missing:key")).toBeUndefined();
   });
 
-  it("handles openDB caching and upgradeneeded with existing store", async () => {
-    const p1 = openDB();
-    const p2 = openDB();
+  it("handles openStore caching and upgradeneeded with existing store", async () => {
+    resetStore("tekyida-test-db");
+    const p1 = openStore("tekyida-test-db", 1, "tekyida-test-store");
+    const p2 = openStore("tekyida-test-db", 1, "tekyida-test-store");
     expect(p1).toBe(p2);
     await p1;
 
     // Upgradeneeded when store exists
-    _resetPreloadStateForTesting();
+    resetStore("tekyida-test-db");
     const originalOpen = indexedDB.open;
     indexedDB.open = vi.fn().mockImplementation(() => {
-      const req: any = {
+      const req: MockRequest = {
         result: {
           objectStoreNames: { contains: () => true },
           createObjectStore: vi.fn(),
@@ -95,10 +108,10 @@ describe("queryCache", () => {
         req.onupgradeneeded?.();
         req.onsuccess?.();
       }, 0);
-      return req;
+      return req as unknown as IDBOpenDBRequest;
     });
 
-    await openDB();
+    await openStore("tekyida-test-db", 1, "tekyida-test-store");
     indexedDB.open = originalOpen;
   });
 
@@ -156,12 +169,12 @@ describe("queryCache", () => {
     _resetPreloadStateForTesting();
     const originalOpen = indexedDB.open;
     indexedDB.open = vi.fn().mockImplementation(() => {
-      const req: any = {};
+      const req: MockRequest = {};
       setTimeout(() => {
         req.error = new Error("Open DB Error");
         req.onerror?.();
       }, 0);
-      return req;
+      return req as unknown as IDBOpenDBRequest;
     });
 
     await expect(preloadCache()).resolves.toBeUndefined();
@@ -170,10 +183,10 @@ describe("queryCache", () => {
 
   it("handles cursor error and transaction rejection in preloadCache and set/remove", async () => {
     const spy = vi.spyOn(IDBDatabase.prototype, "transaction").mockImplementation(() => {
-      const tx: any = {
+      const tx: MockTransaction = {
         objectStore: () => ({
           openCursor: () => {
-            const req: any = {};
+            const req: MockRequest = {};
             setTimeout(() => {
               req.error = new Error("Cursor error");
               req.onerror?.();
@@ -184,7 +197,7 @@ describe("queryCache", () => {
           delete: () => {},
           clear: () => {},
           get: () => {
-            const req: any = {};
+            const req: MockRequest = {};
             setTimeout(() => {
               req.error = new Error("Get error");
               req.onerror?.();
@@ -197,7 +210,7 @@ describe("queryCache", () => {
         tx.error = new Error("Tx error");
         tx.onerror?.();
       }, 0);
-      return tx;
+      return tx as unknown as IDBTransaction;
     });
 
     try {
