@@ -20,36 +20,37 @@ struct AppStateActionWrappersTests {
     /// Yields the main actor until the fire-and-forget task settles.
     private func waitFor(
         _ condition: @MainActor () -> Bool,
+        _ what: String,
         timeout: TimeInterval = 3
     ) async {
         let deadline = Date().addingTimeInterval(timeout)
         while !condition() && Date() < deadline {
             await Task.yield()
         }
-        #expect(condition(), "wrapper effect not observed in time")
+        #expect(condition(), "\(what) not observed in time. Mutations seen: \(backend.mutationCalls.map(\.path))")
     }
 
     private func waitForMutation(_ path: String) async {
-        await waitFor { backend.mutationCalls.contains { $0.path == path } }
+        await waitFor({ backend.mutationCalls.contains { $0.path == path } }, path)
     }
 
     // MARK: - Notebooks
 
     @Test("Notebook wrappers post their mutations")
     func notebookWrappers() async {
-        await state.createNotebook(name: "Wrapped")
+        state.createNotebook(name: "Wrapped")
         await waitForMutation("notebooks:create")
 
-        await state.updateNotebook(id: "nb1", name: "Renamed")
+        state.updateNotebook(id: "nb1", name: "Renamed")
         await waitForMutation("notebooks:update")
 
-        await state.archiveNotebook(id: "nb1", archived: true)
+        state.archiveNotebook(id: "nb1", archived: true)
         await waitForMutation("notebooks:archive")
 
-        await state.reorderNotebooks(orderedIds: ["b", "a"])
+        state.reorderNotebooks(orderedIds: ["b", "a"])
         await waitForMutation("notebooks:reorder")
 
-        await state.deleteNotebook(id: "nb1")
+        state.deleteNotebook(id: "nb1")
         await waitForMutation("notebooks:remove")
     }
 
@@ -57,13 +58,13 @@ struct AppStateActionWrappersTests {
 
     @Test("Contact wrappers post their mutations")
     func contactWrappers() async {
-        await state.createContact(notebookId: "nb1", name: "Alice")
+        state.createContact(notebookId: "nb1", name: "Alice")
         await waitForMutation("contacts:create")
 
-        await state.updateContact(id: "c1", name: "Alicia", phone: "123")
+        state.updateContact(id: "c1", name: "Alicia", phone: "123")
         await waitForMutation("contacts:update")
 
-        await state.deleteContact(id: "c1")
+        state.deleteContact(id: "c1")
         await waitForMutation("contacts:remove")
     }
 
@@ -76,19 +77,19 @@ struct AppStateActionWrappersTests {
         ])
         state.experiences = [Experience(id: "e1", notebookId: "nb1", name: "Dinner")]
 
-        await state.createExperience(notebookId: "nb1", name: "Trip", contactId: "c1")
+        state.createExperience(notebookId: "nb1", name: "Trip", contactId: "c1")
         await waitForMutation("experiences:create")
 
-        await state.updateExperience(id: "e1", name: "Feast")
+        state.updateExperience(id: "e1", name: "Feast")
         await waitForMutation("experiences:update")
 
-        await state.toggleExperienceClosed(id: "e1")
+        state.toggleExperienceClosed(id: "e1")
         await waitForMutation("experiences:close")
 
-        await state.transferExperience(id: "e1", to: "nb2")
+        state.transferExperience(id: "e1", to: "nb2")
         await waitForMutation("experiences:transfer")
 
-        await state.deleteExperience(id: "e1")
+        state.deleteExperience(id: "e1")
         await waitForMutation("experiences:remove")
     }
 
@@ -96,13 +97,13 @@ struct AppStateActionWrappersTests {
     func transactionWrappers() async {
         let date = Date(timeIntervalSince1970: 1_700_000_000)
 
-        await state.createTransaction(notebookId: "nb1", amount: 10, date: date)
+        state.createTransaction(notebookId: "nb1", amount: 10, date: date)
         await waitForMutation("transactions:create")
 
-        await state.updateTransaction(id: "t1", amount: -3, date: date)
+        state.updateTransaction(id: "t1", amount: -3, date: date)
         await waitForMutation("transactions:update")
 
-        await state.deleteTransaction(id: "t1")
+        state.deleteTransaction(id: "t1")
         await waitForMutation("transactions:remove")
     }
 
@@ -110,10 +111,10 @@ struct AppStateActionWrappersTests {
 
     @Test("Blank inputs are rejected before any mutation is queued")
     func blankInputGuards() async {
-        await state.createNotebook(name: "   ")
-        await state.createContact(notebookId: "nb1", name: "  ")
-        await state.updateContact(id: "c1", name: "")
-        await state.createExperience(notebookId: "nb1", name: " ")
+        state.createNotebook(name: "   ")
+        state.createContact(notebookId: "nb1", name: "  ")
+        state.updateContact(id: "c1", name: "")
+        state.createExperience(notebookId: "nb1", name: " ")
 
         for _ in 0..<10 { await Task.yield() }
         #expect(backend.mutationCalls.isEmpty)
@@ -125,10 +126,10 @@ struct AppStateActionWrappersTests {
     func wrappersQueueOffline() async {
         state.isOnline = false
 
-        await state.createContact(notebookId: "nb1", name: "Offline Alice")
+        state.createContact(notebookId: "nb1", name: "Offline Alice")
         await waitFor({ state.pendingSyncCount == 1 })
 
-        await state.deleteTransaction(id: "t9")
+        state.deleteTransaction(id: "t9")
         await waitFor({ state.pendingSyncCount == 2 })
 
         #expect(backend.mutationCalls.isEmpty)
