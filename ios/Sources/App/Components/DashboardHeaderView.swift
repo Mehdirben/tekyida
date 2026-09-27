@@ -46,12 +46,6 @@ public struct BrandLogoHeader: View {
                 }
             }
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
-        .background(
-            Capsule()
-                .fill(AppTheme.warningBg.opacity(0.85))
-        )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(syncStatusLabel)
     }
