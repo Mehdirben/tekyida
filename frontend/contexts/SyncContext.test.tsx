@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import React from "react";
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { SyncProvider, useSync } from "./SyncContext";
 import * as offlineQueue from "@/lib/offlineQueue";
 
@@ -243,5 +243,425 @@ describe("SyncContext - Offline Create + Delete Lifecycle", () => {
 
         const queued = await offlineQueue.getAll();
         expect(queued).toHaveLength(0);
+    });
+});
+
+describe("SyncContext - status, guards, and queue recovery", () => {
+    const originalOnLine = navigator.onLine;
+
+    beforeEach(async () => {
+        offlineQueue.resetDB();
+        await offlineQueue.clear();
+        Object.values(mockMutations).forEach((fn) => fn.mockReset());
+        Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
+    });
+
+    afterEach(() => {
+        Object.defineProperty(navigator, "onLine", { value: originalOnLine, configurable: true });
+    });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <SyncProvider>{children}</SyncProvider>
+    );
+
+    it("throws when useSync is used outside SyncProvider", () => {
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+        expect(() => renderHook(() => useSync())).toThrow(
+            "useSync must be used within SyncProvider"
+        );
+        spy.mockRestore();
+    });
+
+    it("reports synced status with an empty queue", async () => {
+        const { result } = renderHook(() => useSync(), { wrapper });
+        await act(async () => {
+            await new Promise((r) => setTimeout(r, 5));
+        });
+        expect(result.current.status).toBe("synced");
+        expect(result.current.isOnline).toBe(true);
+        expect(result.current.isItemPending("unknown_id")).toBe(false);
+    });
+
+    it("reports offline status while the browser is offline", async () => {
+        Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+        const { result } = renderHook(() => useSync(), { wrapper });
+        await act(async () => {
+            window.dispatchEvent(new Event("offline"));
+            await new Promise((r) => setTimeout(r, 5));
+        });
+        expect(result.current.status).toBe("offline");
+        expect(result.current.isOnline).toBe(false);
+    });
+
+    it("returns the server result for mutations that succeed while online", async () => {
+        mockMutations["notebooks:create"].mockResolvedValue("server_nb_1");
+        const { result } = renderHook(() => useSync(), { wrapper });
+        await act(async () => {
+            await new Promise((r) => setTimeout(r, 5));
+        });
+
+        let returned: unknown;
+        await act(async () => {
+            returned = await result.current.offlineMutation(
+                "notebooks:create",
+                mockMutations["notebooks:create"],
+                { name: "A" }
+            );
+        });
+
+        expect(returned).toBe("server_nb_1");
+        expect(await offlineQueue.getAll()).toHaveLength(0);
+        expect(result.current.isItemPending("temp_abc")).toBe(true);
+    });
+
+    it("reports pending status and pending ids while mutations are queued", async () => {
+        mockMutations["notebooks:update"].mockRejectedValue(new Error("fetch failed"));
+        Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+        await offlineQueue.enqueue({
+            functionPath: "notebooks:update",
+            args: { id: "s1" },
+            queuedAt: 1,
+        });
+        const { result } = renderHook(() => useSync(), { wrapper });
+        await act(async () => {
+            await new Promise((r) => setTimeout(r, 5));
+        });
+        expect(result.current.status).toBe("offline");
+
+        Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
+        await act(async () => {
+            window.dispatchEvent(new Event("online"));
+            await new Promise((r) => setTimeout(r, 5));
+        });
+
+        await waitFor(() => expect(result.current.status).toBe("pending"));
+        expect(result.current.pendingCount).toBe(1);
+        expect(result.current.isItemPending("s1")).toBe(true);
+    });
+
+    it("reports syncing status while a flush is in flight", async () => {
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        mockMutations["notebooks:update"].mockImplementationOnce(() => gate);
+
+        await offlineQueue.enqueue({
+            functionPath: "notebooks:update",
+            args: { id: "s1" },
+            queuedAt: 1,
+        });
+        const { result } = renderHook(() => useSync(), { wrapper });
+
+        let flush!: Promise<void>;
+        await act(async () => {
+            flush = result.current.flushQueue();
+        });
+        expect(result.current.status).toBe("syncing");
+
+        await act(async () => {
+            release();
+            await flush;
+        });
+        expect(result.current.status).toBe("synced");
+    });
+
+    it("guards flushQueue against concurrent invocations", async () => {
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        mockMutations["notebooks:update"].mockImplementationOnce(() => gate);
+
+        await offlineQueue.enqueue({
+            functionPath: "notebooks:update",
+            args: { id: "s1" },
+            queuedAt: 1,
+        });
+        const { result } = renderHook(() => useSync(), { wrapper });
+
+        let first!: Promise<void>;
+        await act(async () => {
+            first = result.current.flushQueue();
+        });
+        await act(async () => {
+            await result.current.flushQueue();
+        });
+        await act(async () => {
+            release();
+            await first;
+        });
+
+        expect(mockMutations["notebooks:update"]).toHaveBeenCalledTimes(1);
+    });
+
+    it("discards queued mutations for unknown function paths", async () => {
+        await offlineQueue.enqueue({
+            functionPath: "unknown:thing",
+            args: { id: "s9" },
+            queuedAt: 1,
+        });
+        const { result } = renderHook(() => useSync(), { wrapper });
+
+        await act(async () => {
+            await result.current.flushQueue();
+        });
+
+        expect(await offlineQueue.getAll()).toHaveLength(0);
+    });
+
+    it("discards permanent failures but keeps network failures queued", async () => {
+        mockMutations["notebooks:update"].mockRejectedValue(new Error("validation boom"));
+        mockMutations["notebooks:archive"].mockRejectedValue(new Error("fetch interrupted"));
+
+        await offlineQueue.enqueue({
+            functionPath: "notebooks:update",
+            args: { id: "s1" },
+            queuedAt: 1,
+        });
+        await offlineQueue.enqueue({
+            functionPath: "notebooks:archive",
+            args: { id: "s2" },
+            queuedAt: 2,
+        });
+        const { result } = renderHook(() => useSync(), { wrapper });
+
+        await act(async () => {
+            await result.current.flushQueue();
+        });
+
+        const queued = await offlineQueue.getAll();
+        expect(queued).toHaveLength(1);
+        expect(queued[0].functionPath).toBe("notebooks:archive");
+    });
+
+    it("requeues a mutation when the connection drops before it resolves", async () => {
+        mockMutations["transactions:create"].mockImplementationOnce(() => {
+            Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+            return Promise.reject(new Error("socket closed"));
+        });
+        const { result } = renderHook(() => useSync(), { wrapper });
+
+        let returned: unknown;
+        await act(async () => {
+            returned = await result.current.offlineMutation(
+                "transactions:create",
+                mockMutations["transactions:create"],
+                { notebookId: "nb1", amount: 1 }
+            );
+        });
+
+        expect(returned).toMatch(/^temp_/);
+        const queued = await offlineQueue.getAll();
+        expect(queued).toHaveLength(1);
+        expect(queued[0].functionPath).toBe("transactions:create");
+    });
+
+    it("rethrows non-network errors from offline mutations", async () => {
+        mockMutations["contacts:create"].mockRejectedValueOnce(new Error("invalid arguments"));
+        const { result } = renderHook(() => useSync(), { wrapper });
+
+        await act(async () => {
+            await expect(
+                result.current.offlineMutation(
+                    "contacts:create",
+                    mockMutations["contacts:create"],
+                    { notebookId: "nb1", name: "A" }
+                )
+            ).rejects.toThrow("invalid arguments");
+        });
+        expect(await offlineQueue.getAll()).toHaveLength(0);
+    });
+
+    it("flushes immediately after enqueueing while online with prior pending items", async () => {
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        mockMutations["notebooks:update"].mockImplementationOnce(() => gate);
+
+        await offlineQueue.enqueue({
+            functionPath: "notebooks:update",
+            args: { id: "s1", name: "X" },
+            queuedAt: 1,
+        });
+        const { result } = renderHook(() => useSync(), { wrapper });
+        await act(async () => {
+            await new Promise((r) => setTimeout(r, 5));
+        });
+
+        await act(async () => {
+            await result.current.offlineMutation(
+                "notebooks:create",
+                mockMutations["notebooks:create"],
+                { name: "New" }
+            );
+        });
+
+        await act(async () => {
+            release();
+        });
+
+        await waitFor(() =>
+            expect(mockMutations["notebooks:create"]).toHaveBeenCalledWith({ name: "New" })
+        );
+        expect(await offlineQueue.getAll()).toHaveLength(0);
+    });
+
+    it("retries the queue periodically while online with pending items", async () => {
+        vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+        mockMutations["notebooks:update"].mockRejectedValue(new Error("fetch failed"));
+
+        await offlineQueue.enqueue({
+            functionPath: "notebooks:update",
+            args: { id: "s1", name: "X" },
+            queuedAt: 1,
+        });
+        const { result, unmount } = renderHook(() => useSync(), { wrapper });
+        await act(async () => {
+            await new Promise((r) => setTimeout(r, 5));
+        });
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(30_000);
+        });
+        expect(result.current.pendingCount).toBe(1);
+
+        unmount();
+        vi.useRealTimers();
+    });
+
+    it("maps temp ids inside reorder arrays during flush", async () => {
+        mockMutations["notebooks:create"].mockResolvedValue("server_nb_1");
+        mockMutations["notebooks:reorder"].mockResolvedValue(undefined);
+
+        await offlineQueue.enqueue({
+            functionPath: "notebooks:create",
+            args: { name: "A" },
+            queuedAt: 1,
+            tempId: "temp_nb_1",
+        });
+        await offlineQueue.enqueue({
+            functionPath: "notebooks:reorder",
+            args: { ids: ["temp_nb_1", "server_nb_2"] },
+            queuedAt: 2,
+        });
+        const { result } = renderHook(() => useSync(), { wrapper });
+
+        await act(async () => {
+            await result.current.flushQueue();
+        });
+
+        expect(mockMutations["notebooks:reorder"]).toHaveBeenCalledWith({
+            ids: ["server_nb_1", "server_nb_2"],
+        });
+        expect(await offlineQueue.getAll()).toHaveLength(0);
+    });
+
+    it("skips reorder mutations that still reference unmapped temp ids", async () => {
+        await offlineQueue.enqueue({
+            functionPath: "notebooks:reorder",
+            args: { ids: ["temp_lost"] },
+            queuedAt: 1,
+        });
+        const { result } = renderHook(() => useSync(), { wrapper });
+
+        await act(async () => {
+            await result.current.flushQueue();
+        });
+
+        expect(mockMutations["notebooks:reorder"]).not.toHaveBeenCalled();
+        expect(await offlineQueue.getAll()).toHaveLength(0);
+    });
+
+    it("auto-flushes when connectivity returns with pending mutations", async () => {
+        Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+        await offlineQueue.enqueue({
+            functionPath: "notebooks:update",
+            args: { id: "s1", name: "X" },
+            queuedAt: 1,
+        });
+        renderHook(() => useSync(), { wrapper });
+        await act(async () => {
+            await new Promise((r) => setTimeout(r, 5));
+        });
+
+        Object.defineProperty(navigator, "onLine", { value: true, configurable: true });
+        await act(async () => {
+            window.dispatchEvent(new Event("online"));
+            await new Promise((r) => setTimeout(r, 5));
+        });
+
+        await waitFor(() =>
+            expect(mockMutations["notebooks:update"]).toHaveBeenCalledWith({ id: "s1", name: "X" })
+        );
+        expect(await offlineQueue.getAll()).toHaveLength(0);
+    });
+    it.each(["network lost", "Failed to reach server"])(
+        "keeps mutations queued when flush fails with %s",
+        async (message) => {
+            mockMutations["notebooks:update"].mockRejectedValue(new Error(message));
+            await offlineQueue.enqueue({
+                functionPath: "notebooks:update",
+                args: { id: "s1" },
+                queuedAt: 1,
+            });
+            const { result } = renderHook(() => useSync(), { wrapper });
+
+            await act(async () => {
+                await result.current.flushQueue();
+            });
+
+            expect(await offlineQueue.getAll()).toHaveLength(1);
+        }
+    );
+
+    it("keeps mutations queued when offline mutation fails with a network error", async () => {
+        mockMutations["notebooks:update"].mockRejectedValue(new Error("network gone"));
+        const { result } = renderHook(() => useSync(), { wrapper });
+
+        let returned: unknown;
+        await act(async () => {
+            returned = await result.current.offlineMutation(
+                "notebooks:update",
+                mockMutations["notebooks:update"],
+                { id: "s1", name: "X" }
+            );
+        });
+
+        expect(returned).toBeUndefined();
+        expect(await offlineQueue.getAll()).toHaveLength(1);
+    });
+
+    it("does not flush while offline", async () => {
+        Object.defineProperty(navigator, "onLine", { value: false, configurable: true });
+        await offlineQueue.enqueue({
+            functionPath: "notebooks:update",
+            args: { id: "s1" },
+            queuedAt: 1,
+        });
+        const { result } = renderHook(() => useSync(), { wrapper });
+
+        await act(async () => {
+            await result.current.flushQueue();
+        });
+
+        expect(mockMutations["notebooks:update"]).not.toHaveBeenCalled();
+        expect(await offlineQueue.getAll()).toHaveLength(1);
+    });
+
+    it("skips the periodic flush once the queue has drained", async () => {
+        vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+        const { unmount } = renderHook(() => useSync(), { wrapper });
+        await act(async () => {
+            await new Promise((r) => setTimeout(r, 5));
+        });
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(30_000);
+        });
+
+        unmount();
+        vi.useRealTimers();
     });
 });

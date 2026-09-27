@@ -18,6 +18,7 @@ import Select from "@/components/ui/Select";
 import UnsyncedBadge from "@/components/ui/UnsyncedBadge";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import EditModalDialog from "@/components/ui/EditModalDialog";
+import ModalTextInput from "@/components/ui/ModalTextInput";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { useMutation } from "convex/react";
@@ -25,8 +26,8 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
-import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import { useEscapeCascade } from "@/hooks/useEscapeCascade";
+import { useKeyboardInset } from "@/hooks/useKeyboardInset";
 import { triggerHaptic } from "@/lib/haptics";
 import { formatBalance, balanceColor } from "@/lib/money";
 
@@ -446,20 +447,13 @@ export default function ExperienceList({
                 saveDisabled={!editName.trim()}
                 style={keyboardOffsetStyle}
             >
-                <input
-                    ref={editNameRef}
-                    type="text"
+                <ModalTextInput
+                    inputRef={editNameRef}
                     value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter") handleEdit();
-                        if (e.key === "Escape") {
-                            e.stopPropagation();
-                            handleCloseEdit();
-                        }
-                    }}
+                    onChange={setEditName}
+                    onConfirm={handleEdit}
+                    onCancel={handleCloseEdit}
                     placeholder={t("experience.name")}
-                    className="glass-input py-2.5 text-sm"
                 />
                 <Select
                     options={contactOptions}

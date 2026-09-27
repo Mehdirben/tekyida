@@ -111,8 +111,8 @@ async function adjustNotebookBalances(
 async function adjustBalances(
     notebookId: string,
     diff: number,
-    contactId?: string,
-    txCountDiff = 0
+    contactId: string | undefined,
+    txCountDiff: number
 ): Promise<void> {
     if (contactId) {
         const ctKey = queryCache.cacheKey("contacts.list", { notebookId });

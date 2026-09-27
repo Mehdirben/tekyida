@@ -7,6 +7,13 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import { useSync } from "@/contexts/SyncContext";
 
+/** Read the persisted active notebook ID (SSR-safe). */
+export function readSavedActiveNotebook(): Id<"notebooks"> | undefined {
+    if (typeof window === "undefined") return undefined;
+    const saved = localStorage.getItem("tekyida-active-notebook");
+    return saved ? (saved as Id<"notebooks">) : undefined;
+}
+
 /**
  * Shared hook for notebook selection, CRUD, and active notebook persistence.
  * Used by both the Dashboard and Experiences pages.
@@ -20,11 +27,7 @@ export function useActiveNotebook() {
     const reorderNotebooks = useMutation(api.notebooks.reorder);
     const { offlineMutation, isItemPending } = useSync();
 
-    const [activeNotebookId, setActiveNotebookIdRaw] = useState<Id<"notebooks"> | undefined>(() => {
-        if (typeof window === "undefined") return undefined;
-        const saved = localStorage.getItem("tekyida-active-notebook");
-        return saved ? (saved as Id<"notebooks">) : undefined;
-    });
+    const [activeNotebookId, setActiveNotebookIdRaw] = useState<Id<"notebooks"> | undefined>(readSavedActiveNotebook);
 
     const setActiveNotebookId = useCallback((id: Id<"notebooks"> | undefined) => {
         setActiveNotebookIdRaw(id);

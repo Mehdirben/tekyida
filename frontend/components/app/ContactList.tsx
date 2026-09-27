@@ -5,6 +5,7 @@ import { UserPlus, User, Phone, ChevronRight, Trash2, Pencil } from "lucide-reac
 import UnsyncedBadge from "@/components/ui/UnsyncedBadge";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import EditModalDialog from "@/components/ui/EditModalDialog";
+import ModalTextInput from "@/components/ui/ModalTextInput";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { useMutation } from "convex/react";
@@ -275,34 +276,21 @@ export default function ContactList({
                 saveDisabled={!editName.trim()}
                 style={keyboardOffsetStyle}
             >
-                <input
-                    ref={editNameRef}
-                    type="text"
+                <ModalTextInput
+                    inputRef={editNameRef}
                     value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter") handleEdit();
-                        if (e.key === "Escape") {
-                            e.stopPropagation();
-                            handleCloseEdit();
-                        }
-                    }}
+                    onChange={setEditName}
+                    onConfirm={handleEdit}
+                    onCancel={handleCloseEdit}
                     placeholder={t("contact.name")}
-                    className="glass-input py-2.5 text-sm"
                 />
-                <input
+                <ModalTextInput
                     type="tel"
                     value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter") handleEdit();
-                        if (e.key === "Escape") {
-                            e.stopPropagation();
-                            handleCloseEdit();
-                        }
-                    }}
+                    onChange={setEditPhone}
+                    onConfirm={handleEdit}
+                    onCancel={handleCloseEdit}
                     placeholder={t("contact.phone")}
-                    className="glass-input py-2.5 text-sm"
                 />
             </EditModalDialog>
 
