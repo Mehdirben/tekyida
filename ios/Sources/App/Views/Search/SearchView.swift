@@ -28,9 +28,9 @@ public struct SearchView: View {
 
     @State private var query: String = ""
     @State private var scope: FilterScope = .contacts
+    @State private var isSearchPresented: Bool = false
     @State private var selectedContact: Contact?
     @State private var selectedExperience: Experience?
-    @FocusState private var isSearchFocused: Bool
 
     public init() {}
 
@@ -40,48 +40,7 @@ public struct SearchView: View {
                 MeshGradientBackground()
 
                 ScrollView {
-                    VStack(spacing: 16) {
-                        // Native Liquid Glass Search Input
-                        HStack(spacing: 10) {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(.secondary)
-                                .font(.system(size: 16, weight: .medium))
-
-                            TextField(tr("search.placeholder"), text: $query)
-                                .textFieldStyle(.plain)
-                                .autocorrectionDisabled()
-                                .textInputAutocapitalization(.never)
-                                .focused($isSearchFocused)
-
-                            if !query.isEmpty {
-                                Button {
-                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                    query = ""
-                                } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(.secondary)
-                                        .font(.system(size: 16))
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
-
-                        // Filter Scope Segmented Control
-                        Picker(tr("search.title"), selection: Binding(
-                            get: { scope },
-                            set: { newValue in
-                                guard newValue != scope else { return }
-                                UISelectionFeedbackGenerator().selectionChanged()
-                                scope = newValue
-                            }
-                        )) {
-                            ForEach(FilterScope.allCases, id: \.self) { item in
-                                Text(item.localizedName).tag(item)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-
+                    VStack(spacing: 20) {
                         if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             recentOrEmptyState
                         } else {
@@ -93,14 +52,62 @@ public struct SearchView: View {
                     .padding(.bottom, 96)
                 }
                 .scrollDismissesKeyboard(.immediately)
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        // Touching away closes the search bar (and its keyboard)
+                        if isSearchPresented {
+                            isSearchPresented = false
+                        }
+                    }
+                )
                 .tabBarMinimizeBehaviorOnScroll()
                 .dismissKeyboardOnTap()
             }
             .navigationTitle(tr("tab.search"))
             .navigationBarTitleDisplayMode(.large)
+            .searchable(
+                text: Binding(
+                    get: { query },
+                    set: { newValue in
+                        if !query.isEmpty && newValue.isEmpty {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        }
+                        query = newValue
+                    }
+                ),
+                isPresented: Binding(
+                    get: { isSearchPresented },
+                    set: { newValue in
+                        if isSearchPresented != newValue {
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
+                        isSearchPresented = newValue
+                    }
+                ),
+                placement: .automatic,
+                prompt: Text(tr("search.placeholder"))
+            )
+            .onChange(of: query) { oldValue, newValue in
+                if !oldValue.isEmpty && newValue.isEmpty {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                }
+            }
+            .searchScopes(Binding(
+                get: { scope },
+                set: { newValue in
+                    guard newValue != scope else { return }
+                    UISelectionFeedbackGenerator().selectionChanged()
+                    scope = newValue
+                }
+            )) {
+                ForEach(FilterScope.allCases, id: \.self) { item in
+                    Text(item.localizedName).tag(item)
+                }
+            }
             .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    isSearchFocused = true
+                // Present the search field with the keyboard when the tab opens
+                if !isSearchPresented {
+                    isSearchPresented = true
                 }
             }
             .sheet(item: $selectedContact) { contact in
