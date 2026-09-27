@@ -86,19 +86,19 @@ struct AppStateActionWrappersTests {
 
         // Toggle runs FIRST: its guard reads local state, so it must happen
         // before any refresh can replace the array mid-flight.
-        state.toggleExperienceClosed(id: "e1")
+        fire { state.toggleExperienceClosed(id: "e1") }
         await waitForMutation("experiences:close")
 
-        state.createExperience(notebookId: "nb1", name: "Trip", contactId: "c1")
+        fire { state.createExperience(notebookId: "nb1", name: "Trip", contactId: "c1") }
         await waitForMutation("experiences:create")
 
-        state.updateExperience(id: "e1", name: "Feast")
+        fire { state.updateExperience(id: "e1", name: "Feast") }
         await waitForMutation("experiences:update")
 
-        state.transferExperience(id: "e1", to: "nb2")
+        fire { state.transferExperience(id: "e1", to: "nb2") }
         await waitForMutation("experiences:transfer")
 
-        state.deleteExperience(id: "e1")
+        fire { state.deleteExperience(id: "e1") }
         await waitForMutation("experiences:remove")
     }
 
@@ -106,7 +106,7 @@ struct AppStateActionWrappersTests {
     func toggleReopenWrapper() async {
         state.experiences = [Experience(id: "e2", notebookId: "nb1", name: "Done", closed: true)]
 
-        state.toggleExperienceClosed(id: "e2")
+        fire { state.toggleExperienceClosed(id: "e2") }
 
         await waitForMutation("experiences:reopen")
     }
