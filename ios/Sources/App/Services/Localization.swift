@@ -125,7 +125,6 @@ enum L10n {
         "transfer.target": "Target Notebook",
         "transfer.selectDestination": "Select Destination",
         "transfer.confirm": "Confirm Transfer",
-        "transfer.transfer": "Transfer",
 
         // Notebooks
         "notebooks.title": "Notebooks",
@@ -314,7 +313,6 @@ enum L10n {
         "transfer.target": "Carnet de destination",
         "transfer.selectDestination": "Choisir la destination",
         "transfer.confirm": "Confirmer le Transfert",
-        "transfer.transfer": "Transférer",
 
         // Notebooks
         "notebooks.title": "Carnets",

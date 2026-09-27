@@ -135,17 +135,6 @@ public struct TransferExperienceSheet: View {
                         dismiss()
                     }
                 }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(tr("transfer.transfer")) {
-                        guard !selectedNotebookId.isEmpty else { return }
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        onTransfer(selectedNotebookId)
-                        dismiss()
-                    }
-                    .font(.body.bold())
-                    .disabled(selectedNotebookId.isEmpty)
-                }
             }
         }
     }
