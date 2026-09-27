@@ -70,32 +70,28 @@ public struct SettingsView: View {
                 }
             }
 
-            HStack(spacing: 12) {
-                Image(systemName: "envelope")
-                    .foregroundColor(.secondary)
-                    .frame(width: 20)
-                TextField(tr("settings.newEmail"), text: $newEmail)
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .disabled(!state.isOnline)
-            }
-            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+            GlassInputField(
+                systemImage: "envelope",
+                placeholder: tr("settings.newEmail"),
+                text: $newEmail,
+                keyboard: .emailAddress,
+                contentType: .emailAddress,
+                autocapitalization: .never,
+                disablesAutocorrection: true,
+                isDisabled: !state.isOnline
+            )
             .opacity(state.isOnline ? 1.0 : 0.6)
 
-            HStack(spacing: 12) {
-                Image(systemName: "envelope.badge")
-                    .foregroundColor(.secondary)
-                    .frame(width: 20)
-                TextField(tr("settings.confirmEmail"), text: $confirmEmail)
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .disabled(!state.isOnline)
-            }
-            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+            GlassInputField(
+                systemImage: "envelope.badge",
+                placeholder: tr("settings.confirmEmail"),
+                text: $confirmEmail,
+                keyboard: .emailAddress,
+                contentType: .emailAddress,
+                autocapitalization: .never,
+                disablesAutocorrection: true,
+                isDisabled: !state.isOnline
+            )
             .opacity(state.isOnline ? 1.0 : 0.6)
 
             if let emailMessage {
@@ -131,37 +127,34 @@ public struct SettingsView: View {
                 }
             }
 
-            HStack(spacing: 12) {
-                Image(systemName: "lock")
-                    .foregroundColor(.secondary)
-                    .frame(width: 20)
-                SecureField(tr("settings.currentPassword"), text: $currentPassword)
-                    .textContentType(.password)
-                    .disabled(!state.isOnline)
-            }
-            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+            GlassInputField(
+                systemImage: "lock",
+                placeholder: tr("settings.currentPassword"),
+                text: $currentPassword,
+                isSecure: true,
+                contentType: .password,
+                isDisabled: !state.isOnline
+            )
             .opacity(state.isOnline ? 1.0 : 0.6)
 
-            HStack(spacing: 12) {
-                Image(systemName: "key")
-                    .foregroundColor(.secondary)
-                    .frame(width: 20)
-                SecureField(tr("settings.newPassword"), text: $newPassword)
-                    .textContentType(.newPassword)
-                    .disabled(!state.isOnline)
-            }
-            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+            GlassInputField(
+                systemImage: "key",
+                placeholder: tr("settings.newPassword"),
+                text: $newPassword,
+                isSecure: true,
+                contentType: .newPassword,
+                isDisabled: !state.isOnline
+            )
             .opacity(state.isOnline ? 1.0 : 0.6)
 
-            HStack(spacing: 12) {
-                Image(systemName: "key.fill")
-                    .foregroundColor(.secondary)
-                    .frame(width: 20)
-                SecureField(tr("settings.confirmNewPassword"), text: $confirmPassword)
-                    .textContentType(.newPassword)
-                    .disabled(!state.isOnline)
-            }
-            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+            GlassInputField(
+                systemImage: "key.fill",
+                placeholder: tr("settings.confirmNewPassword"),
+                text: $confirmPassword,
+                isSecure: true,
+                contentType: .newPassword,
+                isDisabled: !state.isOnline
+            )
             .opacity(state.isOnline ? 1.0 : 0.6)
 
             if let passwordMessage {

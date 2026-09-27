@@ -55,14 +55,11 @@ public struct AddTransactionSheet: View {
                         .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
                         // Description Field
-                        HStack(spacing: 12) {
-                            Image(systemName: "note.text")
-                                .foregroundColor(.secondary)
-                                .frame(width: 20)
-
-                            TextField(tr("transaction.notePlaceholder"), text: $description)
-                        }
-                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                        GlassInputField(
+                            systemImage: "note.text",
+                            placeholder: tr("transaction.notePlaceholder"),
+                            text: $description
+                        )
 
                         // Date Picker
                         DatePicker(tr("transaction.dateAndTime"), selection: $date, displayedComponents: [.date, .hourAndMinute])

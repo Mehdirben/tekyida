@@ -53,9 +53,7 @@ public struct ContactRowView: View {
                             .lineLimit(1)
 
                         if state.isItemPendingSync(id: contact.id) {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(AppTheme.warning)
+                            PendingSyncIndicator(size: 11)
                         }
                     }
 

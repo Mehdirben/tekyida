@@ -81,24 +81,14 @@ public struct ExperiencesView: View {
                     state.transferExperience(id: exp.id, to: targetNotebookId)
                 }
             }
-            .alert(tr("experiences.deleteTitle"), isPresented: Binding(
-                get: { deletingExperience != nil },
-                set: { if !$0 { deletingExperience = nil } }
-            )) {
-                Button(tr("common.cancel"), role: .cancel) {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    deletingExperience = nil
+            .confirmableDelete(
+                item: $deletingExperience,
+                title: tr("experiences.deleteTitle"),
+                message: { String(format: tr("experiences.deleteMessage"), $0?.name ?? "") },
+                onDelete: { exp in
+                    state.deleteExperience(id: exp.id)
                 }
-                Button(tr("common.delete"), role: .destructive) {
-                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
-                    if let exp = deletingExperience {
-                        state.deleteExperience(id: exp.id)
-                        deletingExperience = nil
-                    }
-                }
-            } message: {
-                Text(String(format: tr("experiences.deleteMessage"), deletingExperience?.name ?? ""))
-            }
+            )
         }
     }
 

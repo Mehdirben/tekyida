@@ -119,26 +119,12 @@ public struct ContactDetailView: View {
             }
             .padding(16)
         }
-        .sheet(isPresented: $showAddTransaction) {
-            AddTransactionSheet { amount, desc, date in
-                state.createTransaction(
-                    notebookId: contact.notebookId,
-                    contactId: contact.id,
-                    amount: amount,
-                    description: desc,
-                    date: date
-                )
-            }
-        }
-        .transactionModals(
-            editingTransaction: $editingTransaction,
-            deletingTransaction: $deletingTransaction,
-            onSave: { id, amount, desc, date in
-                state.updateTransaction(id: id, amount: amount, description: desc, date: date)
-            },
-            onDelete: { id in
-                state.deleteTransaction(id: id)
-            }
+        .transactionActions(
+            isAdding: $showAddTransaction,
+            editing: $editingTransaction,
+            deleting: $deletingTransaction,
+            notebookId: contact.notebookId,
+            contactId: contact.id
         )
         .sheet(item: $selectedExperience) { experience in
             ExperienceDetailView(experience: experience)
@@ -218,9 +204,7 @@ public struct ContactDetailView: View {
                             .foregroundColor(.primary)
 
                         if state.isItemPendingSync(id: experience.id) {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(AppTheme.warning)
+                            PendingSyncIndicator(size: 10)
                         }
                     }
 

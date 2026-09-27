@@ -44,9 +44,7 @@ public struct TransactionRowView: View {
                         .foregroundColor(.secondary)
 
                     if state.isItemPendingSync(id: transaction.id) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(AppTheme.warning)
+                        PendingSyncIndicator(size: 9)
                     }
                 }
 

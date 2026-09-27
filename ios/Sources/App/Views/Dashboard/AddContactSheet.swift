@@ -31,28 +31,23 @@ public struct AddContactSheet: View {
 
                     // Modern Liquid Glass Form Group
                     VStack(spacing: 16) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "person.fill")
-                                .foregroundColor(.secondary)
-                                .frame(width: 24)
+                        GlassInputField(
+                            systemImage: "person.fill",
+                            placeholder: tr("contact.namePlaceholder"),
+                            text: $name,
+                            iconWidth: 24,
+                            autocapitalization: .words,
+                            characterLimit: 200
+                        )
 
-                            TextField(tr("contact.namePlaceholder"), text: $name)
-                                .textInputAutocapitalization(.words)
-                                .onChange(of: name) { _, newVal in
-                                    if newVal.count > 200 { name = String(newVal.prefix(200)) }
-                                }
-                        }
-                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
-
-                        HStack(spacing: 12) {
-                            Image(systemName: "phone.fill")
-                                .foregroundColor(AppTheme.accent)
-                                .frame(width: 24)
-
-                            TextField(tr("contact.phonePlaceholder"), text: $phone)
-                                .keyboardType(.phonePad)
-                        }
-                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                        GlassInputField(
+                            systemImage: "phone.fill",
+                            placeholder: tr("contact.phonePlaceholder"),
+                            text: $phone,
+                            iconColor: AppTheme.accent,
+                            iconWidth: 24,
+                            keyboard: .phonePad
+                        )
                     }
 
                     saveButton

@@ -63,24 +63,14 @@ public struct DashboardView: View {
                     state.updateContact(id: contact.id, name: name, phone: phone)
                 }
             }
-            .alert(tr("contacts.deleteTitle"), isPresented: Binding(
-                get: { deletingContact != nil },
-                set: { if !$0 { deletingContact = nil } }
-            )) {
-                Button(tr("common.cancel"), role: .cancel) {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    deletingContact = nil
+            .confirmableDelete(
+                item: $deletingContact,
+                title: tr("contacts.deleteTitle"),
+                message: { String(format: tr("contacts.deleteMessage"), $0?.name ?? "") },
+                onDelete: { contact in
+                    state.deleteContact(id: contact.id)
                 }
-                Button(tr("common.delete"), role: .destructive) {
-                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
-                    if let contact = deletingContact {
-                        state.deleteContact(id: contact.id)
-                        deletingContact = nil
-                    }
-                }
-            } message: {
-                Text(String(format: tr("contacts.deleteMessage"), deletingContact?.name ?? ""))
-            }
+            )
         }
     }
 

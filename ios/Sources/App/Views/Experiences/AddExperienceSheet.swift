@@ -28,18 +28,14 @@ public struct AddExperienceSheet: View {
                 VStack(spacing: 20) {
                     // Experience Details Fields
                     VStack(alignment: .leading, spacing: 16) {
-                        HStack(spacing: 12) {
-                            Image(systemName: "flag.fill")
-                                .foregroundColor(.secondary)
-                                .frame(width: 24)
-
-                            TextField(tr("experience.namePlaceholder"), text: $name)
-                                .textInputAutocapitalization(.sentences)
-                                .onChange(of: name) { _, newVal in
-                                    if newVal.count > 200 { name = String(newVal.prefix(200)) }
-                                }
-                        }
-                        .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                        GlassInputField(
+                            systemImage: "flag.fill",
+                            placeholder: tr("experience.namePlaceholder"),
+                            text: $name,
+                            iconWidth: 24,
+                            autocapitalization: .sentences,
+                            characterLimit: 200
+                        )
 
                         GlassSelectorRow(
                             title: tr("experience.linkedContact"),

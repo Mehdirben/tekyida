@@ -37,15 +37,13 @@ struct AccountAccessView: View {
 
                     VStack(spacing: 14) {
                         if state.isAwaitingEmailVerification {
-                            HStack(spacing: 12) {
-                                Image(systemName: "number")
-                                    .foregroundColor(.secondary)
-                                    .frame(width: 20)
-                                TextField(tr("auth.codePlaceholder"), text: $verificationCode)
-                                    .keyboardType(.numberPad)
-                                    .textContentType(.oneTimeCode)
-                            }
-                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                            GlassInputField(
+                                systemImage: "number",
+                                placeholder: tr("auth.codePlaceholder"),
+                                text: $verificationCode,
+                                keyboard: .numberPad,
+                                contentType: .oneTimeCode
+                            )
 
                             GlassActionButton(
                                 tr("auth.verify"),
@@ -83,46 +81,40 @@ struct AccountAccessView: View {
                             .buttonStyle(.plain)
                         } else {
                             if isRegistration {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "person.fill")
-                                        .foregroundColor(.secondary)
-                                        .frame(width: 20)
-                                    TextField(tr("auth.name"), text: $name)
-                                        .textContentType(.name)
-                                }
-                                .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                                GlassInputField(
+                                    systemImage: "person.fill",
+                                    placeholder: tr("auth.name"),
+                                    text: $name,
+                                    contentType: .name
+                                )
                             }
 
-                            HStack(spacing: 12) {
-                                Image(systemName: "envelope.fill")
-                                    .foregroundColor(.secondary)
-                                    .frame(width: 20)
-                                TextField(tr("auth.email"), text: $email)
-                                    .textContentType(.emailAddress)
-                                    .keyboardType(.emailAddress)
-                                    .textInputAutocapitalization(.never)
-                                    .autocorrectionDisabled()
-                            }
-                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                            GlassInputField(
+                                systemImage: "envelope.fill",
+                                placeholder: tr("auth.email"),
+                                text: $email,
+                                keyboard: .emailAddress,
+                                contentType: .emailAddress,
+                                autocapitalization: .never,
+                                disablesAutocorrection: true
+                            )
 
-                            HStack(spacing: 12) {
-                                Image(systemName: "lock.fill")
-                                    .foregroundColor(.secondary)
-                                    .frame(width: 20)
-                                SecureField(tr("auth.password"), text: $password)
-                                    .textContentType(isRegistration ? .newPassword : .password)
-                            }
-                            .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                            GlassInputField(
+                                systemImage: "lock.fill",
+                                placeholder: tr("auth.password"),
+                                text: $password,
+                                isSecure: true,
+                                contentType: isRegistration ? .newPassword : .password
+                            )
 
                             if isRegistration {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "lock.shield.fill")
-                                        .foregroundColor(.secondary)
-                                        .frame(width: 20)
-                                    SecureField(tr("auth.confirmPassword"), text: $confirmation)
-                                        .textContentType(.newPassword)
-                                }
-                                .glassInputStyle(cornerRadius: AppTheme.radiusInput)
+                                GlassInputField(
+                                    systemImage: "lock.shield.fill",
+                                    placeholder: tr("auth.confirmPassword"),
+                                    text: $confirmation,
+                                    isSecure: true,
+                                    contentType: .newPassword
+                                )
                             }
 
                             GlassActionButton(
