@@ -17,6 +17,13 @@ struct AppStateActionWrappersTests {
         try backend.seedDefaultRefreshData()
     }
 
+    /// Invokes wrappers from a synchronous closure: in async contexts the
+    /// compiler always prefers the `async` overloads, which would bypass the
+    /// fire-and-forget wrappers this suite exists to cover.
+    private func fire(_ work: @MainActor () -> Void) {
+        work()
+    }
+
     /// Yields the main actor until the fire-and-forget task settles.
     private func waitFor(
         _ condition: @MainActor () -> Bool,
@@ -38,19 +45,19 @@ struct AppStateActionWrappersTests {
 
     @Test("Notebook wrappers post their mutations")
     func notebookWrappers() async {
-        state.createNotebook(name: "Wrapped")
+        fire { state.createNotebook(name: "Wrapped") }
         await waitForMutation("notebooks:create")
 
-        state.updateNotebook(id: "nb1", name: "Renamed")
+        fire { state.updateNotebook(id: "nb1", name: "Renamed") }
         await waitForMutation("notebooks:update")
 
-        state.archiveNotebook(id: "nb1", archived: true)
+        fire { state.archiveNotebook(id: "nb1", archived: true) }
         await waitForMutation("notebooks:archive")
 
-        state.reorderNotebooks(orderedIds: ["b", "a"])
+        fire { state.reorderNotebooks(orderedIds: ["b", "a"]) }
         await waitForMutation("notebooks:reorder")
 
-        state.deleteNotebook(id: "nb1")
+        fire { state.deleteNotebook(id: "nb1") }
         await waitForMutation("notebooks:remove")
     }
 
@@ -58,13 +65,13 @@ struct AppStateActionWrappersTests {
 
     @Test("Contact wrappers post their mutations")
     func contactWrappers() async {
-        state.createContact(notebookId: "nb1", name: "Alice")
+        fire { state.createContact(notebookId: "nb1", name: "Alice") }
         await waitForMutation("contacts:create")
 
-        state.updateContact(id: "c1", name: "Alicia", phone: "123")
+        fire { state.updateContact(id: "c1", name: "Alicia", phone: "123") }
         await waitForMutation("contacts:update")
 
-        state.deleteContact(id: "c1")
+        fire { state.deleteContact(id: "c1") }
         await waitForMutation("contacts:remove")
     }
 
@@ -77,19 +84,19 @@ struct AppStateActionWrappersTests {
         ])
         state.experiences = [Experience(id: "e1", notebookId: "nb1", name: "Dinner")]
 
-        state.createExperience(notebookId: "nb1", name: "Trip", contactId: "c1")
+        fire { state.createExperience(notebookId: "nb1", name: "Trip", contactId: "c1") }
         await waitForMutation("experiences:create")
 
-        state.updateExperience(id: "e1", name: "Feast")
+        fire { state.updateExperience(id: "e1", name: "Feast") }
         await waitForMutation("experiences:update")
 
-        state.toggleExperienceClosed(id: "e1")
+        fire { state.toggleExperienceClosed(id: "e1") }
         await waitForMutation("experiences:close")
 
-        state.transferExperience(id: "e1", to: "nb2")
+        fire { state.transferExperience(id: "e1", to: "nb2") }
         await waitForMutation("experiences:transfer")
 
-        state.deleteExperience(id: "e1")
+        fire { state.deleteExperience(id: "e1") }
         await waitForMutation("experiences:remove")
     }
 
@@ -97,13 +104,13 @@ struct AppStateActionWrappersTests {
     func transactionWrappers() async {
         let date = Date(timeIntervalSince1970: 1_700_000_000)
 
-        state.createTransaction(notebookId: "nb1", amount: 10, date: date)
+        fire { state.createTransaction(notebookId: "nb1", amount: 10, date: date) }
         await waitForMutation("transactions:create")
 
-        state.updateTransaction(id: "t1", amount: -3, date: date)
+        fire { state.updateTransaction(id: "t1", amount: -3, date: date) }
         await waitForMutation("transactions:update")
 
-        state.deleteTransaction(id: "t1")
+        fire { state.deleteTransaction(id: "t1") }
         await waitForMutation("transactions:remove")
     }
 
@@ -111,10 +118,10 @@ struct AppStateActionWrappersTests {
 
     @Test("Blank inputs are rejected before any mutation is queued")
     func blankInputGuards() async {
-        state.createNotebook(name: "   ")
-        state.createContact(notebookId: "nb1", name: "  ")
-        state.updateContact(id: "c1", name: "")
-        state.createExperience(notebookId: "nb1", name: " ")
+        fire { state.createNotebook(name: "   ") }
+        fire { state.createContact(notebookId: "nb1", name: "  ") }
+        fire { state.updateContact(id: "c1", name: "") }
+        fire { state.createExperience(notebookId: "nb1", name: " ") }
 
         for _ in 0..<10 { await Task.yield() }
         #expect(backend.mutationCalls.isEmpty)
@@ -126,11 +133,11 @@ struct AppStateActionWrappersTests {
     func wrappersQueueOffline() async {
         state.isOnline = false
 
-        state.createContact(notebookId: "nb1", name: "Offline Alice")
-        await waitFor({ state.pendingSyncCount == 1 })
+        fire { state.createContact(notebookId: "nb1", name: "Offline Alice") }
+        await waitFor({ state.pendingSyncCount == 1 }, "first offline enqueue")
 
-        state.deleteTransaction(id: "t9")
-        await waitFor({ state.pendingSyncCount == 2 })
+        fire { state.deleteTransaction(id: "t9") }
+        await waitFor({ state.pendingSyncCount == 2 }, "second offline enqueue")
 
         #expect(backend.mutationCalls.isEmpty)
     }
