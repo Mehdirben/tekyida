@@ -25,11 +25,6 @@ struct ConvexBackendTests {
         backend = ConvexBackend(session: URLProtocolStub.makeSession(), tokenStore: tokens)
     }
 
-    private func envelope(_ valueJSON: String) -> Data {
-        Data(#"{"status":"success","value":#+'#' + valueJSON + #"#
-        )
-    }
-
     @Test("Query posts the Convex envelope and decodes the value")
     func queryEnvelopeAndDecode() async throws {
         let recorder = RequestRecorder()

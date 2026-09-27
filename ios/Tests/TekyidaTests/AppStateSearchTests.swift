@@ -16,7 +16,7 @@ struct AppStateSearchTests {
         let notebook = Notebook(name: "Vacation")
         let contact = Contact(notebookId: notebook.id, name: "Youssef Alaoui", phone: "+212 600-001122")
         let secondContact = Contact(notebookId: notebook.id, name: "Leila Tazi", phone: "+212 611-334455")
-        let experience = Experience(notebookId: notebook.id, name: "Sahara Desert Trek", contactId: contact.id)
+        let experience = Experience(notebookId: notebook.id, contactId: contact.id, name: "Sahara Desert Trek")
         state.notebooks = [notebook]
         state.activeNotebookId = notebook.id
         state.contacts = [contact, secondContact]
