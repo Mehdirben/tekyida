@@ -119,6 +119,16 @@ public struct DashboardView: View {
                         .padding(.vertical, 4)
                         .background(Color(uiColor: .secondarySystemFill), in: Capsule())
                 }
+
+                GlassButton(
+                    tr("contacts.add"),
+                    systemImage: "person.badge.plus",
+                    style: .primary,
+                    size: .regular,
+                    isFullWidth: false
+                ) {
+                    showAddContact = true
+                }
             }
             .padding(.horizontal, 4)
             .padding(.top, 4)
@@ -149,14 +159,6 @@ public struct DashboardView: View {
                     }
                 }
             }
-
-            // Bottom Add Contact button with modern Liquid Glass prominent styling
-            ListAddBottomButton(
-                title: tr("contacts.add"),
-                systemImage: "person.badge.plus",
-                action: { showAddContact = true }
-            )
-            .padding(.top, 4)
         }
     }
 }

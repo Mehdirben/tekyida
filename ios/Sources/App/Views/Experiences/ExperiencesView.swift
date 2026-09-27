@@ -181,6 +181,16 @@ public struct ExperiencesView: View {
                         .padding(.vertical, 4)
                         .background(Color(uiColor: .secondarySystemFill), in: Capsule())
                 }
+
+                GlassButton(
+                    tr("experiences.add"),
+                    systemImage: "plus",
+                    style: .primary,
+                    size: .regular,
+                    isFullWidth: false
+                ) {
+                    showAddExperience = true
+                }
             }
             .padding(.horizontal, 4)
             .padding(.top, 4)
@@ -222,14 +232,6 @@ public struct ExperiencesView: View {
                     }
                 }
             }
-
-            // Bottom Add Experience button
-            ListAddBottomButton(
-                title: tr("experiences.add"),
-                systemImage: "plus",
-                action: { showAddExperience = true }
-            )
-            .padding(.top, 4)
         }
     }
 }
