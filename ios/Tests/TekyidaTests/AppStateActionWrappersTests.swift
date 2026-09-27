@@ -68,7 +68,12 @@ struct AppStateActionWrappersTests {
     }
 
     @Test("Experience wrappers post their mutations")
-    func experienceWrappers() async {
+    func experienceWrappers() async throws {
+        // Seed the server list so the post-mutation refresh keeps the local
+        // experience (toggle's guard looks it up after the refresh).
+        try backend.setQuery("experiences:list", value: [
+            Experience(id: "e1", notebookId: "nb1", name: "Dinner")
+        ])
         state.experiences = [Experience(id: "e1", notebookId: "nb1", name: "Dinner")]
 
         await state.createExperience(notebookId: "nb1", name: "Trip", contactId: "c1")

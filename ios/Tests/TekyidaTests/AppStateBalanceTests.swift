@@ -66,7 +66,7 @@ struct AppStateBalanceTests {
         let closedId = state.experiences[0].id
 
         let direct = engine.directTransactions(for: aliceId)
-        #expect(direct.count == 2, "Alice has two direct transactions")
+        #expect(direct.count == 1, "Alice has one direct transaction (the experience-tied one is excluded)")
         #expect(direct.allSatisfy { $0.experienceId == nil })
 
         #expect(engine.lastTransactionDate(for: aliceId) != nil)
@@ -84,7 +84,7 @@ struct AppStateBalanceTests {
         let aliceId = state.contacts[0].id
         let closedId = state.experiences[0].id
 
-        #expect(state.directTransactions(for: aliceId).count == 2)
+        #expect(state.directTransactions(for: aliceId).count == 1)
         #expect(state.lastTransactionDate(for: aliceId) != nil)
         #expect(state.closedExperiences(for: aliceId).count == 1)
         #expect(state.experienceTransactions(closedId).count == 1)
