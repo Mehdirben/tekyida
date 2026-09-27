@@ -56,4 +56,28 @@ struct AppStateSearchTests {
         #expect(results.totalCount == 3)
         #expect(!results.isEmpty)
     }
+
+    @Test("Search without a notebook scans across all notebooks")
+    func searchWithoutNotebookScope() {
+        let results = SearchEngine.run(
+            contacts: [Contact(notebookId: "nb1", name: "Amir"), Contact(notebookId: "nb2", name: "Lina")],
+            experiences: [Experience(notebookId: "nb2", name: "Anniversary")],
+            transactions: [Transaction(notebookId: "nb1", amount: 5, description: "Apple")],
+            notebookId: nil,
+            query: "a"
+        )
+        #expect(results.totalCount == 4, "nil scope matches items from every notebook")
+    }
+
+    @Test("Transactions match by formatted amount")
+    func searchMatchesAmount() {
+        let results = SearchEngine.run(
+            contacts: [],
+            experiences: [],
+            transactions: [Transaction(notebookId: "nb", amount: -12.5, description: nil)],
+            notebookId: "nb",
+            query: "12.50"
+        )
+        #expect(results.transactions.count == 1, "amount search uses the absolute two-decimal rendering")
+    }
 }

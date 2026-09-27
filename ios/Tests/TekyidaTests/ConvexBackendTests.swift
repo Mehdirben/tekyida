@@ -227,4 +227,97 @@ struct ConvexBackendTests {
         let sent = try #require(recorder.requests.first)
         #expect(sent.url?.path.hasSuffix("/api/action") == true)
     }
+
+    // MARK: - Email verification flows
+
+    @Test("verifyEmail posts the code and stores tokens on acceptance")
+    func verifyEmailStoresTokens() async throws {
+        URLProtocolStub.handler = { request in
+            let body = (try? JSONSerialization.jsonObject(with: request.bodyData ?? Data())) as? [String: Any]
+            let params = (body?["args"] as? [String: Any])?["params"] as? [String: Any]
+            #expect(params?["flow"] as? String == "email-verification")
+            #expect(params?["code"] as? String == "654321")
+            return .init(
+                status: 200,
+                body: Data(#"{"status":"success","value":{"tokens":{"token":"verify_access","refreshToken":"verify_refresh"}}}"#.utf8)
+            )
+        }
+        let accepted = try await backend.verifyEmail(email: "user@tekyida.app", code: "654321")
+        #expect(accepted)
+        #expect(tokens.read("accessToken") == "verify_access")
+    }
+
+    @Test("verifyEmail reports rejection without tokens")
+    func verifyEmailRejected() async throws {
+        URLProtocolStub.handler = { _ in
+            .init(status: 200, body: Data(#"{"status":"success","value":{}}"#.utf8))
+        }
+        let accepted = try await backend.verifyEmail(email: "user@tekyida.app", code: "000000")
+        #expect(!accepted)
+    }
+
+    @Test("resendVerification posts and ignores the value")
+    func resendVerificationPosts() async throws {
+        let recorder = RequestRecorder()
+        URLProtocolStub.handler = { request in
+            recorder.append(request)
+            return .init(status: 200, body: Data(#"{"status":"success","value":null}"#.utf8))
+        }
+        try await backend.resendVerification(email: "user@tekyida.app")
+        let sent = try #require(recorder.requests.first)
+        let body = try #require(try JSONSerialization.jsonObject(with: sent.bodyData ?? Data()) as? [String: Any])
+        let params = try #require((body["args"] as? [String: Any])?["params"] as? [String: Any])
+        #expect(params["email"] as? String == "user@tekyida.app")
+        #expect(params["flow"] as? String == "email-verification")
+    }
+
+    // MARK: - Envelope-error refresh path
+
+    @Test("Envelope auth error with a refresh token renews and retries")
+    func envelopeAuthErrorRefreshesAndRetries() async throws {
+        tokens.write("stale", key: "accessToken")
+        tokens.write("refresh-1", key: "refreshToken")
+        let recorder = RequestRecorder()
+        URLProtocolStub.handler = { request in
+            recorder.append(request)
+            let body = (try? JSONSerialization.jsonObject(with: request.bodyData ?? Data())) as? [String: Any]
+            if body?["path"] as? String == "auth:signIn" {
+                return .init(
+                    status: 200,
+                    body: Data(#"{"status":"success","value":{"tokens":{"token":"freshAccess","refreshToken":"freshRefresh"}}}"#.utf8)
+                )
+            }
+            if recorder.count == 1 {
+                return .init(status: 200, body: Data(#"{"status":"error","errorMessage":"Not authenticated"}"#.utf8))
+            }
+            return .init(status: 200, body: Data(#"{"status":"success","value":[]}"#.utf8))
+        }
+
+        let notebooks: [Notebook] = try await backend.query("notebooks:list", args: [:])
+        #expect(notebooks.isEmpty)
+        #expect(recorder.count == 3, "original + token refresh + retried query")
+        #expect(tokens.read("accessToken") == "freshAccess")
+    }
+
+    @Test("A token refresh that returns no tokens signs the session out")
+    func refreshWithoutTokensSignsOut() async {
+        tokens.write("stale", key: "accessToken")
+        tokens.write("refresh-1", key: "refreshToken")
+        URLProtocolStub.handler = { request in
+            let body = (try? JSONSerialization.jsonObject(with: request.bodyData ?? Data())) as? [String: Any]
+            if body?["path"] as? String == "auth:signIn" {
+                // Successful envelope, but no tokens inside → storeTokens fails.
+                return .init(status: 200, body: Data(#"{"status":"success","value":{}}"#.utf8))
+            }
+            return .init(status: 401, body: Data())
+        }
+
+        await #expect {
+            let _: [Notebook] = try await backend.query("notebooks:list", args: [:])
+        } throws: { error in
+            BackendError.isAuthenticationFailure(error)
+        }
+        #expect(tokens.read("accessToken") == nil, "cleared after a failed renewal")
+        #expect(tokens.read("refreshToken") == nil)
+    }
 }

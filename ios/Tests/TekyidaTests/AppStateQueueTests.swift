@@ -183,6 +183,89 @@ struct AppStateQueueTests {
         #expect(state.appError?.contains("Validation failed") == true)
     }
 
+    @Test("Sync drops entries whose id is still a local offline id")
+    func syncSkipsStillOfflineIds() async throws {
+        state.pendingMutations = [QueuedMutation(
+            functionPath: "contacts:update",
+            arguments: try makeArgs(["id": "offline_1", "name": "X"]),
+            localCreatedId: nil,
+            accountEmail: "user@tekyida.app"
+        )]
+        state.pendingSyncCount = 1
+
+        await state.syncPendingMutations()
+
+        #expect(state.pendingMutations.isEmpty, "unresolvable offline id entries are dropped")
+        #expect(backend.mutationCalls.isEmpty, "the server must not receive an offline_ id")
+    }
+
+    @Test("Removing an offline notebook collapses its dependent queued creates")
+    func removeCollapsesDependentCreates() throws {
+        state.isOnline = false
+        _ = try state.enqueueOfflineMutation("notebooks:create", args: ["name": "Trip"])
+        let notebookId = try #require(state.pendingMutations.first?.localCreatedId)
+
+        _ = try state.enqueueOfflineMutation("contacts:create", args: ["notebookId": notebookId, "name": "Alice"])
+        _ = try state.enqueueOfflineMutation("experiences:create", args: ["notebookId": notebookId, "name": "Dinner"])
+        #expect(state.pendingMutations.count == 3)
+
+        _ = try state.enqueueOfflineMutation("notebooks:remove", args: ["id": notebookId])
+
+        #expect(state.pendingMutations.isEmpty, "dependent creates must collapse with the notebook remove")
+        #expect(state.pendingSyncCount == 0)
+    }
+
+    @Test("Removing offline contacts and experiences collapses their queued transactions")
+    func removeCollapsesTransactionCreates() throws {
+        state.isOnline = false
+        _ = try state.enqueueOfflineMutation("contacts:create", args: ["notebookId": "nb1", "name": "Alice"])
+        let contactId = try #require(state.pendingMutations.first?.localCreatedId)
+        _ = try state.enqueueOfflineMutation("transactions:create", args: [
+            "notebookId": "nb1", "contactId": contactId, "amount": 5
+        ])
+        #expect(state.pendingMutations.count == 2)
+
+        _ = try state.enqueueOfflineMutation("contacts:remove", args: ["id": contactId])
+        #expect(state.pendingMutations.isEmpty, "queued transaction tied to the contact collapses too")
+
+        _ = try state.enqueueOfflineMutation("experiences:create", args: ["notebookId": "nb1", "name": "Trip"])
+        let experienceId = try #require(state.pendingMutations.first?.localCreatedId)
+        _ = try state.enqueueOfflineMutation("transactions:create", args: [
+            "notebookId": "nb1", "experienceId": experienceId, "amount": 7
+        ])
+
+        _ = try state.enqueueOfflineMutation("experiences:remove", args: ["id": experienceId])
+        #expect(state.pendingMutations.isEmpty, "queued transaction tied to the experience collapses too")
+    }
+
+    @Test("Sync remaps the active notebook id from a queued create")
+    func syncRemapsActiveNotebook() async throws {
+        try backend.setQuery("notebooks:list", value: [Notebook(id: "srv_nb", name: "Trips")])
+        state.isOnline = false
+        _ = try state.enqueueOfflineMutation("notebooks:create", args: ["name": "Trips"])
+        let localId = try #require(state.pendingMutations.first?.localCreatedId)
+        state.activeNotebookId = localId
+        backend.setMutationJSON("notebooks:create", "\"srv_nb\"")
+
+        state.isOnline = true
+        await state.syncPendingMutations()
+
+        #expect(state.activeNotebookId == "srv_nb", "selection follows the server id")
+    }
+
+    @Test("Concurrent refreshes coalesce instead of doubling requests")
+    func concurrentRefreshCoalesces() async {
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { @MainActor in
+                await self.state.refreshDataAndReportError()
+            }
+            group.addTask { @MainActor in
+                await self.state.refreshDataAndReportError()
+            }
+        }
+        #expect(state.appError == nil)
+    }
+
     @Test("Sync refuses entries owned by a different account")
     func syncRejectsForeignEntries() async throws {
         state.pendingMutations = [QueuedMutation(

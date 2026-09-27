@@ -54,4 +54,39 @@ struct AppStateBalanceTests {
         #expect(engine.totalExperiencesBalance(for: notebook.id) == 999,
                 "total experiences balance counts open experiences only (closed experience's 50 is excluded)")
     }
+
+    @Test("BalanceEngine helper lookups")
+    func balanceEngineHelpers() {
+        let engine = BalanceEngine(
+            contacts: state.contacts,
+            experiences: state.experiences,
+            transactions: state.transactions
+        )
+        let aliceId = state.contacts[0].id
+        let closedId = state.experiences[0].id
+
+        let direct = engine.directTransactions(for: aliceId)
+        #expect(direct.count == 2, "Alice has two direct transactions")
+        #expect(direct.allSatisfy { $0.experienceId == nil })
+
+        #expect(engine.lastTransactionDate(for: aliceId) != nil)
+        #expect(engine.lastTransactionDate(for: "ghost") == nil)
+
+        #expect(engine.closedExperiences(for: aliceId).map(\.id) == [closedId])
+        #expect(engine.closedExperiences(for: "ghost").isEmpty)
+
+        #expect(engine.experienceTransactions(closedId).count == 1)
+        #expect(engine.experienceTransactions("ghost").isEmpty)
+    }
+
+    @Test("AppState balance facades expose the engine helpers")
+    func balanceFacades() {
+        let aliceId = state.contacts[0].id
+        let closedId = state.experiences[0].id
+
+        #expect(state.directTransactions(for: aliceId).count == 2)
+        #expect(state.lastTransactionDate(for: aliceId) != nil)
+        #expect(state.closedExperiences(for: aliceId).count == 1)
+        #expect(state.experienceTransactions(closedId).count == 1)
+    }
 }
