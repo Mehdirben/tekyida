@@ -54,8 +54,8 @@ public struct SearchView: View {
                 .scrollDismissesKeyboard(.immediately)
                 .simultaneousGesture(
                     TapGesture().onEnded {
-                        // Touching away closes the search bar (and its keyboard)
-                        if isSearchPresented {
+                        // Touching away closes the search bar only when not actively searching
+                        if isSearchPresented && query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                             isSearchPresented = false
                         }
                     }
