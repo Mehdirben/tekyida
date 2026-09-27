@@ -61,6 +61,38 @@ struct AppStateCoreTests {
         #expect(state.isItemPendingSync(id: "offline_arbitrary"), "any offline_ prefix reads as pending")
     }
 
+    @Test("Queued mutations with unreadable arguments never match ids")
+    func pendingSyncWithCorruptArguments() throws {
+        state.pendingMutations = [QueuedMutation(
+            functionPath: "contacts:update",
+            arguments: Data("not-json".utf8),
+            localCreatedId: nil,
+            accountEmail: "user@tekyida.app"
+        )]
+
+        #expect(!state.isItemPendingSync(id: "srv_1"))
+    }
+
+    @Test("Offline snapshot persistence failures surface appError")
+    func snapshotPersistFailure() throws {
+        // A file occupying the cache directory path makes every write fail.
+        let blocker = TestSupport.temporaryDirectory().appendingPathComponent("blocker")
+        try Data("blocked".utf8).write(to: blocker)
+        let blockedCache = OfflineCache(directory: blocker)
+
+        let failingState = AppState(
+            backend: backend,
+            offlineCache: blockedCache,
+            defaults: TestSupport.makeIsolatedDefaults().defaults,
+            startSideEffects: false
+        )
+        failingState.userEmail = "user@tekyida.app"
+
+        failingState.persistOfflineSnapshot()
+
+        #expect(failingState.appError?.contains("Could not save offline data") == true)
+    }
+
     // MARK: - Notebook ordering
 
     @Test("Notebook ordering: explicit order first, creation date as tiebreak")

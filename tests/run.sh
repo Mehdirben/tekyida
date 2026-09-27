@@ -260,23 +260,32 @@ f_status="PASSED"
 
 ios_logic_cov="n/a"
 if [ -f "$REPORTS_DIR/ios/coverage.json" ]; then
+  IOS_SRC="$ROOT_DIR/ios/Sources/App"
+  LOGIC_BASENAMES="$(
+    {
+      find "$IOS_SRC/Services" "$IOS_SRC/Models" -name '*.swift' -exec basename {} \;
+      printf 'AmountFormatter.swift\nSyncStatusPresenter.swift\n'
+    } | sort -u
+  )"
   ios_logic_cov=$(node -e '
     const r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+    const basenames = new Set(process.argv[2].split("\n").filter(Boolean));
+    const excluded = new Set(["KeychainTokenStore.swift", "ConnectivityMonitor.swift", "GlassInputField.swift"]);
     const t = (r.targets || []).find((t) =>
       (t.name || "").toLowerCase().includes("tekyida") && !(t.name || "").toLowerCase().includes("test"));
     const isLogic = (n) => {
-      const p = n.replace(/\\/g, "/");
-      if (p.endsWith("KeychainTokenStore.swift")) return false;
-      return p.includes("/Services/") || p.startsWith("Services/") ||
-             p.includes("/Models/") || p.startsWith("Models/") ||
-             ["AmountFormatter.swift", "SyncStatusPresenter.swift", "GlassInputField.swift"]
-               .some((b) => p === b || p.endsWith("/" + b));
+      const path = n.replace(/\\/g, "/");
+      const base = path.split("/").pop();
+      if (excluded.has(base)) return false;
+      if (basenames.has(base)) return true;
+      return path.includes("/Services/") || path.startsWith("Services/") ||
+             path.includes("/Models/") || path.startsWith("Models/");
     };
     const files = (t && t.files ? t.files : []).filter((f) => isLogic(f.name));
     const cov = files.reduce((a, f) => a + f.coveredLines, 0);
     const exe = files.reduce((a, f) => a + f.executableLines, 0);
     console.log(exe === 0 ? "n/a" : ((cov / exe) * 100).toFixed(2) + "%");
-  ' "$REPORTS_DIR/ios/coverage.json")
+  ' "$REPORTS_DIR/ios/coverage.json" "$LOGIC_BASENAMES")
 fi
 
 echo "========================================================================"

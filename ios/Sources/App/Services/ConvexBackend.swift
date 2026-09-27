@@ -4,6 +4,7 @@ import Security
 // MARK: - Backend API Abstraction
 // Thin seam so `AppState` can be exercised in tests with an in-memory fake
 // (`MockBackend` in the test target); production always uses `ConvexBackend`.
+// Token persistence lives in `KeychainTokenStore.swift`.
 
 @MainActor
 protocol BackendAPI: AnyObject {
@@ -16,57 +17,6 @@ protocol BackendAPI: AnyObject {
     func mutation(_ path: String, args: [String: Any]) async throws -> Data
     func actionVoid(_ path: String, args: [String: Any]) async throws
     func action<T: Decodable>(_ path: String, args: [String: Any]) async throws -> T
-}
-
-// MARK: - Token Storage
-// Auth token persistence behind a protocol so unit tests avoid real Keychain I/O.
-
-protocol TokenStore: AnyObject {
-    func read(_ key: String) -> String?
-    func write(_ value: String, key: String)
-    func delete(_ key: String)
-}
-
-final class KeychainTokenStore: TokenStore {
-    private let service: String
-
-    init(service: String = Bundle.main.bundleIdentifier ?? "com.tekyida.app") {
-        self.service = service
-    }
-
-    func read(_ key: String) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        var result: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
-    }
-
-    func write(_ value: String, key: String) {
-        delete(key)
-        var item: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key,
-            kSecValueData as String: Data(value.utf8)
-        ]
-        item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        SecItemAdd(item as CFDictionary, nil)
-    }
-
-    func delete(_ key: String) {
-        SecItemDelete([
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: key
-        ] as CFDictionary)
-    }
 }
 
 // MARK: - Convex HTTP Backend

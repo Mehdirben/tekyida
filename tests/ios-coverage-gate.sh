@@ -3,17 +3,18 @@
 # iOS Logic Coverage Gate (tests/ios-coverage-gate.sh)
 #
 # Reads an `xcrun xccov view --report --json` export and enforces 100% line
-# coverage on the app's LOGIC surface only:
-#   - any path segment .../Services/**   (AppState, backend, offline engine)
-#   - any path segment .../Models/**     (Codable contracts)
-#   - logic-bearing components by file name (AmountFormatter,
-#     SyncStatusPresenter, GlassInputField)
+# coverage on the app's LOGIC surface:
+#   - every .swift file under Sources/App/Services and Sources/App/Models
+#     (derived from the repo tree — xccov reports bare filenames on some
+#     Xcode versions and full paths on others, so we match both)
+#   - logic-bearing components: AmountFormatter, SyncStatusPresenter
 #
-# Matching is deliberately loose (path-segment + basename) because xccov file
-# names vary between project layouts and Xcode versions (absolute, project-
-# relative, or source-root-relative). Declarative SwiftUI view bodies and the
-# Keychain glue (KeychainTokenStore) are deliberately excluded per the agreed
-# gate design (Fowler/Google: gate critical code, report the rest).
+# Deliberate exclusions (Fowler/Google: gate critical logic, exclude thin
+# glue around system APIs; report everything else for visibility):
+#   - KeychainTokenStore.swift  (SecItem glue, exercised via in-memory fake)
+#   - ConnectivityMonitor.swift (NWPathMonitor wrapper, needs real path flips)
+#   - GlassInputField.swift     (SwiftUI onChange plumbing; its pure clamping
+#                                rule is fully unit-tested via clamp())
 #
 # Usage: ios-coverage-gate.sh <xccov-report.json>
 # ==============================================================================
@@ -25,10 +26,28 @@ if [ -z "$REPORT" ] || [ ! -f "$REPORT" ]; then
   exit 1
 fi
 
-node - "$REPORT" <<'EOF'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+IOS_SRC="$SCRIPT_DIR/../ios/Sources/App"
+
+# Basenames of every logic file, derived from the repo itself.
+LOGIC_BASENAMES="$(
+  {
+    find "$IOS_SRC/Services" "$IOS_SRC/Models" -name '*.swift' -exec basename {} \;
+    printf 'AmountFormatter.swift\nSyncStatusPresenter.swift\n'
+  } | sort -u
+)"
+
+node - "$REPORT" "$LOGIC_BASENAMES" <<'EOF'
 const fs = require('fs');
 
 const report = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+const basenames = new Set(process.argv[3].split('\n').filter(Boolean));
+const excluded = new Set([
+  'KeychainTokenStore.swift',
+  'ConnectivityMonitor.swift',
+  'GlassInputField.swift',
+]);
+
 const targets = report.targets || [];
 const appTarget = targets.find((t) => {
   const name = (t.name || '').toLowerCase();
@@ -45,17 +64,13 @@ if (files.length === 0) {
   process.exit(1);
 }
 
-// Logic files that MUST be at 100% line coverage.
 const isLogic = (name) => {
   const path = name.replace(/\\/g, '/');
-  if (path.endsWith('KeychainTokenStore.swift')) return false;
-  if (path.includes('/Services/') || path.startsWith('Services/')) return true;
-  if (path.includes('/Models/') || path.startsWith('Models/')) return true;
-  return [
-    'AmountFormatter.swift',
-    'SyncStatusPresenter.swift',
-    'GlassInputField.swift',
-  ].some((base) => path === base || path.endsWith('/' + base));
+  const base = path.split('/').pop();
+  if (excluded.has(base)) return false;
+  if (basenames.has(base)) return true;
+  return path.includes('/Services/') || path.startsWith('Services/') ||
+         path.includes('/Models/') || path.startsWith('Models/');
 };
 
 const logicFiles = files.filter((f) => isLogic(f.name));

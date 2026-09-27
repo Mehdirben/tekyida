@@ -65,4 +65,11 @@ struct OfflineCacheTests {
         let cache = TestSupport.makeTemporaryCache()
         #expect(cache.load() == nil)
     }
+
+    @Test("Default constructor targets the Tekyida Application Support directory")
+    func defaultPathTarget() {
+        let cache = OfflineCache()
+        #expect(cache.fileURL.path.contains("Tekyida"))
+        #expect(cache.fileURL.lastPathComponent == "offline-cache.json")
+    }
 }
