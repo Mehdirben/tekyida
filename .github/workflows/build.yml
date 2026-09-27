@@ -541,12 +541,27 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # Installs F-Droid server via pipx for accurate Android resources parsing
+      # Weekly-rotating key so fdroidserver refreshes once a week (restore-keys still hits last week's venv)
+      - name: Compute weekly cache key
+        run: echo "WEEK=$(date +%G-W%V)" >> "$GITHUB_ENV"
+
+      # Caches the pipx venv so fdroidserver is only installed once a week
+      - name: Cache F-Droid Server (pipx)
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.local/pipx
+            ~/.local/share/pipx
+          key: ${{ runner.os }}-pipx-fdroidserver-${{ env.WEEK }}
+          restore-keys: |
+            ${{ runner.os }}-pipx-fdroidserver-
+
+      # pipx is preinstalled on the runner; apksigner comes from the preinstalled Android SDK build-tools
       - name: Install F-Droid Server
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y apksigner pipx
           pipx install fdroidserver
+          BT=$(ls -d /usr/local/lib/android/sdk/build-tools/* | sort -V | tail -1)
+          echo "$BT" >> "$GITHUB_PATH"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       # Builds the dual-channel static GitHub Pages distribution site
