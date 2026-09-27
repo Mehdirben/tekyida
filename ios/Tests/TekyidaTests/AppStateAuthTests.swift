@@ -153,10 +153,10 @@ struct AppStateAuthTests {
     @Test("changeEmail and changePassword require online and an empty queue")
     func changeCredentialsGuards() async {
         state.isOnline = false
-        #expect {
+        await #expect {
             try await state.changeEmail(to: "a@b.com")
         } throws: { $0.localizedDescription.contains("offline") }
-        #expect {
+        await #expect {
             try await state.changePassword(current: "a", new: "b")
         } throws: { $0.localizedDescription.contains("offline") }
 
@@ -167,7 +167,7 @@ struct AppStateAuthTests {
             localCreatedId: nil,
             accountEmail: "user@tekyida.app"
         )]
-        #expect {
+        await #expect {
             try await state.changeEmail(to: "a@b.com")
         } throws: { $0.localizedDescription.contains("pending offline changes") }
         #expect(backend.actionVoidCalls.isEmpty)
