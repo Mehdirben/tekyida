@@ -30,6 +30,7 @@ struct AppStateConnectivityTests {
 
     @Test("Going offline clears the loading state")
     func pathChangeOffline() async {
+        state.startConnectivityMonitoring()
         state.isLoading = true
 
         await state.connectivity.onPathChange?(false)
@@ -40,6 +41,7 @@ struct AppStateConnectivityTests {
 
     @Test("Reconnecting syncs queued offline changes")
     func pathChangeReconnectSyncs() async throws {
+        state.startConnectivityMonitoring()
         state.isOnline = false
         _ = try state.enqueueOfflineMutation("contacts:create", args: ["notebookId": "nb1", "name": "Alice"])
         backend.setMutationJSON("contacts:create", "\"srv_c1\"")
@@ -53,6 +55,7 @@ struct AppStateConnectivityTests {
 
     @Test("Retry ticks sync pending changes while online")
     func retryTickSyncs() async throws {
+        state.startConnectivityMonitoring()
         state.pendingMutations = [QueuedMutation(
             functionPath: "contacts:create",
             arguments: try JSONSerialization.data(withJSONObject: ["notebookId": "nb1", "name": "Bob"]),
