@@ -34,7 +34,7 @@ public struct NotebookManagerSheet: View {
             .scrollDismissesKeyboard(.immediately)
             .topScrollEdgeDisabled()
             .dismissKeyboardOnTap()
-            .navigationTitle(tr("notebooks.title"))
+            .navigationTitle(isReordering ? tr("notebook.reorder") : tr("notebooks.title"))
             .navigationBarTitleDisplayMode(.inline)
             .liquidGlassSheet(detents: [.fraction(0.94)])
             .interactiveDismissDisabled(isReordering)
@@ -50,7 +50,7 @@ public struct NotebookManagerSheet: View {
                         .font(.body.bold())
                     }
                 } else {
-                    ToolbarItemGroup(placement: .topBarTrailing) {
+                    ToolbarItemGroup(placement: .topBarLeading) {
                         if state.activeNotebooksList.count + state.archivedNotebooksList.count > 1 {
                             Button(tr("notebook.reorder")) {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -61,7 +61,9 @@ public struct NotebookManagerSheet: View {
                                 }
                             }
                         }
+                    }
 
+                    ToolbarItem(placement: .topBarTrailing) {
                         Button(tr("common.done")) {
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             dismiss()
