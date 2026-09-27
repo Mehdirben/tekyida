@@ -333,6 +333,8 @@ private struct NotebookReorderView: View {
     @State private var dragTranslation: CGFloat = 0
     @State private var hoveredIndex: Int?
     @State private var liftedId: String?
+    @State private var settlingId: String?
+    @State private var settleOffset: CGFloat = 0
     @State private var rowHeight: CGFloat = 0
     @State private var viewportFrame: CGRect = .zero
     @State private var autoScrollDirection: Int = 0
@@ -420,8 +422,12 @@ private struct NotebookReorderView: View {
         )
         .scaleEffect(isLifted ? 1.04 : 1)
         .shadow(color: .black.opacity(isLifted ? 0.2 : 0), radius: isLifted ? 14 : 0, y: isLifted ? 6 : 0)
-        .offset(y: isDragging ? dragTranslation : shiftOffset(for: index, in: items.wrappedValue, isArchived: isArchived))
-        .zIndex(isDragging ? 1 : 0)
+        .offset(y: isDragging
+            ? dragTranslation
+            : (settlingId == notebook.id
+               ? settleOffset
+               : shiftOffset(for: index, in: items.wrappedValue, isArchived: isArchived)))
+        .zIndex(isDragging || settlingId == notebook.id ? 1 : 0)
         .overlay(
             LongPressDragRecognizer(
                 minimumPressDuration: 0.25,
@@ -457,6 +463,8 @@ private struct NotebookReorderView: View {
 
     private func beginDrag(_ notebook: Notebook, at index: Int, isArchived: Bool) {
         guard draggingId == nil else { return }
+        settlingId = nil
+        settleOffset = 0
         withAnimation(reorderSpring) {
             liftedId = notebook.id
         }
@@ -490,10 +498,18 @@ private struct NotebookReorderView: View {
         guard draggingId == id, let hoveredIndex else { return }
         autoScrollDirection = 0
 
-        if let source = items.wrappedValue.firstIndex(where: { $0.id == id }), source != hoveredIndex {
+        let sourceIndex = items.wrappedValue.firstIndex(where: { $0.id == id })
+        let remainder: CGFloat
+        if let sourceIndex, slotHeight > 0 {
+            remainder = dragTranslation - CGFloat(hoveredIndex - sourceIndex) * slotHeight
+        } else {
+            remainder = dragTranslation
+        }
+
+        if let sourceIndex, sourceIndex != hoveredIndex {
             items.wrappedValue.move(
-                fromOffsets: IndexSet(integer: source),
-                toOffset: hoveredIndex > source ? hoveredIndex + 1 : hoveredIndex
+                fromOffsets: IndexSet(integer: sourceIndex),
+                toOffset: hoveredIndex > sourceIndex ? hoveredIndex + 1 : hoveredIndex
             )
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             onPersist()
@@ -502,8 +518,20 @@ private struct NotebookReorderView: View {
         draggingId = nil
         dragTranslation = 0
         self.hoveredIndex = nil
+        settlingId = id
+        settleOffset = remainder
+
         withAnimation(reorderSpring) {
+            settleOffset = 0
             liftedId = nil
+        }
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(0.5))
+            if settlingId == id {
+                settlingId = nil
+                settleOffset = 0
+            }
         }
     }
 
