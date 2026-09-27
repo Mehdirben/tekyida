@@ -58,10 +58,12 @@ jobs:
               - 'android/**'
               - 'distribution/**'
               - 'package*.json'
+              - 'tests/**'
             ios:
               - 'ios/**'
               - 'distribution/**'
               - 'package*.json'
+              - 'tests/**'
             distribution:
               - 'distribution/**'
 
