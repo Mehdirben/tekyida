@@ -103,37 +103,13 @@ public struct DashboardView: View {
         }
 
         return VStack(spacing: 12) {
-            // Title-Style Section Header
-            HStack {
-                HStack(spacing: 8) {
-                    Text(tr("contacts.title"))
-                        .font(.title3.bold())
-                        .foregroundColor(.primary)
-
-                    if !sortedContacts.isEmpty {
-                        Text("\(sortedContacts.count)")
-                            .font(.caption.bold())
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 4)
-                            .background(Color(uiColor: .secondarySystemFill), in: Capsule())
-                    }
-                }
-
-                Spacer()
-
-                GlassButton(
-                    tr("common.add"),
-                    systemImage: "person.badge.plus",
-                    style: .primary,
-                    size: .regular,
-                    isFullWidth: false
-                ) {
-                    showAddContact = true
-                }
-            }
-            .padding(.horizontal, 4)
-            .padding(.top, 4)
+            SectionHeaderView(
+                title: tr("contacts.title"),
+                count: sortedContacts.count,
+                addButtonTitle: tr("common.add"),
+                addButtonSystemImage: "person.badge.plus",
+                addAction: { showAddContact = true }
+            )
 
             if sortedContacts.isEmpty {
                 GlassEmptyStateView(

@@ -87,15 +87,12 @@ public struct AddContactSheet: View {
 
     private var saveButton: some View {
         let isNameEmpty = name.trimmingCharacters(in: .whitespaces).isEmpty
-        return GlassButton(
+        return GlassActionButton(
             initialContact == nil ? tr("contact.save") : tr("contact.update"),
             systemImage: initialContact == nil ? "person.badge.plus" : "checkmark",
-            style: .primary,
-            size: .large,
+            isDisabled: isNameEmpty,
             action: save
         )
-        .disabled(isNameEmpty)
-        .opacity(isNameEmpty ? 0.45 : 1.0)
         .padding(.top, 4)
     }
 

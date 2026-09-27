@@ -111,11 +111,9 @@ public struct ContactDetailView: View {
             }
 
             // Floating Liquid Glass Action Bar
-            GlassButton(
+            GlassActionButton(
                 tr("transaction.add"),
-                systemImage: "plus.circle.fill",
-                style: .primary,
-                size: .large
+                systemImage: "plus.circle.fill"
             ) {
                 showAddTransaction = true
             }

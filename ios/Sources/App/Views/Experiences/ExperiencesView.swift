@@ -165,37 +165,13 @@ public struct ExperiencesView: View {
         .sorted { $0.createdAt > $1.createdAt }
 
         return VStack(spacing: 12) {
-            // Title-Style Section Header
-            HStack {
-                HStack(spacing: 8) {
-                    Text(tr("experiences.title"))
-                        .font(.title3.bold())
-                        .foregroundColor(.primary)
-
-                    if !filtered.isEmpty {
-                        Text("\(filtered.count)")
-                            .font(.caption.bold())
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 4)
-                            .background(Color(uiColor: .secondarySystemFill), in: Capsule())
-                    }
-                }
-
-                Spacer()
-
-                GlassButton(
-                    tr("common.add"),
-                    systemImage: "plus",
-                    style: .primary,
-                    size: .regular,
-                    isFullWidth: false
-                ) {
-                    showAddExperience = true
-                }
-            }
-            .padding(.horizontal, 4)
-            .padding(.top, 4)
+            SectionHeaderView(
+                title: tr("experiences.title"),
+                count: filtered.count,
+                addButtonTitle: tr("common.add"),
+                addButtonSystemImage: "plus",
+                addAction: { showAddExperience = true }
+            )
 
             if filtered.isEmpty {
                 GlassEmptyStateView(

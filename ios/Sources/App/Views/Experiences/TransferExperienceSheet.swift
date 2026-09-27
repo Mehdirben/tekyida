@@ -107,18 +107,15 @@ public struct TransferExperienceSheet: View {
                 .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
 
                 if hasOtherNotebooks {
-                    GlassButton(
+                    GlassActionButton(
                         tr("transfer.confirm"),
                         systemImage: "arrow.right.arrow.left",
-                        style: .primary,
-                        size: .large
+                        isDisabled: selectedNotebookId.isEmpty
                     ) {
                         guard !selectedNotebookId.isEmpty else { return }
                         onTransfer(selectedNotebookId)
                         dismiss()
                     }
-                    .disabled(selectedNotebookId.isEmpty)
-                    .opacity(selectedNotebookId.isEmpty ? 0.45 : 1.0)
                 }
 
                 Spacer()

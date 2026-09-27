@@ -682,14 +682,16 @@ private struct EditNotebookPopup: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                GlassButton(tr("common.saveChanges"), systemImage: "checkmark", style: .primary, size: .large) {
+                GlassActionButton(
+                    tr("common.saveChanges"),
+                    systemImage: "checkmark",
+                    isDisabled: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ) {
                     let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmed.isEmpty else { return }
                     onSave(trimmed)
                     dismiss()
                 }
-                .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .opacity(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1.0)
                 .padding(.top, 4)
 
                 Spacer(minLength: 24)

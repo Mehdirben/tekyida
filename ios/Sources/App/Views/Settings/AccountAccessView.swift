@@ -47,11 +47,13 @@ struct AccountAccessView: View {
                             }
                             .glassInputStyle(cornerRadius: AppTheme.radiusInput)
 
-                            GlassButton(tr("auth.verify"), systemImage: "checkmark.circle", style: .primary, size: .large) {
+                            GlassActionButton(
+                                tr("auth.verify"),
+                                systemImage: "checkmark.circle",
+                                isDisabled: isSubmitting || verificationCode.isEmpty
+                            ) {
                                 submit { await state.verifyEmail(email: email, code: verificationCode) }
                             }
-                            .disabled(isSubmitting || verificationCode.isEmpty)
-                            .opacity((isSubmitting || verificationCode.isEmpty) ? 0.45 : 1.0)
 
                             Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -123,11 +125,10 @@ struct AccountAccessView: View {
                                 .glassInputStyle(cornerRadius: AppTheme.radiusInput)
                             }
 
-                            GlassButton(
+                            GlassActionButton(
                                 isRegistration ? tr("auth.createAccount") : tr("auth.signIn"),
                                 systemImage: isRegistration ? "person.badge.plus" : "arrow.right",
-                                style: .primary,
-                                size: .large
+                                isDisabled: isSubmitting || email.isEmpty || password.isEmpty
                             ) {
                                 guard !isRegistration || password == confirmation else {
                                     localError = tr("auth.passwordMismatch")
@@ -147,8 +148,6 @@ struct AccountAccessView: View {
                                     )
                                 }
                             }
-                            .disabled(isSubmitting || email.isEmpty || password.isEmpty)
-                            .opacity((isSubmitting || email.isEmpty || password.isEmpty) ? 0.45 : 1.0)
 
                             Button {
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()

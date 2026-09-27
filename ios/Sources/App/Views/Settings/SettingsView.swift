@@ -104,11 +104,13 @@ public struct SettingsView: View {
                     .foregroundStyle(emailMessage == tr("settings.emailUpdated") ? AppTheme.accent : AppTheme.danger)
             }
 
-            GlassButton(tr("settings.changeEmail"), systemImage: "envelope.badge", style: .primary, size: .large) {
+            GlassActionButton(
+                tr("settings.changeEmail"),
+                systemImage: "envelope.badge",
+                isDisabled: !state.isOnline || isChangingEmail || newEmail.isEmpty || confirmEmail.isEmpty
+            ) {
                 Task { await updateEmail() }
             }
-            .disabled(!state.isOnline || isChangingEmail || newEmail.isEmpty || confirmEmail.isEmpty)
-            .opacity((!state.isOnline || isChangingEmail || newEmail.isEmpty || confirmEmail.isEmpty) ? 0.45 : 1.0)
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
@@ -168,11 +170,13 @@ public struct SettingsView: View {
                     .foregroundStyle(passwordMessage == tr("settings.passwordUpdated") ? AppTheme.accent : AppTheme.danger)
             }
 
-            GlassButton(tr("settings.changePassword"), systemImage: "key.fill", style: .primary, size: .large) {
+            GlassActionButton(
+                tr("settings.changePassword"),
+                systemImage: "key.fill",
+                isDisabled: !state.isOnline || isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty
+            ) {
                 Task { await updatePassword() }
             }
-            .disabled(!state.isOnline || isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty)
-            .opacity((!state.isOnline || isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) ? 0.45 : 1.0)
         }
         .padding(16)
         .liquidGlassCard(cornerRadius: AppTheme.radiusCard)
@@ -270,7 +274,11 @@ public struct SettingsView: View {
     }
 
     private var signOutSection: some View {
-        GlassButton(tr("settings.signOut"), systemImage: "rectangle.portrait.and.arrow.right", style: .danger, size: .large) {
+        GlassActionButton(
+            tr("settings.signOut"),
+            systemImage: "rectangle.portrait.and.arrow.right",
+            style: .danger
+        ) {
             showSignOutConfirm = true
         }
         .padding(.top, 4)

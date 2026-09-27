@@ -73,16 +73,13 @@ public struct AddTransactionSheet: View {
                     }
 
                     // Bottom Save Button
-                    GlassButton(
+                    GlassActionButton(
                         isEditing ? tr("common.saveChanges") : tr("transaction.add"),
                         systemImage: isEditing ? "checkmark" : "plus.circle.fill",
-                        style: .primary,
-                        size: .large
+                        isDisabled: invalidAmount
                     ) {
                         save()
                     }
-                    .disabled(invalidAmount)
-                    .opacity(invalidAmount ? 0.45 : 1.0)
                     .padding(.top, 4)
 
                     Spacer(minLength: 24)

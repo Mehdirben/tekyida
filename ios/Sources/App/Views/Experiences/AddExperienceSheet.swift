@@ -62,16 +62,13 @@ public struct AddExperienceSheet: View {
                     }
 
                     // Bottom Save Button
-                    GlassButton(
+                    GlassActionButton(
                         initialExperience == nil ? tr("experience.save") : tr("experience.update"),
                         systemImage: initialExperience == nil ? "plus" : "checkmark",
-                        style: .primary,
-                        size: .large
+                        isDisabled: name.trimmingCharacters(in: .whitespaces).isEmpty
                     ) {
                         save()
                     }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                    .opacity(name.trimmingCharacters(in: .whitespaces).isEmpty ? 0.45 : 1.0)
                     .padding(.top, 4)
 
                     Spacer(minLength: 24)
