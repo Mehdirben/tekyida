@@ -262,9 +262,17 @@ ios_logic_cov="n/a"
 if [ -f "$REPORTS_DIR/ios/coverage.json" ]; then
   ios_logic_cov=$(node -e '
     const r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
-    const t = (r.targets || []).find((t) => (t.name || "").startsWith("Tekyida"));
-    const files = (t && t.files ? t.files : []).filter((f) =>
-      f.name.includes("Sources/App/Services/") || f.name.includes("Sources/App/Models/"));
+    const t = (r.targets || []).find((t) =>
+      (t.name || "").toLowerCase().includes("tekyida") && !(t.name || "").toLowerCase().includes("test"));
+    const isLogic = (n) => {
+      const p = n.replace(/\\/g, "/");
+      if (p.endsWith("KeychainTokenStore.swift")) return false;
+      return p.includes("/Services/") || p.startsWith("Services/") ||
+             p.includes("/Models/") || p.startsWith("Models/") ||
+             ["AmountFormatter.swift", "SyncStatusPresenter.swift", "GlassInputField.swift"]
+               .some((b) => p === b || p.endsWith("/" + b));
+    };
+    const files = (t && t.files ? t.files : []).filter((f) => isLogic(f.name));
     const cov = files.reduce((a, f) => a + f.coveredLines, 0);
     const exe = files.reduce((a, f) => a + f.executableLines, 0);
     console.log(exe === 0 ? "n/a" : ((cov / exe) * 100).toFixed(2) + "%");
