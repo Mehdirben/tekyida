@@ -26,9 +26,9 @@ final class ConnectivityMonitor {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 30_000_000_000)
                 guard let self else { return }
-                await MainActor.run {
-                    await self.onRetryTick?()
-                }
+                // The callback is @MainActor-isolated, so awaiting it hops
+                // to the main actor automatically.
+                await self.onRetryTick?()
             }
         }
     }
