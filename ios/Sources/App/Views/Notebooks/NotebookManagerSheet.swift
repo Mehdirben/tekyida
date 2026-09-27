@@ -334,10 +334,8 @@ private struct NotebookReorderView: View {
     @State private var hoveredIndex: Int?
     @State private var liftedId: String?
     @State private var rowHeight: CGFloat = 0
-    @State private var viewportHeight: CGFloat = 0
+    @State private var viewportFrame: CGRect = .zero
     @State private var autoScrollDirection: Int = 0
-    @State private var pressStartedAt: Date?
-    @State private var liftConfirmTask: Task<Void, Never>?
 
     private let spacing: CGFloat = 10
     private let reorderSpring: Animation = .spring(response: 0.32, dampingFraction: 0.85)
@@ -355,14 +353,13 @@ private struct NotebookReorderView: View {
                 }
                 .padding(20)
             }
-            .coordinateSpace(.named("reorderViewport"))
             .background(
                 GeometryReader { geo in
-                    Color.clear.preference(key: ReorderViewportHeightKey.self, value: geo.size.height)
+                    Color.clear.preference(key: ReorderViewportFrameKey.self, value: geo.frame(in: .window))
                 }
             )
             .onPreferenceChange(ReorderRowHeightKey.self) { rowHeight = max(rowHeight, $0) }
-            .onPreferenceChange(ReorderViewportHeightKey.self) { viewportHeight = $0 }
+            .onPreferenceChange(ReorderViewportFrameKey.self) { viewportFrame = $0 }
             .task(id: autoScrollDirection) {
                 await runAutoScroll(proxy)
             }
@@ -425,43 +422,20 @@ private struct NotebookReorderView: View {
         .shadow(color: .black.opacity(isLifted ? 0.2 : 0), radius: isLifted ? 14 : 0, y: isLifted ? 6 : 0)
         .offset(y: isDragging ? dragTranslation : shiftOffset(for: index, in: items.wrappedValue, isArchived: isArchived))
         .zIndex(isDragging ? 1 : 0)
-        .gesture(
-            LongPressGesture(minimumDuration: 0.25, maximumDistance: 12)
-                .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .named("reorderViewport")))
-                .onChanged { value in
-                    if pressStartedAt == nil {
-                        pressStartedAt = Date()
-                    }
-                    switch value {
-                    case .first(true):
-                        guard draggingId == nil else { break }
-                        if Date().timeIntervalSince(pressStartedAt ?? Date()) >= 0.15 {
-                            self.pressStartedAt = nil
-                            beginDrag(notebook, at: index, isArchived: isArchived)
-                        } else {
-                            liftConfirmTask?.cancel()
-                            liftConfirmTask = Task { @MainActor in
-                                try? await Task.sleep(nanoseconds: 180_000_000)
-                                guard !Task.isCancelled, draggingId == nil else { return }
-                                beginDrag(notebook, at: index, isArchived: isArchived)
-                            }
-                        }
-                    case .second(true, let drag?):
-                        updateDrag(drag, for: notebook.id)
-                    default:
-                        break
-                    }
+        .overlay(
+            LongPressDragRecognizer(
+                minimumPressDuration: 0.25,
+                allowableMovement: 12,
+                onBegan: {
+                    beginDrag(notebook, at: index, isArchived: isArchived)
+                },
+                onChanged: { translation, location in
+                    updateDrag(translation: translation, location: location, for: notebook.id)
+                },
+                onEnded: {
+                    endDrag(of: notebook.id, items: items)
                 }
-                .onEnded { _ in
-                    pressStartedAt = nil
-                    liftConfirmTask?.cancel()
-                    liftConfirmTask = nil
-                    if draggingId == notebook.id {
-                        endDrag(of: notebook.id, items: items)
-                    } else if liftedId == notebook.id {
-                        withAnimation(reorderSpring) { liftedId = nil }
-                    }
-                }
+            )
         )
     }
 
@@ -493,9 +467,9 @@ private struct NotebookReorderView: View {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
-    private func updateDrag(_ value: DragGesture.Value, for id: String) {
+    private func updateDrag(translation: CGPoint, location: CGPoint, for id: String) {
         guard draggingId == id else { return }
-        dragTranslation = value.translation.height
+        dragTranslation = translation.y
 
         let items = dragIsArchived ? archivedNotebooks : activeNotebooks
         if slotHeight > 0, let source = items.firstIndex(where: { $0.id == draggingId }) {
@@ -509,7 +483,7 @@ private struct NotebookReorderView: View {
             }
         }
 
-        autoScrollDirection = autoScrollDirection(forY: value.location.y)
+        autoScrollDirection = autoScrollDirection(forY: location.y)
     }
 
     private func endDrag(of id: String, items: Binding<[Notebook]>) {
@@ -534,10 +508,10 @@ private struct NotebookReorderView: View {
     }
 
     private func autoScrollDirection(forY y: CGFloat) -> Int {
-        guard viewportHeight > 0 else { return 0 }
+        guard viewportFrame != .zero else { return 0 }
         let edge: CGFloat = 72
-        if y < edge { return -1 }
-        if y > viewportHeight - edge { return 1 }
+        if y < viewportFrame.minY + edge { return -1 }
+        if y > viewportFrame.maxY - edge { return 1 }
         return 0
     }
 
@@ -566,10 +540,77 @@ private struct ReorderRowHeightKey: PreferenceKey {
     }
 }
 
-private struct ReorderViewportHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
+private struct ReorderViewportFrameKey: PreferenceKey {
+    static var defaultValue: CGRect = .zero
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        value = nextValue()
+    }
+}
+
+// MARK: - UIKit Long-Press Drag Recognizer
+/// A real UILongPressGestureRecognizer drives the reorder interaction:
+/// .began fires only after a genuine hold, so a quick tap can never lift the
+/// card, and .ended/.cancelled/.failed are always delivered, so the drag can
+/// never get stuck. Moving before the hold completes fails the recognizer and
+/// the scroll view's pan takes over instead.
+private struct LongPressDragRecognizer: UIViewRepresentable {
+    let minimumPressDuration: TimeInterval
+    let allowableMovement: CGFloat
+    let onBegan: () -> Void
+    let onChanged: (_ translation: CGPoint, _ location: CGPoint) -> Void
+    let onEnded: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onBegan: onBegan, onChanged: onChanged, onEnded: onEnded)
+    }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+        let recognizer = UILongPressGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handle(_:))
+        )
+        recognizer.minimumPressDuration = minimumPressDuration
+        recognizer.allowableMovement = allowableMovement
+        view.addGestureRecognizer(recognizer)
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.onBegan = onBegan
+        context.coordinator.onChanged = onChanged
+        context.coordinator.onEnded = onEnded
+    }
+
+    final class Coordinator: NSObject {
+        var onBegan: () -> Void
+        var onChanged: (CGPoint, CGPoint) -> Void
+        var onEnded: () -> Void
+
+        init(
+            onBegan: @escaping () -> Void,
+            onChanged: @escaping (CGPoint, CGPoint) -> Void,
+            onEnded: @escaping () -> Void
+        ) {
+            self.onBegan = onBegan
+            self.onChanged = onChanged
+            self.onEnded = onEnded
+            super.init()
+        }
+
+        @objc func handle(_ recognizer: UILongPressGestureRecognizer) {
+            switch recognizer.state {
+            case .began:
+                onBegan()
+            case .changed:
+                onChanged(recognizer.translation(in: nil), recognizer.location(in: nil))
+            case .ended, .cancelled, .failed:
+                onEnded()
+            default:
+                break
+            }
+        }
     }
 }
 
