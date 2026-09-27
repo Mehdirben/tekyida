@@ -81,7 +81,7 @@ extension AppState {
         }
         let requestedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         try await backend.actionVoid("users:changeEmail", args: ["newEmail": requestedEmail])
-        let updatedEmail: String? = try await backend.query("users:currentEmail")
+        let updatedEmail: String? = try await backend.query("users:currentEmail", args: [:])
         userEmail = normalizedEmail(updatedEmail ?? requestedEmail)
         persistOfflineSnapshot()
     }

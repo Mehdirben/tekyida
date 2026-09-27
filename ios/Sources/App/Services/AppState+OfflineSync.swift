@@ -11,7 +11,7 @@ extension AppState {
 
     func refreshData() async throws {
         let generationAtStart = mutationGeneration
-        let loadedNotebooks: [Notebook] = try await backend.query("notebooks:list")
+        let loadedNotebooks: [Notebook] = try await backend.query("notebooks:list", args: [:])
         var loadedContacts: [Contact] = []
         var loadedExperiences: [Experience] = []
         var loadedTransactions: [Transaction] = []
@@ -35,7 +35,7 @@ extension AppState {
             }
         }
 
-        let email: String? = try await backend.query("users:currentEmail")
+        let email: String? = try await backend.query("users:currentEmail", args: [:])
         let loadedEmail = normalizedEmail(email ?? userEmail)
         if pendingMutations.contains(where: { normalizedEmail($0.accountEmail) != loadedEmail }) {
             throw BackendError.message("Pending offline changes belong to another account. Sign in to that account to sync them.")

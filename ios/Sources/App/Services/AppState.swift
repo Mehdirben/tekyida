@@ -63,7 +63,10 @@ public final class AppState: ObservableObject {
     ///   - startSideEffects: pass `false` in tests to skip lock-key cleanup,
     ///     connectivity monitoring, and the automatic session-restore network
     ///     task, keeping construction synchronous and deterministic.
-    public init(
+    ///
+    /// Internal because the parameters reference internal types; production
+    /// code uses the public `init()` convenience below.
+    init(
         backend: any BackendAPI = ConvexBackend.shared,
         offlineCache: OfflineCache = OfflineCache(),
         defaults: UserDefaults = .standard,
@@ -96,6 +99,17 @@ public final class AppState: ObservableObject {
             }
             isLoading = false
         }
+    }
+
+    /// Production entry point: real backend, real cache, standard defaults,
+    /// full startup side effects.
+    public convenience init() {
+        self.init(
+            backend: ConvexBackend.shared,
+            offlineCache: OfflineCache(),
+            defaults: .standard,
+            startSideEffects: true
+        )
     }
 
     deinit {
