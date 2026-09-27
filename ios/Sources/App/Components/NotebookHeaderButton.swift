@@ -41,7 +41,7 @@ public struct NotebookHeaderButton: View {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     onManage()
                 } label: {
-                    Label(tr("notebook.manage"), systemImage: "slider.horizontal.3")
+                    Text(tr("notebook.manage"))
                 }
             }
         } label: {
