@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
 import AppLayout from "@/components/app/AppLayout";
 import QuickStats from "@/components/app/QuickStats";
@@ -9,6 +9,7 @@ import ContactList from "@/components/app/ContactList";
 import TransactionList from "@/components/app/TransactionList";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import { useActiveNotebook } from "@/hooks/useActiveNotebook";
+import { useEntryAnimation } from "@/hooks/useEntryAnimation";
 import { api } from "@/convex/_generated/api";
 
 export default function DashboardPage() {
@@ -28,13 +29,7 @@ export default function DashboardPage() {
         experiences: { _id: Id<"experiences">; name: string; closed: boolean; balance: number; transactionCount: number; lastTransactionDate?: number }[];
     } | null>(null);
 
-    const [animateIn, setAnimateIn] = useState(true);
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setAnimateIn(false);
-        }, 900);
-        return () => clearTimeout(timer);
-    }, []);
+    const animateIn = useEntryAnimation();
 
     // Compute stats from contacts
     const moneyGiven =

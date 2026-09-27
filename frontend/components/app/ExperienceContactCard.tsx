@@ -4,6 +4,7 @@ import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import type { Id } from "@/convex/_generated/dataModel";
 import { triggerHaptic } from "@/lib/haptics";
+import { balanceColor } from "@/lib/money";
 
 interface ExperienceSummary {
     _id: Id<"experiences">;
@@ -28,13 +29,6 @@ export default function ExperienceContactCard({
     const { t } = useTranslation();
     const { mask: globalMask } = useAmountsVisibility();
     const mask = maskProp ?? globalMask;
-
-    const balanceColor =
-        experience.balance > 0
-            ? "text-accent-500"
-            : experience.balance < 0
-                ? "text-danger-500"
-                : "text-(--text-secondary)";
 
     return (
         <div
@@ -68,7 +62,7 @@ export default function ExperienceContactCard({
                     )}
                 </div>
             </div>
-            <span className={`text-sm font-bold shrink-0 ${balanceColor}`}>
+            <span className={`text-sm font-bold shrink-0 ${balanceColor(experience.balance, "text-(--text-secondary)")}`}>
                 {mask(`${experience.balance >= 0 ? "+" : ""}${experience.balance.toFixed(2)}`)}
             </span>
             <ChevronRight size={14} className="text-(--text-tertiary) shrink-0" />

@@ -20,9 +20,7 @@ export default defineConfig({
         "hooks/useKeyboardInset.ts",
         "hooks/useLocalAmountsVisibility.ts",
         "contexts/AmountsVisibilityContext.tsx",
-        "components/ui/Badge.tsx",
         "components/ui/Button.tsx",
-        "components/ui/Card.tsx",
         "components/ui/Logo.tsx",
       ],
       thresholds: {

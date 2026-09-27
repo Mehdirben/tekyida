@@ -12,6 +12,7 @@ interface EditModalDialogProps {
     onClose: () => void;
     onSave: () => void;
     saveDisabled?: boolean;
+    saveLabel?: string;
     style?: CSSProperties;
     children: ReactNode;
 }
@@ -23,6 +24,7 @@ export default function EditModalDialog({
     onClose,
     onSave,
     saveDisabled = false,
+    saveLabel,
     style,
     children,
 }: EditModalDialogProps) {
@@ -63,7 +65,7 @@ export default function EditModalDialog({
                         disabled={saveDisabled}
                         className="flex-1 py-3.5 text-sm font-semibold text-primary-500 border-l border-(--border) transition-all active:bg-primary-500/10 disabled:opacity-50 cursor-pointer"
                     >
-                        {t("common.save")}
+                        {saveLabel ?? t("common.save")}
                     </button>
                 </div>
             </div>

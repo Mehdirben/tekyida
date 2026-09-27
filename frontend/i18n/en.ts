@@ -5,13 +5,11 @@ const en = {
     "nav.getStarted": "Get Started",
 
     // Hero
-    "hero.tagline": "Track debts, stay clear.",
     "hero.title.line1": "Never Forget",
     "hero.title.line2": "Who Owes What",
     "hero.subtitle":
         "Tekyida is your personal IOU notebook — track debts between friends, family, and colleagues with multiple notebooks, all in Moroccan Dirhams.",
     "hero.cta.primary": "Start Tracking Free",
-    "hero.cta.secondary": "See How It Works",
 
     // Features
     "features.sectionTag": "Why Tekyida?",
@@ -57,10 +55,8 @@ const en = {
     "cta.button": "Create Your Free Account",
 
     // Footer
-    "footer.tagline": "Track debts, keep friendships.",
     "footer.madeWith": "Made with",
     "footer.inMorocco": "in Morocco",
-    "footer.rights": "All rights reserved.",
 
     // Login
     "login.title": "Welcome Back",
@@ -115,12 +111,10 @@ const en = {
 
     // App Navigation
     "nav.dashboard": "Dashboard",
-    "nav.contacts": "Contacts",
     "nav.experiences": "Experiences",
     "nav.settings": "Settings",
 
     // Dashboard
-    "dashboard.title": "Dashboard",
     "dashboard.empty.title": "No notebooks yet",
     "dashboard.empty.subtitle": "Create your first notebook to start tracking IOUs with friends, family, or colleagues.",
     "dashboard.empty.cta": "Create Your First Notebook",
@@ -132,19 +126,15 @@ const en = {
     // Notebook
     "notebook.select": "Select Notebook",
     "notebook.add": "Add Notebook",
-    "notebook.contacts": "contacts",
-    "notebook.balance": "Balance",
     "notebook.delete": "Delete Notebook",
     "notebook.deleteConfirm": "Delete this notebook and all its contacts and transactions? This cannot be undone.",
     "notebook.namePlaceholder": "Notebook name…",
     "notebook.edit": "Edit Notebook",
-    "notebook.editName": "Notebook name",
     "notebook.archive": "Archive Notebook",
     "notebook.archiveConfirm": "Archive this notebook? It will be hidden from the active list but can be restored later.",
     "notebook.unarchive": "Restore Notebook",
     "notebook.unarchiveConfirm": "Restore this notebook? It will be returned to the active list.",
     "notebook.archivedSection": "Archived Notebooks",
-    "notebook.noArchived": "No archived notebooks",
     "notebook.archivedStatus": "archived",
     "notebook.showArchived": "Show archived notebooks",
     "notebook.hideArchived": "Hide archived notebooks",
@@ -171,7 +161,6 @@ const en = {
     "experience.delete": "Delete Experience",
     "experience.deleteConfirm": "Delete this experience and all its transactions? This cannot be undone.",
     "experience.edit": "Edit Experience",
-    "experience.linkContact": "Link to contact",
     "experience.contactOptional": "Contact (optional)",
     "experience.noContact": "No contact",
     "experience.transactions": "transactions",
@@ -192,21 +181,17 @@ const en = {
     "transaction.delete": "Delete",
     "transaction.deleteConfirm": "Delete this transaction? This cannot be undone.",
     "transaction.edit": "Edit Transaction",
-    "transaction.date": "Date & Time",
 
     // Common
     "common.cancel": "Cancel",
-    "common.confirm": "Confirm",
     "common.delete": "Delete",
     "common.save": "Save",
-    "common.close": "Close",
     "common.transfer": "Transfer",
     "common.archive": "Archive",
     "common.restore": "Restore",
 
     // Settings
     "settings.title": "Settings",
-    "settings.account": "Account",
     "settings.email": "Email address",
     "settings.newEmail": "New email address",
     "settings.confirmEmail": "Confirm email address",
@@ -216,7 +201,6 @@ const en = {
     "settings.currentPasswordWrong": "Current password is incorrect.",
     "settings.newPassword": "New password",
     "settings.confirmPassword": "Confirm new password",
-    "settings.save": "Save Changes",
     "settings.saveEmail": "Update Email",
     "settings.emailChanged": "Email updated successfully.",
     "settings.emailMismatch": "Email addresses do not match.",
@@ -255,7 +239,6 @@ const en = {
     "lock.enterPin": "Enter your 6-digit PIN",
     "lock.setPin": "Create a 6-digit PIN",
     "lock.confirmPin": "Confirm your 6-digit PIN",
-    "lock.pinsDoNotMatch": "PINs do not match. Please try again.",
     "lock.invalidPin": "Incorrect PIN. Please try again.",
     "lock.pinSuccess": "PIN configured successfully.",
     "lock.signOut": "Sign Out & Log In Again",

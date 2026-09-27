@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import EditTransactionModal from "@/components/app/EditTransactionModal";
 import { useTranslation } from "@/i18n/LanguageContext";
 import type { useTransactionEditor } from "@/hooks/useTransactionEditor";
@@ -26,7 +26,7 @@ export default function TransactionModals({
 
     return (
         <>
-            <ConfirmDeleteModal
+            <ConfirmDialog
                 isOpen={!!deleteTargetId}
                 title={t("transaction.delete")}
                 description={t("transaction.deleteConfirm")}

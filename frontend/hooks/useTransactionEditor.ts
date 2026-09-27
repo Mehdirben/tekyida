@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import type { Id } from "@/convex/_generated/dataModel";
 import { toLocalDatetime } from "@/lib/dateUtils";
 import { triggerHaptic } from "@/lib/haptics";
+import { parseTransactionForm } from "@/lib/transactionForm";
+import { useEscapeCascade } from "@/hooks/useEscapeCascade";
 
-export interface EditableTransaction {
+interface EditableTransaction {
     _id: Id<"transactions">;
     amount: number;
     description?: string;
@@ -48,16 +50,13 @@ export function useTransactionEditor(
 
     const handleSaveEdit = async () => {
         if (!editTarget) return;
-        const parsedAmount = parseFloat(editAmount);
-        if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+        const parsed = parseTransactionForm(editAmount, editIsPositive, editDescription, editDate);
+        if (!parsed) return;
         triggerHaptic("success");
 
-        const parsedDate = editDate ? new Date(editDate).getTime() : Date.now();
         await onSaveTx({
             id: editTarget._id,
-            amount: editIsPositive ? parsedAmount : -parsedAmount,
-            description: editDescription.trim() || undefined,
-            date: isNaN(parsedDate) ? Date.now() : parsedDate,
+            ...parsed,
         });
         handleCloseEdit();
     };
@@ -95,23 +94,17 @@ export function useTransactionSheetEscape({
     setAdding: (val: boolean) => void;
     onClose: () => void;
 }) {
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                if (deleteTargetId) {
-                    triggerHaptic("light");
-                    setDeleteTargetId(null);
-                } else if (txEditor.editTarget) {
-                    txEditor.handleCloseEdit();
-                } else if (adding) {
-                    triggerHaptic("light");
-                    setAdding(false);
-                } else {
-                    onClose();
-                }
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [deleteTargetId, setDeleteTargetId, txEditor, adding, onClose]);
+    useEscapeCascade(() => {
+        if (deleteTargetId) {
+            triggerHaptic("light");
+            setDeleteTargetId(null);
+        } else if (txEditor.editTarget) {
+            txEditor.handleCloseEdit();
+        } else if (adding) {
+            triggerHaptic("light");
+            setAdding(false);
+        } else {
+            onClose();
+        }
+    });
 }

@@ -4,9 +4,13 @@ import { useState, type FormEvent } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useTranslation } from "@/i18n/LanguageContext";
 
-export async function verifyEmailCode(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    signIn: (...args: any[]) => Promise<any>,
+type PasswordSignIn = (
+    provider: string,
+    params?: { email: string; code?: string; flow: "email-verification" }
+) => Promise<unknown>;
+
+async function verifyEmailCode(
+    signIn: PasswordSignIn,
     email: string,
     code: string
 ): Promise<void> {
@@ -17,9 +21,8 @@ export async function verifyEmailCode(
     });
 }
 
-export async function resendVerificationCode(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    signIn: (...args: any[]) => Promise<any>,
+async function resendVerificationCode(
+    signIn: PasswordSignIn,
     email: string
 ): Promise<void> {
     await signIn("password", { email, flow: "email-verification" });

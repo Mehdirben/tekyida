@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toLocalDatetime } from "@/lib/dateUtils";
 import { triggerHaptic } from "@/lib/haptics";
+import { parseTransactionForm } from "@/lib/transactionForm";
 
 export function useTransactionCreator(
     onCreateTx: (args: {
@@ -18,16 +19,11 @@ export function useTransactionCreator(
     const [date, setDate] = useState(() => toLocalDatetime(Date.now()));
 
     const handleAdd = async () => {
-        const parsedAmount = parseFloat(amount);
-        if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+        const parsed = parseTransactionForm(amount, isPositive, description, date);
+        if (!parsed) return;
         triggerHaptic("success");
 
-        const parsedDate = date ? new Date(date).getTime() : Date.now();
-        await onCreateTx({
-            amount: isPositive ? parsedAmount : -parsedAmount,
-            description: description.trim() || undefined,
-            date: isNaN(parsedDate) ? Date.now() : parsedDate,
-        });
+        await onCreateTx(parsed);
 
         setAmount("");
         setDescription("");

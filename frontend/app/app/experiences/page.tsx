@@ -12,6 +12,7 @@ import ExperienceDetail from "@/components/app/ExperienceDetail";
 import { useSync } from "@/contexts/SyncContext";
 import { useCachedQuery } from "@/hooks/useCachedQuery";
 import { useActiveNotebook } from "@/hooks/useActiveNotebook";
+import { useEntryAnimation } from "@/hooks/useEntryAnimation";
 
 interface ExperienceSummary {
     _id: Id<"experiences">;
@@ -49,13 +50,7 @@ export default function ExperiencesPage() {
     // Selected experience for detail sheet
     const [selectedExperience, setSelectedExperience] = useState<ExperienceSummary | null>(null);
 
-    const [animateIn, setAnimateIn] = useState(true);
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setAnimateIn(false);
-        }, 900);
-        return () => clearTimeout(timer);
-    }, []);
+    const animateIn = useEntryAnimation();
 
     // Auto-open experience detail from ?open=<id> query param (once only)
     const searchParams = useSearchParams();

@@ -10,11 +10,11 @@ import {
     type ReactNode,
 } from "react";
 import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import * as offlineQueue from "@/lib/offlineQueue";
 import { applyOptimisticUpdate, type OptimisticContext } from "@/lib/optimisticUpdates";
+import { mutationRegistry } from "@/lib/mutationRegistry";
 
-export type SyncStatus = "synced" | "pending" | "syncing" | "offline";
+type SyncStatus = "synced" | "pending" | "syncing" | "offline";
 
 interface SyncContextValue {
     /** Current sync status */
@@ -40,54 +40,33 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
     const flushingRef = useRef(false);
 
-    // Get all mutation functions
-    const notebooksCreate = useMutation(api.notebooks.create);
-    const notebooksUpdate = useMutation(api.notebooks.update);
-    const notebooksArchive = useMutation(api.notebooks.archive);
-    const notebooksRemove = useMutation(api.notebooks.remove);
-    const notebooksReorder = useMutation(api.notebooks.reorder);
-    const contactsCreate = useMutation(api.contacts.create);
-    const contactsUpdate = useMutation(api.contacts.update);
-    const contactsRemove = useMutation(api.contacts.remove);
-    const transactionsCreate = useMutation(api.transactions.create);
-    const transactionsUpdate = useMutation(api.transactions.update);
-    const transactionsRemove = useMutation(api.transactions.remove);
-    const experiencesCreate = useMutation(api.experiences.create);
-    const experiencesUpdate = useMutation(api.experiences.update);
-    const experiencesRemove = useMutation(api.experiences.remove);
-    const experiencesClose = useMutation(api.experiences.close);
-    const experiencesReopen = useMutation(api.experiences.reopen);
-    const experiencesTransfer = useMutation(api.experiences.transfer);
+    // Get all mutation functions, keyed by offline queue function path
+    const mutationFns: Record<string, (args: Record<string, unknown>) => Promise<unknown>> = {
+        "notebooks:create": useMutation(mutationRegistry["notebooks:create"]),
+        "notebooks:update": useMutation(mutationRegistry["notebooks:update"]),
+        "notebooks:archive": useMutation(mutationRegistry["notebooks:archive"]),
+        "notebooks:remove": useMutation(mutationRegistry["notebooks:remove"]),
+        "notebooks:reorder": useMutation(mutationRegistry["notebooks:reorder"]),
+        "contacts:create": useMutation(mutationRegistry["contacts:create"]),
+        "contacts:update": useMutation(mutationRegistry["contacts:update"]),
+        "contacts:remove": useMutation(mutationRegistry["contacts:remove"]),
+        "transactions:create": useMutation(mutationRegistry["transactions:create"]),
+        "transactions:update": useMutation(mutationRegistry["transactions:update"]),
+        "transactions:remove": useMutation(mutationRegistry["transactions:remove"]),
+        "experiences:create": useMutation(mutationRegistry["experiences:create"]),
+        "experiences:update": useMutation(mutationRegistry["experiences:update"]),
+        "experiences:remove": useMutation(mutationRegistry["experiences:remove"]),
+        "experiences:close": useMutation(mutationRegistry["experiences:close"]),
+        "experiences:reopen": useMutation(mutationRegistry["experiences:reopen"]),
+        "experiences:transfer": useMutation(mutationRegistry["experiences:transfer"]),
+    };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const getMutationFn = useCallback((path: string): ((args: any) => Promise<any>) | null => {
-        switch (path) {
-            case "notebooks:create": return notebooksCreate;
-            case "notebooks:update": return notebooksUpdate;
-            case "notebooks:archive": return notebooksArchive;
-            case "notebooks:remove": return notebooksRemove;
-            case "notebooks:reorder": return notebooksReorder;
-            case "contacts:create": return contactsCreate;
-            case "contacts:update": return contactsUpdate;
-            case "contacts:remove": return contactsRemove;
-            case "transactions:create": return transactionsCreate;
-            case "transactions:update": return transactionsUpdate;
-            case "transactions:remove": return transactionsRemove;
-            case "experiences:create": return experiencesCreate;
-            case "experiences:update": return experiencesUpdate;
-            case "experiences:remove": return experiencesRemove;
-            case "experiences:close": return experiencesClose;
-            case "experiences:reopen": return experiencesReopen;
-            case "experiences:transfer": return experiencesTransfer;
-            default: return null;
-        }
-    }, [
-        notebooksCreate, notebooksUpdate, notebooksArchive, notebooksRemove, notebooksReorder,
-        contactsCreate, contactsUpdate, contactsRemove,
-        transactionsCreate, transactionsUpdate, transactionsRemove,
-        experiencesCreate, experiencesUpdate, experiencesRemove,
-        experiencesClose, experiencesReopen, experiencesTransfer,
-    ]);
+    const getMutationFn = useCallback(
+        (path: string): ((args: Record<string, unknown>) => Promise<unknown>) | null =>
+            mutationFns[path] ?? null,
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- mutationFns values are stable (useMutation memoizes)
+        []
+    );
 
     // Refresh pending count and pending IDs from IndexedDB
     const refreshCount = useCallback(async () => {
@@ -110,6 +89,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
     // Online/offline detection
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- sync initial value from browser API after mount to avoid SSR hydration mismatch
         setIsOnline(navigator.onLine);
 
         const handleOnline = () => setIsOnline(true);

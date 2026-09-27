@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { Lock, LogOut } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useTranslation } from "@/i18n/LanguageContext";
-import { hashPin } from "@/lib/crypto";
 import { triggerHaptic } from "@/lib/haptics";
+import { isLockEnabled, getStoredPinCredentials, verifyPin, clearPinStorage } from "@/lib/pinStorage";
 import PinPad from "@/components/ui/PinPad";
 
 export default function AppLock({ children }: { children: React.ReactNode }) {
@@ -23,8 +23,7 @@ export default function AppLock({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
-        const lockEnabled = localStorage.getItem("tekyida-lock-enabled") === "true";
-        if (lockEnabled) {
+        if (isLockEnabled()) {
             setIsLocked(true);
         }
     }, []);
@@ -33,8 +32,7 @@ export default function AppLock({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.visibilityState === "hidden") {
-                const isLockEnabled = localStorage.getItem("tekyida-lock-enabled") === "true";
-                if (isLockEnabled) {
+                if (isLockEnabled()) {
                     setIsLocked(true);
                     setPinValue("");
                 }
@@ -49,18 +47,13 @@ export default function AppLock({ children }: { children: React.ReactNode }) {
 
     // 5. Verify the 6-digit PIN using SHA-256 local hash matching
     const handlePinComplete = async (enteredPin: string) => {
-        const storedHash = localStorage.getItem("tekyida-lock-pin-hash");
-        const storedSalt = localStorage.getItem("tekyida-lock-pin-salt");
-
-        if (!storedHash || !storedSalt) {
+        if (!getStoredPinCredentials()) {
             // Edge case: if disabled but state locked, bypass
             setIsLocked(false);
             return;
         }
 
-        const computedHash = await hashPin(enteredPin, storedSalt);
-
-        if (computedHash === storedHash) {
+        if (await verifyPin(enteredPin)) {
             triggerHaptic("medium");
             setIsClosingLock(true);
             setTimeout(() => {
@@ -83,10 +76,8 @@ export default function AppLock({ children }: { children: React.ReactNode }) {
 
         try {
             localStorage.removeItem("tekyida-authed");
-            localStorage.removeItem("tekyida-lock-enabled");
-            localStorage.removeItem("tekyida-lock-pin-hash");
-            localStorage.removeItem("tekyida-lock-pin-salt");
         } catch {}
+        clearPinStorage();
 
         await signOut();
         router.push("/login");

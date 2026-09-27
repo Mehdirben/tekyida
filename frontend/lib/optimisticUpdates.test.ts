@@ -21,28 +21,28 @@ describe("optimisticUpdates", () => {
     const newId = await applyOptimisticUpdate("notebooks:create", { name: "New Book" });
     expect(newId).toBeDefined();
 
-    let list = (await queryCache.get<any[]>(listKey)) ?? [];
+    let list = (await queryCache.get<Record<string, unknown>[]>(listKey)) ?? [];
     expect(list).toHaveLength(1);
     expect(list[0].name).toBe("New Book");
 
     // Update
     await applyOptimisticUpdate("notebooks:update", { id: newId, name: "Renamed Book" });
-    list = (await queryCache.get<any[]>(listKey)) ?? [];
+    list = (await queryCache.get<Record<string, unknown>[]>(listKey)) ?? [];
     expect(list[0].name).toBe("Renamed Book");
 
     // Archive
     await applyOptimisticUpdate("notebooks:archive", { id: newId, archived: true });
-    list = (await queryCache.get<any[]>(listKey)) ?? [];
+    list = (await queryCache.get<Record<string, unknown>[]>(listKey)) ?? [];
     expect(list[0].archived).toBe(true);
 
     // Reorder
     await applyOptimisticUpdate("notebooks:reorder", { ids: [newId] });
-    list = (await queryCache.get<any[]>(listKey)) ?? [];
+    list = (await queryCache.get<Record<string, unknown>[]>(listKey)) ?? [];
     expect(list[0].order).toBe(0);
 
     // Remove
     await applyOptimisticUpdate("notebooks:remove", { id: newId });
-    list = (await queryCache.get<any[]>(listKey)) ?? [];
+    list = (await queryCache.get<Record<string, unknown>[]>(listKey)) ?? [];
     expect(list).toHaveLength(0);
   });
 
@@ -58,7 +58,7 @@ describe("optimisticUpdates", () => {
     expect(contactId).toBeDefined();
 
     const contactKey = queryCache.cacheKey("contacts.list", { notebookId });
-    let contacts = (await queryCache.get<any[]>(contactKey)) ?? [];
+    let contacts = (await queryCache.get<Record<string, unknown>[]>(contactKey)) ?? [];
     expect(contacts[0].name).toBe("Alice");
 
     // Update
@@ -67,12 +67,12 @@ describe("optimisticUpdates", () => {
       { id: contactId, name: "Alice Bob" },
       context
     );
-    contacts = (await queryCache.get<any[]>(contactKey)) ?? [];
+    contacts = (await queryCache.get<Record<string, unknown>[]>(contactKey)) ?? [];
     expect(contacts[0].name).toBe("Alice Bob");
 
     // Remove
     await applyOptimisticUpdate("contacts:remove", { id: contactId }, context);
-    contacts = (await queryCache.get<any[]>(contactKey)) ?? [];
+    contacts = (await queryCache.get<Record<string, unknown>[]>(contactKey)) ?? [];
     expect(contacts).toHaveLength(0);
   });
 
@@ -88,23 +88,23 @@ describe("optimisticUpdates", () => {
     expect(expId).toBeDefined();
 
     const expKey = queryCache.cacheKey("experiences.list", { notebookId });
-    let exps = (await queryCache.get<any[]>(expKey)) ?? [];
+    let exps = (await queryCache.get<Record<string, unknown>[]>(expKey)) ?? [];
     expect(exps[0].name).toBe("Trip");
     expect(exps[0].closed).toBe(false);
 
     // Close
     await applyOptimisticUpdate("experiences:close", { id: expId }, context);
-    exps = (await queryCache.get<any[]>(expKey)) ?? [];
+    exps = (await queryCache.get<Record<string, unknown>[]>(expKey)) ?? [];
     expect(exps[0].closed).toBe(true);
 
     // Reopen
     await applyOptimisticUpdate("experiences:reopen", { id: expId }, context);
-    exps = (await queryCache.get<any[]>(expKey)) ?? [];
+    exps = (await queryCache.get<Record<string, unknown>[]>(expKey)) ?? [];
     expect(exps[0].closed).toBe(false);
 
     // Remove
     await applyOptimisticUpdate("experiences:remove", { id: expId }, context);
-    exps = (await queryCache.get<any[]>(expKey)) ?? [];
+    exps = (await queryCache.get<Record<string, unknown>[]>(expKey)) ?? [];
     expect(exps).toHaveLength(0);
   });
 

@@ -4,6 +4,7 @@ import { ArrowUpRight, ArrowDownLeft, TrendingUp, Eye, EyeOff } from "lucide-rea
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
 import { triggerHaptic } from "@/lib/haptics";
+import { formatBalance, balanceColor } from "@/lib/money";
 
 interface StatItem {
     label: string;
@@ -28,11 +29,6 @@ export default function QuickStats({
 
     const formatAmount = (amount: number) => mask(`${amount.toFixed(2)} MAD`);
 
-    const formatBalance = (amount: number) => {
-        const sign = amount >= 0 ? "+" : "";
-        return mask(`${sign}${amount.toFixed(2)} MAD`);
-    };
-
     const stats: StatItem[] = [
         {
             label: t("dashboard.stats.moneyOwed"),
@@ -48,14 +44,9 @@ export default function QuickStats({
         },
         {
             label: t("dashboard.stats.balance"),
-            value: formatBalance(netBalance),
+            value: formatBalance(netBalance, mask),
             icon: <TrendingUp size={20} className="text-primary-500" />,
-            accent:
-                netBalance > 0
-                    ? "text-accent-500"
-                    : netBalance < 0
-                        ? "text-danger-500"
-                        : "text-(--text-primary)",
+            accent: balanceColor(netBalance),
         },
     ];
 

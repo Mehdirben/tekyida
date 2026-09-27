@@ -5,6 +5,8 @@
 
 import * as queryCache from "./queryCache";
 
+type CachedDoc = Record<string, unknown>;
+
 /** Generate a temporary ID for locally-created items */
 export function tempId(): string {
     return `temp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -16,6 +18,31 @@ export interface OptimisticContext {
     experienceId?: string;
 }
 
+type OptimisticHandler = (
+    args: Record<string, unknown>,
+    ctx?: OptimisticContext
+) => Promise<unknown>;
+
+const optimisticHandlers: Record<string, OptimisticHandler> = {
+    "notebooks:create": notebookCreate,
+    "notebooks:update": notebookUpdate,
+    "notebooks:archive": notebookArchive,
+    "notebooks:remove": notebookRemove,
+    "notebooks:reorder": notebookReorder,
+    "contacts:create": contactCreate,
+    "contacts:update": contactUpdate,
+    "contacts:remove": contactRemove,
+    "transactions:create": transactionCreate,
+    "transactions:update": transactionUpdate,
+    "transactions:remove": transactionRemove,
+    "experiences:create": experienceCreate,
+    "experiences:update": experienceUpdate,
+    "experiences:remove": experienceRemove,
+    "experiences:close": (args, ctx) => experienceSetClosed(args, ctx, true),
+    "experiences:reopen": (args, ctx) => experienceSetClosed(args, ctx, false),
+    "experiences:transfer": experienceTransfer,
+};
+
 /**
  * Apply an optimistic update to the query cache.
  * Returns a temp ID if a new item was created.
@@ -26,44 +53,10 @@ export async function applyOptimisticUpdate(
     context?: OptimisticContext
 ): Promise<string | undefined> {
     try {
-        switch (functionPath) {
-            case "notebooks:create":
-                return await notebookCreate(args);
-            case "notebooks:update":
-                return void (await notebookUpdate(args));
-            case "notebooks:archive":
-                return void (await notebookArchive(args));
-            case "notebooks:remove":
-                return void (await notebookRemove(args));
-            case "notebooks:reorder":
-                return void (await notebookReorder(args));
-            case "contacts:create":
-                return await contactCreate(args);
-            case "contacts:update":
-                return void (await contactUpdate(args, context));
-            case "contacts:remove":
-                return void (await contactRemove(args, context));
-            case "transactions:create":
-                return await transactionCreate(args);
-            case "transactions:update":
-                return void (await transactionUpdate(args, context));
-            case "transactions:remove":
-                return void (await transactionRemove(args, context));
-            case "experiences:create":
-                return await experienceCreate(args);
-            case "experiences:update":
-                return void (await experienceUpdate(args, context));
-            case "experiences:remove":
-                return void (await experienceRemove(args, context));
-            case "experiences:close":
-                return void (await experienceSetClosed(args, context, true));
-            case "experiences:reopen":
-                return void (await experienceSetClosed(args, context, false));
-            case "experiences:transfer":
-                return void (await experienceTransfer(args, context));
-            default:
-                return undefined;
-        }
+        const handler = optimisticHandlers[functionPath];
+        if (!handler) return undefined;
+        const result = await handler(args, context);
+        return typeof result === "string" ? result : undefined;
     } catch {
         // Optimistic updates are best-effort — never block the mutation
         return undefined;
@@ -72,9 +65,47 @@ export async function applyOptimisticUpdate(
 
 // ─── Helpers ──────────────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function readList(key: string): Promise<any[]> {
-    return (await queryCache.get<unknown[]>(key)) ?? [];
+async function readList(key: string): Promise<CachedDoc[]> {
+    return (await queryCache.get<CachedDoc[]>(key)) ?? [];
+}
+
+/**
+ * Patch a single document (matched by `_id`) inside a cached list.
+ * Returns the previous document, or undefined when not found.
+ */
+async function patchDoc(
+    key: string,
+    id: unknown,
+    patch: (doc: CachedDoc) => CachedDoc
+): Promise<CachedDoc | undefined> {
+    const list = await readList(key);
+    const idx = list.findIndex((doc) => doc._id === id);
+    if (idx === -1) return undefined;
+    const previous = list[idx];
+    list[idx] = patch(previous);
+    await queryCache.set(key, list);
+    return previous;
+}
+
+async function adjustNotebookBalances(
+    diffs: Array<{ notebookId: string; diff: number }>
+): Promise<void> {
+    const nbKey = queryCache.cacheKey("notebooks.list", {});
+    const notebooks = await readList(nbKey);
+    let changed = false;
+    for (const { notebookId, diff } of diffs) {
+        const idx = notebooks.findIndex((n) => n._id === notebookId);
+        if (idx !== -1) {
+            notebooks[idx] = {
+                ...notebooks[idx],
+                balance: ((notebooks[idx].balance as number) ?? 0) + diff,
+            };
+            changed = true;
+        }
+    }
+    if (changed) {
+        await queryCache.set(nbKey, notebooks);
+    }
 }
 
 async function adjustBalances(
@@ -85,39 +116,22 @@ async function adjustBalances(
 ): Promise<void> {
     if (contactId) {
         const ctKey = queryCache.cacheKey("contacts.list", { notebookId });
-        const contacts = await readList(ctKey);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ctIdx = contacts.findIndex((c: any) => c._id === contactId);
-        if (ctIdx !== -1) {
-            contacts[ctIdx] = {
-                ...contacts[ctIdx],
-                balance: (contacts[ctIdx].balance ?? 0) + diff,
-                ...(txCountDiff !== 0
-                    ? {
-                          transactionCount: Math.max(
-                              0,
-                              (contacts[ctIdx].transactionCount ?? 0) + txCountDiff
-                          ),
-                      }
-                    : {}),
-            };
-            await queryCache.set(ctKey, contacts);
-        }
+        await patchDoc(ctKey, contactId, (doc) => ({
+            ...doc,
+            balance: ((doc.balance as number) ?? 0) + diff,
+            ...(txCountDiff !== 0
+                ? {
+                      transactionCount: Math.max(
+                          0,
+                          ((doc.transactionCount as number) ?? 0) + txCountDiff
+                      ),
+                  }
+                : {}),
+        }));
     }
 
-    const nbKey = queryCache.cacheKey("notebooks.list", {});
-    const notebooks = await readList(nbKey);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nbIdx = notebooks.findIndex((n: any) => n._id === notebookId);
-    if (nbIdx !== -1) {
-        notebooks[nbIdx] = {
-            ...notebooks[nbIdx],
-            balance: (notebooks[nbIdx].balance ?? 0) + diff,
-        };
-        await queryCache.set(nbKey, notebooks);
-    }
+    await adjustNotebookBalances([{ notebookId, diff }]);
 }
-
 
 function getTransactionCacheKey(ctx?: OptimisticContext): string | null {
     if (ctx?.experienceId) {
@@ -150,31 +164,18 @@ async function notebookCreate(args: Record<string, unknown>): Promise<string> {
 
 async function notebookUpdate(args: Record<string, unknown>): Promise<void> {
     const key = queryCache.cacheKey("notebooks.list", {});
-    const list = await readList(key);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const idx = list.findIndex((n: any) => n._id === args.id);
-    if (idx !== -1) {
-        list[idx] = { ...list[idx], name: args.name };
-        await queryCache.set(key, list);
-    }
+    await patchDoc(key, args.id, (doc) => ({ ...doc, name: args.name }));
 }
 
 async function notebookArchive(args: Record<string, unknown>): Promise<void> {
     const key = queryCache.cacheKey("notebooks.list", {});
-    const list = await readList(key);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const idx = list.findIndex((n: any) => n._id === args.id);
-    if (idx !== -1) {
-        list[idx] = { ...list[idx], archived: args.archived };
-        await queryCache.set(key, list);
-    }
+    await patchDoc(key, args.id, (doc) => ({ ...doc, archived: args.archived }));
 }
 
 async function notebookRemove(args: Record<string, unknown>): Promise<void> {
     const key = queryCache.cacheKey("notebooks.list", {});
     const list = await readList(key);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await queryCache.set(key, list.filter((n: any) => n._id !== args.id));
+    await queryCache.set(key, list.filter((n) => n._id !== args.id));
 }
 
 async function notebookReorder(args: Record<string, unknown>): Promise<void> {
@@ -184,8 +185,8 @@ async function notebookReorder(args: Record<string, unknown>): Promise<void> {
     
     // Sort local cache list elements to match the order of IDs in the array
     const sorted = [...list].sort((a, b) => {
-        const indexA = ids.indexOf(a._id);
-        const indexB = ids.indexOf(b._id);
+        const indexA = ids.indexOf(a._id as string);
+        const indexB = ids.indexOf(b._id as string);
         const valA = indexA !== -1 ? indexA : Number.MAX_SAFE_INTEGER;
         const valB = indexB !== -1 ? indexB : Number.MAX_SAFE_INTEGER;
         return valA - valB;
@@ -193,7 +194,7 @@ async function notebookReorder(args: Record<string, unknown>): Promise<void> {
 
     // Patch local order property
     for (let i = 0; i < sorted.length; i++) {
-        const idx = ids.indexOf(sorted[i]._id);
+        const idx = ids.indexOf(sorted[i]._id as string);
         if (idx !== -1) {
             sorted[i] = { ...sorted[i], order: idx };
         }
@@ -224,16 +225,10 @@ async function contactCreate(args: Record<string, unknown>): Promise<string> {
 
     // Update notebook contactCount
     const nbKey = queryCache.cacheKey("notebooks.list", {});
-    const notebooks = await readList(nbKey);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nbIdx = notebooks.findIndex((n: any) => n._id === notebookId);
-    if (nbIdx !== -1) {
-        notebooks[nbIdx] = {
-            ...notebooks[nbIdx],
-            contactCount: (notebooks[nbIdx].contactCount ?? 0) + 1,
-        };
-        await queryCache.set(nbKey, notebooks);
-    }
+    await patchDoc(nbKey, notebookId, (doc) => ({
+        ...doc,
+        contactCount: ((doc.contactCount as number) ?? 0) + 1,
+    }));
 
     return id;
 }
@@ -245,13 +240,11 @@ async function contactUpdate(
     const notebookId = ctx?.notebookId;
     if (!notebookId) return;
     const key = queryCache.cacheKey("contacts.list", { notebookId });
-    const list = await readList(key);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const idx = list.findIndex((c: any) => c._id === args.id);
-    if (idx !== -1) {
-        list[idx] = { ...list[idx], name: args.name, phone: args.phone };
-        await queryCache.set(key, list);
-    }
+    await patchDoc(key, args.id, (doc) => ({
+        ...doc,
+        name: args.name,
+        phone: args.phone,
+    }));
 }
 
 async function contactRemove(
@@ -262,26 +255,18 @@ async function contactRemove(
     if (!notebookId) return;
     const key = queryCache.cacheKey("contacts.list", { notebookId });
     const list = await readList(key);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const contact = list.find((c: any) => c._id === args.id);
+    const contact = list.find((c) => c._id === args.id);
     if (!contact) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await queryCache.set(key, list.filter((c: any) => c._id !== args.id));
+    await queryCache.set(key, list.filter((c) => c._id !== args.id));
 
     // Update notebook balance & contactCount
     const nbKey = queryCache.cacheKey("notebooks.list", {});
-    const notebooks = await readList(nbKey);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nbIdx = notebooks.findIndex((n: any) => n._id === notebookId);
-    if (nbIdx !== -1) {
-        notebooks[nbIdx] = {
-            ...notebooks[nbIdx],
-            contactCount: Math.max(0, (notebooks[nbIdx].contactCount ?? 0) - 1),
-            balance: (notebooks[nbIdx].balance ?? 0) - (contact.balance ?? 0),
-        };
-        await queryCache.set(nbKey, notebooks);
-    }
+    await patchDoc(nbKey, notebookId, (doc) => ({
+        ...doc,
+        contactCount: Math.max(0, ((doc.contactCount as number) ?? 0) - 1),
+        balance: ((doc.balance as number) ?? 0) - ((contact.balance as number) ?? 0),
+    }));
 }
 
 // ─── Transactions ─────────────────────────────────────────────
@@ -334,19 +319,15 @@ async function transactionUpdate(
     const key = getTransactionCacheKey(ctx);
     if (!key) return;
 
-    const list = await readList(key);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const idx = list.findIndex((t: any) => t._id === args.id);
-    if (idx === -1) return;
-
-    const diff = (args.amount as number) - (list[idx].amount as number);
-    list[idx] = {
-        ...list[idx],
+    const previous = await patchDoc(key, args.id, (doc) => ({
+        ...doc,
         amount: args.amount as number,
         description: args.description,
         date: args.date,
-    };
-    await queryCache.set(key, list);
+    }));
+    if (!previous) return;
+
+    const diff = (args.amount as number) - (previous.amount as number);
 
     if (ctx?.notebookId) {
         if (ctx.experienceId) {
@@ -366,13 +347,11 @@ async function transactionRemove(
     if (!key) return;
 
     const list = await readList(key);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tx = list.find((t: any) => t._id === args.id);
+    const tx = list.find((t) => t._id === args.id);
     if (!tx) return;
 
     const amount = tx.amount as number;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await queryCache.set(key, list.filter((t: any) => t._id !== args.id));
+    await queryCache.set(key, list.filter((t) => t._id !== args.id));
 
     if (ctx?.notebookId) {
         if (ctx.experienceId) {
@@ -414,13 +393,11 @@ async function experienceUpdate(
     const notebookId = ctx?.notebookId;
     if (!notebookId) return;
     const key = queryCache.cacheKey("experiences.list", { notebookId });
-    const list = await readList(key);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const idx = list.findIndex((e: any) => e._id === args.id);
-    if (idx !== -1) {
-        list[idx] = { ...list[idx], name: args.name, contactId: args.contactId };
-        await queryCache.set(key, list);
-    }
+    await patchDoc(key, args.id, (doc) => ({
+        ...doc,
+        name: args.name,
+        contactId: args.contactId,
+    }));
 }
 
 async function experienceRemove(
@@ -431,8 +408,7 @@ async function experienceRemove(
     if (!notebookId) return;
     const key = queryCache.cacheKey("experiences.list", { notebookId });
     const list = await readList(key);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await queryCache.set(key, list.filter((e: any) => e._id !== args.id));
+    await queryCache.set(key, list.filter((e) => e._id !== args.id));
 }
 
 async function experienceSetClosed(
@@ -443,15 +419,10 @@ async function experienceSetClosed(
     const notebookId = ctx?.notebookId;
     if (!notebookId) return;
     const key = queryCache.cacheKey("experiences.list", { notebookId });
-    const list = await readList(key);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const idx = list.findIndex((e: any) => e._id === args.id);
-    if (idx === -1) return;
 
-    const experience = list[idx];
     const isClosed = closed ?? true;
-    list[idx] = { ...experience, closed: isClosed };
-    await queryCache.set(key, list);
+    const experience = await patchDoc(key, args.id, (doc) => ({ ...doc, closed: isClosed }));
+    if (!experience) return;
 
     // Update contacts.list cache: closed experiences show as summary cards in the contact view
     const contactId = experience.contactId as string | undefined;
@@ -459,8 +430,7 @@ async function experienceSetClosed(
 
     const ctKey = queryCache.cacheKey("contacts.list", { notebookId });
     const contacts = await readList(ctKey);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ctIdx = contacts.findIndex((c: any) => c._id === contactId);
+    const ctIdx = contacts.findIndex((c) => c._id === contactId);
     if (ctIdx === -1) return;
 
     const contact = contacts[ctIdx];
@@ -468,30 +438,28 @@ async function experienceSetClosed(
         _id: experience._id,
         name: experience.name,
         closed: true,
-        balance: experience.balance ?? 0,
-        transactionCount: experience.transactionCount ?? 0,
+        balance: (experience.balance as number) ?? 0,
+        transactionCount: (experience.transactionCount as number) ?? 0,
         lastTransactionDate: experience.lastTransactionDate,
     };
+    const existingExperiences = (contact.experiences as CachedDoc[] | undefined) ?? [];
 
     if (isClosed) {
         // Closing: add experience summary to contact and include its balance
-        const existingExperiences = contact.experiences ?? [];
         contacts[ctIdx] = {
             ...contact,
             experiences: [...existingExperiences, expSummary],
-            balance: (contact.balance ?? 0) + (experience.balance ?? 0),
+            balance: ((contact.balance as number) ?? 0) + ((experience.balance as number) ?? 0),
         };
     } else {
         // Reopening: remove experience summary from contact and subtract its balance
-        const existingExperiences = contact.experiences ?? [];
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const removedExp = existingExperiences.find((e: any) => e._id === experience._id);
-        const removedBalance = removedExp?.balance ?? experience.balance ?? 0;
+        const removedExp = existingExperiences.find((e) => e._id === experience._id);
+        const removedBalance =
+            (removedExp?.balance as number | undefined) ?? (experience.balance as number) ?? 0;
         contacts[ctIdx] = {
             ...contact,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            experiences: existingExperiences.filter((e: any) => e._id !== experience._id),
-            balance: (contact.balance ?? 0) - removedBalance,
+            experiences: existingExperiences.filter((e) => e._id !== experience._id),
+            balance: ((contact.balance as number) ?? 0) - removedBalance,
         };
     }
     await queryCache.set(ctKey, contacts);
@@ -508,23 +476,21 @@ async function updateExperienceSummary(
     newTxDate?: number
 ): Promise<void> {
     const expKey = queryCache.cacheKey("experiences.list", { notebookId });
-    const experiences = await readList(expKey);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const expIdx = experiences.findIndex((e: any) => e._id === experienceId);
-    if (expIdx !== -1) {
-        const exp = experiences[expIdx];
-        const updatedExp = {
-            ...exp,
-            balance: (exp.balance ?? 0) + balanceDiff,
-            transactionCount: Math.max(0, (exp.transactionCount ?? 0) + countDiff),
+    await patchDoc(expKey, experienceId, (doc) => {
+        const updated: CachedDoc = {
+            ...doc,
+            balance: ((doc.balance as number) ?? 0) + balanceDiff,
+            transactionCount: Math.max(0, ((doc.transactionCount as number) ?? 0) + countDiff),
         };
         // Update lastTransactionDate if a new transaction date is provided and is more recent
         if (newTxDate !== undefined) {
-            updatedExp.lastTransactionDate = Math.max(exp.lastTransactionDate ?? 0, newTxDate);
+            updated.lastTransactionDate = Math.max(
+                (doc.lastTransactionDate as number | undefined) ?? 0,
+                newTxDate
+            );
         }
-        experiences[expIdx] = updatedExp;
-        await queryCache.set(expKey, experiences);
-    }
+        return updated;
+    });
 }
 
 async function experienceTransfer(
@@ -539,14 +505,12 @@ async function experienceTransfer(
     // Remove from source notebook's experience list
     const sourceKey = queryCache.cacheKey("experiences.list", { notebookId: sourceNotebookId });
     const sourceList = await readList(sourceKey);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const exp = sourceList.find((e: any) => e._id === experienceId);
+    const exp = sourceList.find((e) => e._id === experienceId);
     if (!exp) return;
 
-    const expBalance = exp.balance ?? 0;
+    const expBalance = (exp.balance as number) ?? 0;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await queryCache.set(sourceKey, sourceList.filter((e: any) => e._id !== experienceId));
+    await queryCache.set(sourceKey, sourceList.filter((e) => e._id !== experienceId));
 
     // Add to target notebook's experience list (clear contactId)
     const targetKey = queryCache.cacheKey("experiences.list", { notebookId: targetNotebookId });
@@ -559,17 +523,8 @@ async function experienceTransfer(
     await queryCache.set(targetKey, targetList);
 
     // Update balances of both notebooks
-    const nbKey = queryCache.cacheKey("notebooks.list", {});
-    const notebooks = await readList(nbKey);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const srcNb = notebooks.find((n: any) => n._id === sourceNotebookId);
-    if (srcNb) {
-        srcNb.balance = (srcNb.balance ?? 0) - expBalance;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tgtNb = notebooks.find((n: any) => n._id === targetNotebookId);
-    if (tgtNb) {
-        tgtNb.balance = (tgtNb.balance ?? 0) + expBalance;
-    }
-    await queryCache.set(nbKey, notebooks);
+    await adjustNotebookBalances([
+        { notebookId: sourceNotebookId, diff: -expBalance },
+        { notebookId: targetNotebookId, diff: expBalance },
+    ]);
 }

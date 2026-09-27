@@ -5,7 +5,7 @@ import { SyncProvider, useSync } from "./SyncContext";
 import * as offlineQueue from "@/lib/offlineQueue";
 
 // Mock convex mutations
-type MockMutationFn = ReturnType<typeof vi.fn> & ((args: any) => Promise<any>);
+type MockMutationFn = ReturnType<typeof vi.fn> & ((args: Record<string, unknown>) => Promise<unknown>);
 
 const mockMutations: Record<string, MockMutationFn> = {
     "notebooks:create": vi.fn().mockResolvedValue("temp_id") as MockMutationFn,
@@ -89,11 +89,11 @@ describe("SyncContext - Offline Create + Delete Lifecycle", () => {
         // 1. Create a transaction offline
         let tempTxId: string | undefined;
         await act(async () => {
-            tempTxId = await result.current.offlineMutation(
+            tempTxId = (await result.current.offlineMutation(
                 "transactions:create",
                 mockMutations["transactions:create"],
                 { notebookId: "nb1", amount: 100, description: "Groceries" }
-            );
+            )) as string;
         });
 
         expect(tempTxId).toBeDefined();

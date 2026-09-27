@@ -1,6 +1,18 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { enqueue, getAll, remove, count, clear, resetDB, removeWhere, purgeOfflineItem, purgePendingUpdates } from "./offlineQueue";
 
+type MockRequest = {
+    error?: unknown;
+    result?: unknown;
+    onerror?: () => void;
+    onsuccess?: () => void;
+    onupgradeneeded?: () => void;
+};
+
+type MockTransaction = MockRequest & {
+    objectStore: () => Record<string, (...args: unknown[]) => unknown>;
+};
+
 describe("offlineQueue", () => {
   beforeEach(async () => {
     resetDB();
@@ -50,12 +62,12 @@ describe("offlineQueue", () => {
     resetDB();
     const originalOpen = indexedDB.open;
     indexedDB.open = vi.fn().mockImplementation(() => {
-      const req: any = {};
+      const req: MockRequest = {};
       setTimeout(() => {
         req.error = new Error("DB Open Failure");
         req.onerror?.();
       }, 0);
-      return req;
+      return req as unknown as IDBOpenDBRequest;
     });
 
     await expect(getAll()).rejects.toThrow("DB Open Failure");
@@ -64,14 +76,14 @@ describe("offlineQueue", () => {
 
   it("handles transaction errors", async () => {
     const spy = vi.spyOn(IDBDatabase.prototype, "transaction").mockImplementation(() => {
-      const tx: any = {
+      const tx: MockTransaction = {
         objectStore: () => ({ add: vi.fn(), delete: vi.fn(), clear: vi.fn(), count: vi.fn(), getAll: vi.fn() }),
       };
       setTimeout(() => {
         tx.error = new Error("Tx Failed");
         tx.onerror?.();
       }, 0);
-      return tx;
+      return tx as unknown as IDBTransaction;
     });
 
     await expect(enqueue({ functionPath: "test", args: {}, queuedAt: 1 })).rejects.toThrow("Tx Failed");
@@ -84,14 +96,14 @@ describe("offlineQueue", () => {
     resetDB();
     const originalOpen = indexedDB.open;
     indexedDB.open = vi.fn().mockImplementation(() => {
-      const req: any = {
+      const req: MockRequest = {
         result: {
           objectStoreNames: { contains: () => true },
           createObjectStore: vi.fn(),
           transaction: () => ({
             objectStore: () => ({
               count: () => {
-                const r: any = {};
+                const r: MockRequest = {};
                 setTimeout(() => { r.result = 0; r.onsuccess?.(); }, 0);
                 return r;
               }
@@ -103,7 +115,7 @@ describe("offlineQueue", () => {
         req.onupgradeneeded?.();
         req.onsuccess?.();
       }, 0);
-      return req;
+      return req as unknown as IDBOpenDBRequest;
     });
 
     await count();
@@ -112,8 +124,8 @@ describe("offlineQueue", () => {
 
   it("handles request errors in getAll and count", async () => {
     const getAllSpy = vi.spyOn(IDBDatabase.prototype, "transaction").mockImplementationOnce(() => {
-      const req: any = {};
-      const tx: any = {
+      const req: MockRequest = {};
+      const tx: MockTransaction = {
         objectStore: () => ({
           getAll: () => {
             setTimeout(() => {
@@ -124,15 +136,15 @@ describe("offlineQueue", () => {
           },
         }),
       };
-      return tx;
+      return tx as unknown as IDBTransaction;
     });
 
     await expect(getAll()).rejects.toThrow("Request GetAll Failed");
     getAllSpy.mockRestore();
 
     const countSpy = vi.spyOn(IDBDatabase.prototype, "transaction").mockImplementationOnce(() => {
-      const req: any = {};
-      const tx: any = {
+      const req: MockRequest = {};
+      const tx: MockTransaction = {
         objectStore: () => ({
           count: () => {
             setTimeout(() => {
@@ -143,14 +155,14 @@ describe("offlineQueue", () => {
           },
         }),
       };
-      return tx;
+      return tx as unknown as IDBTransaction;
     });
 
     await expect(count()).rejects.toThrow("Request Count Failed");
     countSpy.mockRestore();
 
     const removeWhereSpy = vi.spyOn(IDBDatabase.prototype, "transaction").mockImplementationOnce(() => {
-      const tx: any = {
+      const tx: MockTransaction = {
         objectStore: () => ({
           openCursor: () => ({ onsuccess: null }),
         }),
@@ -159,7 +171,7 @@ describe("offlineQueue", () => {
         tx.error = new Error("Transaction RemoveWhere Failed");
         tx.onerror?.();
       }, 0);
-      return tx;
+      return tx as unknown as IDBTransaction;
     });
 
     await expect(removeWhere(() => true)).rejects.toThrow("Transaction RemoveWhere Failed");

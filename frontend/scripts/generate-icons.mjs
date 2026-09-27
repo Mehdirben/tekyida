@@ -33,7 +33,6 @@ const pwaIcons = [
 const appleIcons = [
   { size: 180, name: "apple-touch-icon.png", dir: publicDir },
   { size: 180, name: "apple-touch-icon-precomposed.png", dir: publicDir },
-  { size: 180, name: "apple-touch-icon.png", dir: iconsDir },
 ];
 
 console.log("Generating PWA icons from logo...");
@@ -131,11 +130,5 @@ await sharp(logoNoBg)
   .png()
   .toFile(join(iconsDir, "logo-nobg-128.png"));
 console.log("  ✓ icons/logo-nobg-128.png (128x128)");
-
-await sharp(logoNoBg)
-  .resize(64, 64, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
-  .png()
-  .toFile(join(iconsDir, "logo-nobg-64.png"));
-console.log("  ✓ icons/logo-nobg-64.png (64x64)");
 
 console.log("\n✅ All icons generated successfully!");

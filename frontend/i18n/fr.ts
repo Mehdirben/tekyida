@@ -7,13 +7,11 @@ const fr: Record<TranslationKey, string> = {
     "nav.getStarted": "Commencer",
 
     // Hero
-    "hero.tagline": "Suivez les dettes, restez clair.",
     "hero.title.line1": "N'oubliez Jamais",
     "hero.title.line2": "Qui Doit Quoi",
     "hero.subtitle":
         "Tekyida est votre carnet de dettes personnel — suivez les dettes entre amis, famille et collègues avec plusieurs carnets, le tout en Dirhams Marocains.",
     "hero.cta.primary": "Commencer Gratuitement",
-    "hero.cta.secondary": "Voir Comment Ça Marche",
 
     // Features
     "features.sectionTag": "Pourquoi Tekyida ?",
@@ -59,10 +57,8 @@ const fr: Record<TranslationKey, string> = {
     "cta.button": "Créer Votre Compte Gratuit",
 
     // Footer
-    "footer.tagline": "Suivez les dettes, gardez les amitiés.",
     "footer.madeWith": "Fait avec",
     "footer.inMorocco": "au Maroc",
-    "footer.rights": "Tous droits réservés.",
 
     // Login
     "login.title": "Bon Retour",
@@ -117,12 +113,10 @@ const fr: Record<TranslationKey, string> = {
 
     // App Navigation
     "nav.dashboard": "Tableau de bord",
-    "nav.contacts": "Contacts",
     "nav.experiences": "Expériences",
     "nav.settings": "Paramètres",
 
     // Dashboard
-    "dashboard.title": "Tableau de bord",
     "dashboard.empty.title": "Aucun carnet pour le moment",
     "dashboard.empty.subtitle": "Créez votre premier carnet pour commencer à suivre les dettes entre amis, famille ou collègues.",
     "dashboard.empty.cta": "Créer Votre Premier Carnet",
@@ -134,19 +128,15 @@ const fr: Record<TranslationKey, string> = {
     // Notebook
     "notebook.select": "Choisir un Carnet",
     "notebook.add": "Ajouter un Carnet",
-    "notebook.contacts": "contacts",
-    "notebook.balance": "Solde",
     "notebook.delete": "Supprimer le Carnet",
     "notebook.deleteConfirm": "Supprimer ce carnet ainsi que tous ses contacts et transactions ? Cette action est irréversible.",
     "notebook.namePlaceholder": "Nom du carnet…",
     "notebook.edit": "Modifier le Carnet",
-    "notebook.editName": "Nom du carnet",
     "notebook.archive": "Archiver le Carnet",
     "notebook.archiveConfirm": "Archiver ce carnet ? Il sera masqué de la liste active mais pourra être restauré plus tard.",
     "notebook.unarchive": "Restaurer le Carnet",
     "notebook.unarchiveConfirm": "Restaurer ce carnet ? Il sera replacé dans la liste active.",
     "notebook.archivedSection": "Carnets Archivés",
-    "notebook.noArchived": "Aucun carnet archivé",
     "notebook.archivedStatus": "archivé",
     "notebook.showArchived": "Afficher les carnets archivés",
     "notebook.hideArchived": "Masquer les carnets archivés",
@@ -173,7 +163,6 @@ const fr: Record<TranslationKey, string> = {
     "experience.delete": "Supprimer l'Expérience",
     "experience.deleteConfirm": "Supprimer cette expérience et toutes ses transactions ? Cette action est irréversible.",
     "experience.edit": "Modifier l'Expérience",
-    "experience.linkContact": "Lier à un contact",
     "experience.contactOptional": "Contact (optionnel)",
     "experience.noContact": "Aucun contact",
     "experience.transactions": "transactions",
@@ -194,21 +183,17 @@ const fr: Record<TranslationKey, string> = {
     "transaction.delete": "Supprimer",
     "transaction.deleteConfirm": "Supprimer cette transaction ? Cette action est irréversible.",
     "transaction.edit": "Modifier la Transaction",
-    "transaction.date": "Date & Heure",
 
     // Common
     "common.cancel": "Annuler",
-    "common.confirm": "Confirmer",
     "common.delete": "Supprimer",
     "common.save": "Enregistrer",
-    "common.close": "Fermer",
     "common.transfer": "Transférer",
     "common.archive": "Archiver",
     "common.restore": "Restaurer",
 
     // Settings
     "settings.title": "Paramètres",
-    "settings.account": "Compte",
     "settings.email": "Adresse email",
     "settings.newEmail": "Nouvelle adresse email",
     "settings.confirmEmail": "Confirmer l'adresse email",
@@ -218,7 +203,6 @@ const fr: Record<TranslationKey, string> = {
     "settings.currentPasswordWrong": "Le mot de passe actuel est incorrect.",
     "settings.newPassword": "Nouveau mot de passe",
     "settings.confirmPassword": "Confirmer le nouveau mot de passe",
-    "settings.save": "Enregistrer",
     "settings.saveEmail": "Modifier l'email",
     "settings.emailChanged": "Email mis \u00e0 jour avec succ\u00e8s.",
     "settings.emailMismatch": "Les adresses email ne correspondent pas.",
@@ -257,7 +241,6 @@ const fr: Record<TranslationKey, string> = {
     "lock.enterPin": "Saisissez votre code PIN à 6 chiffres",
     "lock.setPin": "Créez un code PIN à 6 chiffres",
     "lock.confirmPin": "Confirmez le code PIN",
-    "lock.pinsDoNotMatch": "Les codes PIN ne correspondent pas. Réessayez.",
     "lock.invalidPin": "Code PIN incorrect. Réessayez.",
     "lock.pinSuccess": "Code PIN configuré avec succès.",
     "lock.signOut": "Se déconnecter & Se reconnecter",

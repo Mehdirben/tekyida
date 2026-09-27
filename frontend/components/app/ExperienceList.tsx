@@ -1,17 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { createPortal } from "react-dom";
 import {
     Compass,
     Plus,
     Trash2,
     Pencil,
-    X,
     Lock,
     Unlock,
     ChevronRight,
-    CloudOff,
     User,
     ArrowRightLeft,
     Archive,
@@ -19,7 +16,7 @@ import {
 } from "lucide-react";
 import Select from "@/components/ui/Select";
 import UnsyncedBadge from "@/components/ui/UnsyncedBadge";
-import ConfirmDeleteModal from "@/components/ui/ConfirmDeleteModal";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import EditModalDialog from "@/components/ui/EditModalDialog";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { useAmountsVisibility } from "@/contexts/AmountsVisibilityContext";
@@ -29,7 +26,9 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useSync } from "@/contexts/SyncContext";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { useKeyboardInset } from "@/hooks/useKeyboardInset";
+import { useEscapeCascade } from "@/hooks/useEscapeCascade";
 import { triggerHaptic } from "@/lib/haptics";
+import { formatBalance, balanceColor } from "@/lib/money";
 
 interface ExperienceSummary {
     _id: Id<"experiences">;
@@ -145,27 +144,21 @@ export default function ExperienceList({
     const keyboardInset = useKeyboardInset();
     const keyboardOffsetStyle = keyboardInset > 0 ? { paddingBottom: `${keyboardInset + 12}px` } : undefined;
 
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                if (transferTarget) {
-                    handleCloseTransfer();
-                } else if (deleteTarget) {
-                    triggerHaptic("light");
-                    setDeleteTarget(null);
-                } else if (editTarget) {
-                    handleCloseEdit();
-                } else if (adding) {
-                    triggerHaptic("light");
-                    setAdding(false);
-                    setNewName("");
-                    setNewContactId("");
-                }
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [deleteTarget, editTarget, transferTarget, adding, handleCloseEdit, handleCloseTransfer]);
+    useEscapeCascade(() => {
+        if (transferTarget) {
+            handleCloseTransfer();
+        } else if (deleteTarget) {
+            triggerHaptic("light");
+            setDeleteTarget(null);
+        } else if (editTarget) {
+            handleCloseEdit();
+        } else if (adding) {
+            triggerHaptic("light");
+            setAdding(false);
+            setNewName("");
+            setNewContactId("");
+        }
+    });
 
     useEffect(() => {
         if (adding && nameRef.current) nameRef.current.focus();
@@ -290,18 +283,6 @@ export default function ExperienceList({
         }
     };
 
-    const formatBalance = (amount: number) => {
-        const sign = amount >= 0 ? "+" : "";
-        return mask(`${sign}${amount.toFixed(2)} MAD`);
-    };
-
-    const balanceColor = (amount: number) =>
-        amount > 0
-            ? "text-accent-500"
-            : amount < 0
-                ? "text-danger-500"
-                : "text-(--text-primary)";
-
     const getContactName = (contactId?: Id<"contacts">) => {
         if (!contactId) return null;
         const contact = contacts.find((c) => c._id === contactId);
@@ -358,7 +339,7 @@ export default function ExperienceList({
                                     {isItemPending(exp._id) && <UnsyncedBadge />}
                                 </div>
                                 <span className={`text-sm font-bold shrink-0 ${balanceColor(exp.balance)} pr-2`}>
-                                    {formatBalance(exp.balance)}
+                                    {formatBalance(exp.balance, mask)}
                                 </span>
                             </div>
 
@@ -445,179 +426,94 @@ export default function ExperienceList({
             })}
 
             {/* Delete Confirmation Popup */}
-            {deleteTarget && createPortal(
-                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
-                    <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                        onClick={() => {
-                            triggerHaptic("light");
-                            setDeleteTarget(null);
-                        }}
-                    />
-                    <div className="relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl animate-scale-in overflow-hidden">
-                        <div className="p-5 text-center">
-                            <div className="inline-flex p-3 rounded-full bg-danger-500/10 mb-3">
-                                <Trash2 size={22} className="text-danger-500" />
-                            </div>
-                            <h3 className="text-base font-bold mb-1">{t("experience.delete")}</h3>
-                            <p className="text-sm text-(--text-secondary)">
-                                {t("experience.deleteConfirm")}
-                            </p>
-                            <p className="text-sm font-semibold mt-2 break-words whitespace-normal">{deleteTarget.name}</p>
-                        </div>
-                        <div className="flex border-t border-(--border)">
-                            <button
-                                onClick={() => {
-                                    triggerHaptic("light");
-                                    setDeleteTarget(null);
-                                }}
-                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
-                            >
-                                {t("common.cancel")}
-                            </button>
-                            <button
-                                onClick={confirmDelete}
-                                className="flex-1 py-3.5 text-sm font-semibold text-danger-500 border-l border-(--border) transition-all active:bg-danger-500/10 cursor-pointer"
-                            >
-                                {t("common.delete")}
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+            <ConfirmDialog
+                isOpen={!!deleteTarget}
+                title={t("experience.delete")}
+                description={t("experience.deleteConfirm")}
+                itemName={deleteTarget?.name}
+                onCancel={() => setDeleteTarget(null)}
+                onConfirm={confirmDelete}
+                style={keyboardOffsetStyle}
+            />
 
             {/* Edit Experience Popup */}
-            {editTarget && createPortal(
-                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
-                    <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                        onClick={handleCloseEdit}
-                    />
-                    <div className={`relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl ${isEditClosing ? "animate-scale-out" : "animate-scale-in"}`}>
-                        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
-                            <h3 className="text-base font-bold">{t("experience.edit")}</h3>
-                            <button
-                                onClick={handleCloseEdit}
-                                className="p-1.5 rounded-lg active:bg-white/10 transition-all cursor-pointer"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-                        <div className="p-5 space-y-3">
-                            <input
-                                ref={editNameRef}
-                                type="text"
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleEdit();
-                                    if (e.key === "Escape") {
-                                        e.stopPropagation();
-                                        handleCloseEdit();
-                                    }
-                                }}
-                                placeholder={t("experience.name")}
-                                className="glass-input py-2.5 text-sm"
-                            />
-                            <Select
-                                options={contactOptions}
-                                value={editContactId}
-                                onChange={setEditContactId}
-                            />
-                        </div>
-                        <div className="flex border-t border-(--border) rounded-b-2xl overflow-hidden">
-                            <button
-                                onClick={handleCloseEdit}
-                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
-                            >
-                                {t("common.cancel")}
-                            </button>
-                            <button
-                                onClick={handleEdit}
-                                disabled={!editName.trim()}
-                                className="flex-1 py-3.5 text-sm font-semibold text-primary-500 border-l border-(--border) transition-all active:bg-primary-500/10 disabled:opacity-40 cursor-pointer"
-                            >
-                                {t("common.save")}
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+            <EditModalDialog
+                isOpen={!!editTarget}
+                isClosing={isEditClosing}
+                title={t("experience.edit")}
+                onClose={handleCloseEdit}
+                onSave={handleEdit}
+                saveDisabled={!editName.trim()}
+                style={keyboardOffsetStyle}
+            >
+                <input
+                    ref={editNameRef}
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") handleEdit();
+                        if (e.key === "Escape") {
+                            e.stopPropagation();
+                            handleCloseEdit();
+                        }
+                    }}
+                    placeholder={t("experience.name")}
+                    className="glass-input py-2.5 text-sm"
+                />
+                <Select
+                    options={contactOptions}
+                    value={editContactId}
+                    onChange={setEditContactId}
+                />
+            </EditModalDialog>
 
             {/* Transfer Experience Popup */}
-            {transferTarget && createPortal(
-                <div className="safe-dialog fixed inset-0 z-[200] flex items-center justify-center transition-[padding] duration-200" style={keyboardOffsetStyle}>
-                    <div
-                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-                        onClick={handleCloseTransfer}
-                    />
-                    <div className={`relative z-10 w-[90%] max-w-sm liquid-glass-heavy rounded-2xl shadow-2xl ${isTransferClosing ? "animate-scale-out" : "animate-scale-in"}`}>
-                        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-(--border)">
-                            <h3 className="text-base font-bold">{t("experience.transferTitle")}</h3>
-                            <button
-                                onClick={handleCloseTransfer}
-                                className="p-1.5 rounded-lg active:bg-white/10 transition-all cursor-pointer"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-                        <div className="p-5 space-y-3">
-                            <p className="text-sm font-semibold break-words whitespace-normal">{transferTarget.name}</p>
-                            <p className="text-xs text-(--text-secondary)">
-                                {t("experience.transferConfirm")}
-                            </p>
-                            {transferNotebookOptions.length > 0 ? (
-                                <Select
-                                    options={transferNotebookOptions}
-                                    value={transferNotebookId}
-                                    onChange={setTransferNotebookId}
-                                    placeholder={t("experience.selectNotebook")}
-                                    footerButton={
-                                        notebooks.some((n) => n.archived && n._id !== notebookId) ? {
-                                            icon: showArchivedInTransfer ? <ArchiveRestore size={15} /> : <Archive size={15} />,
-                                            label: showArchivedInTransfer ? t("notebook.hideArchived") : t("notebook.showArchived"),
-                                            onClick: () => {
-                                                const nextShow = !showArchivedInTransfer;
-                                                setShowArchivedInTransfer(nextShow);
-                                                
-                                                if (!nextShow && transferNotebookId) {
-                                                    const selectedNotebook = notebooks.find((n) => n._id === transferNotebookId);
-                                                    if (selectedNotebook?.archived) {
-                                                        setTransferNotebookId("");
-                                                    }
-                                                }
-                                            },
-                                            active: showArchivedInTransfer
-                                        } : undefined
+            <EditModalDialog
+                isOpen={!!transferTarget}
+                isClosing={isTransferClosing}
+                title={t("experience.transferTitle")}
+                onClose={handleCloseTransfer}
+                onSave={handleTransfer}
+                saveDisabled={!transferNotebookId}
+                saveLabel={t("common.transfer")}
+                style={keyboardOffsetStyle}
+            >
+                <p className="text-sm font-semibold break-words whitespace-normal">{transferTarget?.name}</p>
+                <p className="text-xs text-(--text-secondary)">
+                    {t("experience.transferConfirm")}
+                </p>
+                {transferNotebookOptions.length > 0 ? (
+                    <Select
+                        options={transferNotebookOptions}
+                        value={transferNotebookId}
+                        onChange={setTransferNotebookId}
+                        placeholder={t("experience.selectNotebook")}
+                        footerButton={
+                            notebooks.some((n) => n.archived && n._id !== notebookId) ? {
+                                icon: showArchivedInTransfer ? <ArchiveRestore size={15} /> : <Archive size={15} />,
+                                label: showArchivedInTransfer ? t("notebook.hideArchived") : t("notebook.showArchived"),
+                                onClick: () => {
+                                    const nextShow = !showArchivedInTransfer;
+                                    setShowArchivedInTransfer(nextShow);
+                                    
+                                    if (!nextShow && transferNotebookId) {
+                                        const selectedNotebook = notebooks.find((n) => n._id === transferNotebookId);
+                                        if (selectedNotebook?.archived) {
+                                            setTransferNotebookId("");
+                                        }
                                     }
-                                />
-                            ) : (
-                                <p className="text-xs text-(--text-tertiary) italic text-center py-2">
-                                    {t("notebook.add")}
-                                </p>
-                            )}
-                        </div>
-                        <div className="flex border-t border-(--border) rounded-b-2xl overflow-hidden">
-                            <button
-                                onClick={handleCloseTransfer}
-                                className="flex-1 py-3.5 text-sm font-medium text-(--text-secondary) transition-all active:bg-white/5 cursor-pointer"
-                            >
-                                {t("common.cancel")}
-                            </button>
-                            <button
-                                onClick={handleTransfer}
-                                disabled={!transferNotebookId}
-                                className="flex-1 py-3.5 text-sm font-semibold text-primary-500 border-l border-(--border) transition-all active:bg-primary-500/10 disabled:opacity-40 cursor-pointer"
-                            >
-                                {t("common.transfer")}
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+                                },
+                                active: showArchivedInTransfer
+                            } : undefined
+                        }
+                    />
+                ) : (
+                    <p className="text-xs text-(--text-tertiary) italic text-center py-2">
+                        {t("notebook.add")}
+                    </p>
+                )}
+            </EditModalDialog>
 
             {/* Add Experience Section */}
             {adding ? (
