@@ -30,9 +30,11 @@ enum TestSupport {
 
     /// Deterministic `AppState` for unit tests: no Keychain reads beyond the
     /// injected fake, no NWPathMonitor, no automatic restore network task.
+    /// `backend` has no default on purpose: `MockBackend` is MainActor-isolated
+    /// and its initializer cannot be evaluated as a nonisolated default arg.
     @MainActor
     static func makeState(
-        backend: BackendAPI = MockBackend(),
+        backend: BackendAPI,
         cache: OfflineCache = OfflineCache(directory: temporaryDirectory()),
         defaults: UserDefaults = UserDefaults(suiteName: "tekyida-tests-\(UUID().uuidString)")!
     ) -> AppState {
@@ -46,7 +48,7 @@ enum TestSupport {
 
     /// Signed-in variant with an empty backend and offline queue cleared.
     @MainActor
-    static func makeSignedInState(backend: BackendAPI = MockBackend()) -> AppState {
+    static func makeSignedInState(backend: BackendAPI) -> AppState {
         let state = makeState(backend: backend)
         state.userEmail = "user@tekyida.app"
         state.isAuthenticated = true

@@ -18,7 +18,7 @@ struct ViewSmokeTests {
 
     @Test("Scroll header, brand header, and sync banner bodies evaluate")
     func tekyidaScrollHeaderAndSyncBanner() {
-        let state = TestSupport.makeState()
+        let state = TestSupport.makeState(backend: MockBackend())
         let header = TekyidaScrollHeader(onManageNotebooks: {})
             .environmentObject(state)
         _ = header.body
@@ -34,7 +34,7 @@ struct ViewSmokeTests {
 
     @Test("Search view and add-sheet bodies evaluate")
     func searchViewAndAddSheetsBodies() {
-        let state = TestSupport.makeState()
+        let state = TestSupport.makeState(backend: MockBackend())
         let searchView = SearchView().environmentObject(state)
         _ = searchView.body
 
@@ -56,7 +56,7 @@ struct ViewSmokeTests {
 
     @Test("Transfer experience sheet body evaluates")
     func transferExperienceSheetBody() {
-        let state = TestSupport.makeState()
+        let state = TestSupport.makeState(backend: MockBackend())
         let experience = Experience(notebookId: "nb1", name: "Dinner")
         let sheet = TransferExperienceSheet(experience: experience, onTransfer: { _ in })
             .environmentObject(state)
@@ -65,7 +65,7 @@ struct ViewSmokeTests {
 
     @Test("Notebook manager sheet body evaluates")
     func notebookManagerSheetBody() {
-        let state = TestSupport.makeState()
+        let state = TestSupport.makeState(backend: MockBackend())
         let sheet = NotebookManagerSheet()
             .environmentObject(state)
         _ = sheet.body
