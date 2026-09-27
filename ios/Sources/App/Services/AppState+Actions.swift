@@ -57,7 +57,7 @@ extension AppState {
             let data = try await runMutation("notebooks:create", args: ["name": trimmed])
             let id = try JSONDecoder().decode(String.self, from: data)
             activeNotebookId = id
-            UserDefaults.standard.set(id, forKey: activeNotebookKey)
+            defaults.set(id, forKey: activeNotebookKey)
             await refreshAfterMutation()
         } catch {
             appError = error.localizedDescription
@@ -81,9 +81,9 @@ extension AppState {
                 let next = activeNotebooksList.first?.id
                 activeNotebookId = next
                 if let next {
-                    UserDefaults.standard.set(next, forKey: activeNotebookKey)
+                    defaults.set(next, forKey: activeNotebookKey)
                 } else {
-                    UserDefaults.standard.removeObject(forKey: activeNotebookKey)
+                    defaults.removeObject(forKey: activeNotebookKey)
                 }
             }
         } catch { appError = error.localizedDescription }
@@ -109,9 +109,9 @@ extension AppState {
                 let next = activeNotebooksList.first?.id
                 activeNotebookId = next
                 if let next {
-                    UserDefaults.standard.set(next, forKey: activeNotebookKey)
+                    defaults.set(next, forKey: activeNotebookKey)
                 } else {
-                    UserDefaults.standard.removeObject(forKey: activeNotebookKey)
+                    defaults.removeObject(forKey: activeNotebookKey)
                 }
             }
         } catch { appError = error.localizedDescription }

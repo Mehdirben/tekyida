@@ -1,51 +1,58 @@
-import XCTest
+import Testing
 import SwiftUI
 @testable import Tekyida
 
+@Suite("Design System")
 @MainActor
-final class DesignSystemTests: XCTestCase {
-    func testLiquidGlassDesignTokensAndConcentricHierarchy() {
-        // Concentric geometric hierarchy: Sheets > Cards > Buttons > Inputs
-        XCTAssertGreaterThan(AppTheme.radiusSheet, AppTheme.radiusCard)
-        XCTAssertGreaterThan(AppTheme.radiusCard, AppTheme.radiusButton)
-        XCTAssertGreaterThanOrEqual(AppTheme.radiusButton, AppTheme.radiusInput)
+struct DesignSystemTests {
+    @Test("Concentric geometric hierarchy: sheets > cards > buttons > inputs")
+    func liquidGlassDesignTokensAndConcentricHierarchy() {
+        #expect(AppTheme.radiusSheet > AppTheme.radiusCard)
+        #expect(AppTheme.radiusCard > AppTheme.radiusButton)
+        #expect(AppTheme.radiusButton >= AppTheme.radiusInput)
+    }
 
-        // Concentric path computation produces non-empty path
+    @Test("Concentric rectangle produces a non-empty path")
+    func concentricRectanglePath() {
         let rect = ConcentricRectangle(cornerRadius: 16)
         let path = rect.path(in: CGRect(x: 0, y: 0, width: 200, height: 60))
-        XCTAssertFalse(path.isEmpty)
+        #expect(!path.isEmpty)
+    }
 
-        // GlassButton and GlassCard instantiation
-        let btn = GlassButton("Confirm", style: .primary, size: .extraLarge) {}
-        XCTAssertNotNil(btn.body)
+    @Test("Glass button and card bodies evaluate")
+    func glassButtonAndCardBodies() {
+        let button = GlassButton("Confirm", style: .primary, size: .extraLarge) {}
+        _ = button.body
 
         let card = GlassCard {
             Text("Test Content")
         }
-        XCTAssertNotNil(card.body)
+        _ = card.body
     }
 
-    func testTouchAndKeyboardModifiers() {
+    @Test("Touch and keyboard modifiers attach without crashing")
+    func touchAndKeyboardModifiers() {
         let button = GlassButton("Test", systemImage: "star", style: .primary, size: .large, action: {})
-        XCTAssertNotNil(button.body)
+        _ = button.body
 
-        let modifiedView = Text("Hello")
+        let modified = Text("Hello")
             .tapFeedback()
             .dismissKeyboardOnTap()
-        XCTAssertNotNil(modifiedView)
+        _ = modified
     }
 
-    func testReusableComponentsRenderBodies() {
+    @Test("Reusable component bodies evaluate")
+    func reusableComponentsRenderBodies() {
         let input = GlassInputField(
             systemImage: "person.fill",
             placeholder: "Name",
             text: .constant(""),
             characterLimit: 20
         )
-        XCTAssertNotNil(input.body)
+        _ = input.body
 
         let pending = PendingSyncIndicator(size: 10)
-        XCTAssertNotNil(pending.body)
+        _ = pending.body
 
         let section = SectionHeaderView(
             title: "Contacts",
@@ -54,7 +61,7 @@ final class DesignSystemTests: XCTestCase {
             addButtonSystemImage: "plus",
             addAction: {}
         )
-        XCTAssertNotNil(section.body)
+        _ = section.body
 
         let searchRow = SearchResultRow(
             systemImage: "person.fill",
@@ -64,6 +71,6 @@ final class DesignSystemTests: XCTestCase {
             isMasked: false,
             onTap: {}
         )
-        XCTAssertNotNil(searchRow.body)
+        _ = searchRow.body
     }
 }

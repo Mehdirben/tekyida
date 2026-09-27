@@ -40,9 +40,12 @@ public final class AppState: ObservableObject {
     @Published public internal(set) var pendingSyncCount = 0
 
     // MARK: Module-internal dependencies shared by the AppState extensions.
+    // All injectable so unit tests can replace the network, cache, and
+    // defaults with isolated fakes (production defaults keep behavior).
 
-    let backend = ConvexBackend.shared
-    let offlineCache = OfflineCache()
+    let backend: any BackendAPI
+    let offlineCache: OfflineCache
+    let defaults: UserDefaults
     var pendingMutations: [QueuedMutation] = []
     var localToServerIds: [String: String] = [:]
     var isRefreshing = false
@@ -56,21 +59,43 @@ public final class AppState: ObservableObject {
     let amountsDefaultKey = "tekyida_amounts_hidden_default"
     let transferRedirectKey = "tekyida_transfer_redirect"
 
-    public init() {
-        ["tekyida_lock_enabled", "tekyida_lock_hash", "tekyida_lock_salt"]
-            .forEach { UserDefaults.standard.removeObject(forKey: $0) }
-        loadSettings()
+    /// - Parameters:
+    ///   - startSideEffects: pass `false` in tests to skip lock-key cleanup,
+    ///     connectivity monitoring, and the automatic session-restore network
+    ///     task, keeping construction synchronous and deterministic.
+    public init(
+        backend: any BackendAPI = ConvexBackend.shared,
+        offlineCache: OfflineCache = OfflineCache(),
+        defaults: UserDefaults = .standard,
+        startSideEffects: Bool = true
+    ) {
+        self.backend = backend
+        self.offlineCache = offlineCache
+        self.defaults = defaults
+        if startSideEffects {
+            ["tekyida_lock_enabled", "tekyida_lock_hash", "tekyida_lock_salt"]
+                .forEach { defaults.removeObject(forKey: $0) }
+        }
+        loadSettings(applyGlobalLanguage: startSideEffects)
         if let snapshot = offlineCache.load() {
             restoreLocalSnapshot(snapshot)
             if backend.hasSession { isLoading = false }
         }
         isAuthenticated = backend.hasSession
-        startConnectivityMonitoring()
-        guard isAuthenticated else {
+        if startSideEffects {
+            startConnectivityMonitoring()
+            guard isAuthenticated else {
+                isLoading = false
+                return
+            }
+            Task { await restoreSession() }
+        } else {
+            guard isAuthenticated else {
+                isLoading = false
+                return
+            }
             isLoading = false
-            return
         }
-        Task { await restoreSession() }
     }
 
     deinit {
@@ -152,7 +177,7 @@ public final class AppState: ObservableObject {
         experiences = snapshot.experiences
         transactions = snapshot.transactions
         // Parity with PWA: restore last non-archived notebook on app restart
-        let savedId = UserDefaults.standard.string(forKey: activeNotebookKey)
+        let savedId = defaults.string(forKey: activeNotebookKey)
         if let savedId, let found = notebooks.first(where: { $0.id == savedId && !$0.archived }) {
             activeNotebookId = found.id
         } else {
@@ -192,7 +217,7 @@ public final class AppState: ObservableObject {
         pendingMutations = []
         pendingSyncCount = 0
         userEmail = ""
-        UserDefaults.standard.removeObject(forKey: activeNotebookKey)
+        defaults.removeObject(forKey: activeNotebookKey)
         offlineCache.clear()
     }
 
@@ -205,7 +230,7 @@ public final class AppState: ObservableObject {
     public func selectNotebook(_ id: String) {
         activeNotebookId = id
         if let nb = notebooks.first(where: { $0.id == id }), !nb.archived {
-            UserDefaults.standard.set(id, forKey: activeNotebookKey)
+            defaults.set(id, forKey: activeNotebookKey)
         }
         persistOfflineSnapshot()
     }

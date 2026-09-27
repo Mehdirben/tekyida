@@ -1,16 +1,92 @@
 import Foundation
 import Security
 
+// MARK: - Backend API Abstraction
+// Thin seam so `AppState` can be exercised in tests with an in-memory fake
+// (`MockBackend` in the test target); production always uses `ConvexBackend`.
+
 @MainActor
-final class ConvexBackend {
+protocol BackendAPI: AnyObject {
+    var hasSession: Bool { get }
+    func signIn(email: String, password: String, name: String?, flow: String) async throws -> Bool
+    func verifyEmail(email: String, code: String) async throws -> Bool
+    func resendVerification(email: String) async throws
+    func signOut() async
+    func query<T: Decodable>(_ path: String, args: [String: Any]) async throws -> T
+    func mutation(_ path: String, args: [String: Any]) async throws -> Data
+    func actionVoid(_ path: String, args: [String: Any]) async throws
+    func action<T: Decodable>(_ path: String, args: [String: Any]) async throws -> T
+}
+
+// MARK: - Token Storage
+// Auth token persistence behind a protocol so unit tests avoid real Keychain I/O.
+
+protocol TokenStore: AnyObject {
+    func read(_ key: String) -> String?
+    func write(_ value: String, key: String)
+    func delete(_ key: String)
+}
+
+final class KeychainTokenStore: TokenStore {
+    private let service: String
+
+    init(service: String = Bundle.main.bundleIdentifier ?? "com.tekyida.app") {
+        self.service = service
+    }
+
+    func read(_ key: String) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        var result: CFTypeRef?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+              let data = result as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    func write(_ value: String, key: String) {
+        delete(key)
+        var item: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key,
+            kSecValueData as String: Data(value.utf8)
+        ]
+        item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        SecItemAdd(item as CFDictionary, nil)
+    }
+
+    func delete(_ key: String) {
+        SecItemDelete([
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key
+        ] as CFDictionary)
+    }
+}
+
+// MARK: - Convex HTTP Backend
+
+@MainActor
+final class ConvexBackend: BackendAPI {
     static let shared = ConvexBackend()
     private let deploymentURL = URL(string: "https://tekyida-convex-api.codecy.dev")!
-    private let session = URLSession.shared
-    private let keychainService = Bundle.main.bundleIdentifier ?? "com.tekyida.app"
-    private var accessToken: String? { readKeychain("accessToken") }
-    private var refreshToken: String? { readKeychain("refreshToken") }
+    private let session: URLSession
+    private let tokenStore: any TokenStore
 
-    private init() {}
+    private var accessToken: String? { tokenStore.read("accessToken") }
+    private var refreshToken: String? { tokenStore.read("refreshToken") }
+
+    /// Injectable for tests (`URLProtocol` stubbing + in-memory token store);
+    /// `shared` uses `URLSession.shared` and the real Keychain.
+    init(session: URLSession = .shared, tokenStore: any TokenStore = KeychainTokenStore()) {
+        self.session = session
+        self.tokenStore = tokenStore
+    }
 
     var hasSession: Bool { accessToken != nil }
 
@@ -65,11 +141,11 @@ final class ConvexBackend {
                 allowRefresh: false
             )
         }
-        deleteKeychain("accessToken")
-        deleteKeychain("refreshToken")
+        tokenStore.delete("accessToken")
+        tokenStore.delete("refreshToken")
     }
 
-    func query<T: Decodable>(_ path: String, args: [String: Any] = [:], as type: T.Type = T.self) async throws -> T {
+    func query<T: Decodable>(_ path: String, args: [String: Any] = [:]) async throws -> T {
         let data = try await requestValue(endpoint: "query", path: path, args: args, authenticated: true)
         return try JSONDecoder().decode(T.self, from: data)
     }
@@ -82,7 +158,7 @@ final class ConvexBackend {
         _ = try await requestValue(endpoint: "action", path: path, args: args, authenticated: true)
     }
 
-    func action<T: Decodable>(_ path: String, args: [String: Any] = [:], as type: T.Type = T.self) async throws -> T {
+    func action<T: Decodable>(_ path: String, args: [String: Any] = [:]) async throws -> T {
         let data = try await requestValue(endpoint: "action", path: path, args: args, authenticated: true)
         return try JSONDecoder().decode(T.self, from: data)
     }
@@ -135,8 +211,8 @@ final class ConvexBackend {
                         allowRefresh: false
                     )
                 }
-                deleteKeychain("accessToken")
-                deleteKeychain("refreshToken")
+                tokenStore.delete("accessToken")
+                tokenStore.delete("refreshToken")
                 throw BackendError.authenticationRequired("Your session expired. Please sign in again.")
             }
             throw BackendError.message("The server returned HTTP " + String(http.statusCode) + ".")
@@ -160,8 +236,8 @@ final class ConvexBackend {
                         allowRefresh: false
                     )
                 }
-                deleteKeychain("accessToken")
-                deleteKeychain("refreshToken")
+                tokenStore.delete("accessToken")
+                tokenStore.delete("refreshToken")
                 throw BackendError.authenticationRequired(message)
             }
             throw BackendError.message(message)
@@ -191,8 +267,8 @@ final class ConvexBackend {
             }
         } catch {
             if !BackendError.isRetryable(error) {
-                deleteKeychain("accessToken")
-                deleteKeychain("refreshToken")
+                tokenStore.delete("accessToken")
+                tokenStore.delete("refreshToken")
                 throw BackendError.authenticationRequired(error.localizedDescription)
             }
             throw error
@@ -202,43 +278,9 @@ final class ConvexBackend {
     private func storeTokens(from valueData: Data) -> Bool {
         guard let result = try? JSONDecoder().decode(SignInResult.self, from: valueData),
               let tokens = result.tokens else { return false }
-        writeKeychain(tokens.token, key: "accessToken")
-        writeKeychain(tokens.refreshToken, key: "refreshToken")
+        tokenStore.write(tokens.token, key: "accessToken")
+        tokenStore.write(tokens.refreshToken, key: "refreshToken")
         return true
-    }
-
-    private func readKeychain(_ key: String) -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: key,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        var result: CFTypeRef?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-              let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
-    }
-
-    private func writeKeychain(_ value: String, key: String) {
-        deleteKeychain(key)
-        var item: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: key,
-            kSecValueData as String: Data(value.utf8)
-        ]
-        item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        SecItemAdd(item as CFDictionary, nil)
-    }
-
-    private func deleteKeychain(_ key: String) {
-        SecItemDelete([
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: keychainService,
-            kSecAttrAccount as String: key
-        ] as CFDictionary)
     }
 }
 

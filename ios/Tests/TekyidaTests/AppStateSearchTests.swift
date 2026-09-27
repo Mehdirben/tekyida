@@ -1,10 +1,18 @@
-import XCTest
+import Testing
 @testable import Tekyida
 
+@Suite("AppState Search")
 @MainActor
-final class AppStateSearchTests: XCTestCase {
-    func testSemanticSearchEngine() {
-        let state = AppState()
+struct AppStateSearchTests {
+    private let backend = MockBackend()
+    private let state: AppState
+
+    init() {
+        state = TestSupport.makeState(backend: backend)
+    }
+
+    @Test("Semantic search across contacts, experiences, and transactions")
+    func semanticSearchEngine() {
         let notebook = Notebook(name: "Vacation")
         let contact = Contact(notebookId: notebook.id, name: "Youssef Alaoui", phone: "+212 600-001122")
         let secondContact = Contact(notebookId: notebook.id, name: "Leila Tazi", phone: "+212 611-334455")
@@ -18,15 +26,16 @@ final class AppStateSearchTests: XCTestCase {
             Transaction(notebookId: notebook.id, experienceId: experience.id, amount: 1200, description: "Quad bikes")
         ]
 
-        XCTAssertEqual(state.search(query: "Youssef").contacts.first?.name, "Youssef Alaoui")
-        XCTAssertEqual(state.search(query: "3344").contacts.first?.name, "Leila Tazi")
-        XCTAssertEqual(state.search(query: "Sahara").experiences.first?.name, "Sahara Desert Trek")
-        XCTAssertEqual(state.search(query: "Camel").transactions.first?.description, "Camel ride & tent")
-        XCTAssertEqual(state.search(query: "1200").transactions.count, 1)
-        XCTAssertTrue(state.search(query: "   ").isEmpty)
+        #expect(state.search(query: "Youssef").contacts.first?.name == "Youssef Alaoui")
+        #expect(state.search(query: "3344").contacts.first?.name == "Leila Tazi")
+        #expect(state.search(query: "Sahara").experiences.first?.name == "Sahara Desert Trek")
+        #expect(state.search(query: "Camel").transactions.first?.description == "Camel ride & tent")
+        #expect(state.search(query: "1200").transactions.count == 1)
+        #expect(state.search(query: "   ").isEmpty)
     }
 
-    func testSearchEngineBlankQueryAndTotals() {
+    @Test("SearchEngine blank queries and totals")
+    func searchEngineBlankQueryAndTotals() {
         let blank = SearchEngine.run(
             contacts: [Contact(notebookId: "nb", name: "A")],
             experiences: [],
@@ -34,8 +43,8 @@ final class AppStateSearchTests: XCTestCase {
             notebookId: "nb",
             query: "   "
         )
-        XCTAssertTrue(blank.isEmpty)
-        XCTAssertEqual(blank.totalCount, 0)
+        #expect(blank.isEmpty)
+        #expect(blank.totalCount == 0)
 
         let results = SearchEngine.run(
             contacts: [Contact(notebookId: "nb", name: "Amir")],
@@ -44,7 +53,7 @@ final class AppStateSearchTests: XCTestCase {
             notebookId: "nb",
             query: "a"
         )
-        XCTAssertEqual(results.totalCount, 3)
-        XCTAssertFalse(results.isEmpty)
+        #expect(results.totalCount == 3)
+        #expect(!results.isEmpty)
     }
 }

@@ -51,9 +51,11 @@ public struct BrandLogoHeader: View {
     }
 
     private var syncStatusLabel: String {
-        if state.isSyncing { return tr("sync.syncing") }
-        if !state.isOnline { return tr("sync.offline") }
-        return String(format: tr("sync.pendingCount"), state.pendingSyncCount)
+        SyncStatusPresenter.statusLabel(
+            isSyncing: state.isSyncing,
+            isOnline: state.isOnline,
+            pendingSyncCount: state.pendingSyncCount
+        )
     }
 }
 

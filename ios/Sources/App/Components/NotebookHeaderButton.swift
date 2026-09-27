@@ -68,7 +68,7 @@ public struct NotebookHeaderButton: View {
         .tapFeedback()
     }
 
-    private var currentName: String {
+    var currentName: String {
         if let active = activeNotebook {
             return active.archived ? "\(active.name) \(tr("common.archivedSuffix"))" : active.name
         }

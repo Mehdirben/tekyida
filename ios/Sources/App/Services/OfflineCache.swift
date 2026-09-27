@@ -30,22 +30,32 @@ struct OfflineSnapshot: Codable {
 }
 
 final class OfflineCache {
-    private let fileURL: URL
+    let fileURL: URL
+    private let fileManager: FileManager
 
-    init(fileManager: FileManager = .default) {
-        let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let directory = applicationSupport.appendingPathComponent("Tekyida", isDirectory: true)
-        fileURL = directory.appendingPathComponent("offline-cache.json")
+    /// - Parameters:
+    ///   - directory: overrides the default Application Support location so
+    ///     tests can sandbox reads/writes away from real app state.
+    init(fileManager: FileManager = .default, directory: URL? = nil) {
+        self.fileManager = fileManager
+        if let directory {
+            fileURL = directory.appendingPathComponent("offline-cache.json")
+        } else {
+            let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            fileURL = applicationSupport
+                .appendingPathComponent("Tekyida", isDirectory: true)
+                .appendingPathComponent("offline-cache.json")
+        }
     }
 
     func load() -> OfflineSnapshot? {
-        guard let data = try? Data(contentsOf: fileURL) else { return nil }
+        guard let data = try? fileManager.contents(atPath: fileURL.path) else { return nil }
         return try? JSONDecoder().decode(OfflineSnapshot.self, from: data)
     }
 
     func save(_ snapshot: OfflineSnapshot) throws {
         let directory = fileURL.deletingLastPathComponent()
-        try FileManager.default.createDirectory(
+        try fileManager.createDirectory(
             at: directory,
             withIntermediateDirectories: true,
             attributes: [.protectionKey: FileProtectionType.complete]
@@ -59,6 +69,6 @@ final class OfflineCache {
     }
 
     func clear() {
-        try? FileManager.default.removeItem(at: fileURL)
+        try? fileManager.removeItem(at: fileURL)
     }
 }

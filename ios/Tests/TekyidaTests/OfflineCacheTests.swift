@@ -1,11 +1,12 @@
-import XCTest
+import Testing
+import Foundation
 @testable import Tekyida
 
-final class OfflineCacheTests: XCTestCase {
-    func testOfflineCacheAndQueuedMutation() throws {
-        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDir) }
+@Suite("Offline Cache")
+struct OfflineCacheTests {
+    @Test("Snapshot round-trip and queued mutation persistence")
+    func offlineCacheAndQueuedMutation() throws {
+        let cache = TestSupport.makeTemporaryCache()
 
         let mutation = QueuedMutation(
             functionPath: "notebooks:create",
@@ -13,8 +14,8 @@ final class OfflineCacheTests: XCTestCase {
             localCreatedId: "offline_123",
             accountEmail: "user@tekyida.app"
         )
-        XCTAssertEqual(mutation.functionPath, "notebooks:create")
-        XCTAssertEqual(mutation.localCreatedId, "offline_123")
+        #expect(mutation.functionPath == "notebooks:create")
+        #expect(mutation.localCreatedId == "offline_123")
 
         let snapshot = OfflineSnapshot(
             accountEmail: "user@tekyida.app",
@@ -27,15 +28,41 @@ final class OfflineCacheTests: XCTestCase {
             activeNotebookId: "offline_123"
         )
 
-        let cache = OfflineCache()
         try cache.save(snapshot)
-        let loaded = cache.load()
-        XCTAssertNotNil(loaded)
-        XCTAssertEqual(loaded?.accountEmail, "user@tekyida.app")
-        XCTAssertEqual(loaded?.notebooks.first?.name, "Offline Book")
-        XCTAssertEqual(loaded?.pendingMutations.count, 1)
+        let loaded = try #require(cache.load())
+        #expect(loaded.accountEmail == "user@tekyida.app")
+        #expect(loaded.notebooks.first?.name == "Offline Book")
+        #expect(loaded.pendingMutations.count == 1)
+        #expect(loaded.localToServerIds == ["offline_123": "server_456"])
 
         cache.clear()
-        XCTAssertNil(cache.load())
+        #expect(cache.load() == nil)
+    }
+
+    @Test("Loading a corrupt snapshot returns nil instead of crashing")
+    func corruptedSnapshotReturnsNil() throws {
+        let cache = TestSupport.makeTemporaryCache()
+        let snapshot = OfflineSnapshot(
+            accountEmail: "user@tekyida.app",
+            notebooks: [],
+            contacts: [],
+            experiences: [],
+            transactions: [],
+            pendingMutations: [],
+            localToServerIds: [:],
+            activeNotebookId: nil
+        )
+        try cache.save(snapshot)
+
+        let garbage = Data("not-json-at-all".utf8)
+        try garbage.write(to: cache.fileURL)
+
+        #expect(cache.load() == nil)
+    }
+
+    @Test("Loading with no file on disk returns nil")
+    func missingFileReturnsNil() {
+        let cache = TestSupport.makeTemporaryCache()
+        #expect(cache.load() == nil)
     }
 }

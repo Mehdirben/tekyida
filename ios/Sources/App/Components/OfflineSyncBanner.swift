@@ -29,12 +29,11 @@ struct OfflineSyncBanner: View {
     }
 
     private var statusText: String {
-        if state.isSyncing { return tr("sync.bannerSyncing") }
-        if !state.isOnline { return tr("sync.bannerOffline") }
-        if !state.isAuthenticated && state.pendingSyncCount > 0 {
-            return tr("sync.bannerSignin")
-        }
-        if state.pendingSyncCount == 1 { return tr("sync.oneWaiting") }
-        return String(format: tr("sync.changesWaiting"), state.pendingSyncCount)
+        SyncStatusPresenter.statusText(
+            isSyncing: state.isSyncing,
+            isOnline: state.isOnline,
+            isAuthenticated: state.isAuthenticated,
+            pendingSyncCount: state.pendingSyncCount
+        )
     }
 }

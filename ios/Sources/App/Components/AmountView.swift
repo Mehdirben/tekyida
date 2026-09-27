@@ -37,24 +37,22 @@ public struct AmountView: View {
     }
 
     private var displayText: String {
-        let currency = showsCurrency ? " MAD" : ""
-        if isHidden {
-            return "••••"
-        }
-        let sign = (amount > 0 && showPlusSign) ? "+" : ""
-        return String(format: "%@%.2f%@", sign, amount, currency)
+        AmountFormatter.displayText(
+            amount: amount,
+            isHidden: isHidden,
+            showPlusSign: showPlusSign,
+            showsCurrency: showsCurrency
+        )
     }
 
     private var resolvedColor: Color {
         if let custom = customColor {
             return custom
         }
-        if amount > 0 {
-            return AppTheme.accent
-        } else if amount < 0 {
-            return AppTheme.danger
-        } else {
-            return .primary
+        switch AmountFormatter.tone(for: amount) {
+        case .accent: return AppTheme.accent
+        case .danger: return AppTheme.danger
+        case .neutral: return .primary
         }
     }
 }

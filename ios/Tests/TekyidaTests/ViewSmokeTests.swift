@@ -1,62 +1,73 @@
-import XCTest
+import Testing
 import SwiftUI
 @testable import Tekyida
 
+@Suite("View Smoke Tests")
 @MainActor
-final class ViewSmokeTests: XCTestCase {
-    func testContentViewInitialization() {
-        let view = ContentView()
-        XCTAssertNotNil(view.body)
+struct ViewSmokeTests {
+    @Test("ContentView body evaluates in all auth/loading states")
+    func contentViewInitialization() {
+        let backend = MockBackend()
+        let state = TestSupport.makeState(backend: backend)
+        let view = ContentView(state: state)
+        _ = view.body
+
+        state.isAuthenticated = true
+        _ = view.body
     }
 
-    func testTekyidaScrollHeaderAndSyncBanner() {
-        let state = AppState()
+    @Test("Scroll header, brand header, and sync banner bodies evaluate")
+    func tekyidaScrollHeaderAndSyncBanner() {
+        let state = TestSupport.makeState()
         let header = TekyidaScrollHeader(onManageNotebooks: {})
             .environmentObject(state)
-        XCTAssertNotNil(header.body)
+        _ = header.body
 
         let brand = BrandLogoHeader()
             .environmentObject(state)
-        XCTAssertNotNil(brand.body)
+        _ = brand.body
 
         let banner = OfflineSyncBanner()
             .environmentObject(state)
-        XCTAssertNotNil(banner.body)
+        _ = banner.body
     }
 
-    func testSearchViewAndAddSheetsBodies() {
-        let state = AppState()
+    @Test("Search view and add-sheet bodies evaluate")
+    func searchViewAndAddSheetsBodies() {
+        let state = TestSupport.makeState()
         let searchView = SearchView().environmentObject(state)
-        XCTAssertNotNil(searchView.body)
+        _ = searchView.body
 
         let addContact = AddContactSheet(onSave: { _, _ in })
-        XCTAssertNotNil(addContact.body)
+        _ = addContact.body
 
-        let addExp = AddExperienceSheet(contacts: [], onSave: { _, _ in })
-        XCTAssertNotNil(addExp.body)
+        let addExperience = AddExperienceSheet(contacts: [], onSave: { _, _ in })
+        _ = addExperience.body
 
-        var nbId: String? = "nb_active"
-        let headerBtn = NotebookHeaderButton(
+        var notebookId: String? = "nb_active"
+        let headerButton = NotebookHeaderButton(
             notebooks: [Notebook(id: "nb_active", name: "Active")],
             activeNotebook: Notebook(id: "nb_active", name: "Active"),
-            activeNotebookId: Binding(get: { nbId }, set: { nbId = $0 }),
+            activeNotebookId: Binding(get: { notebookId }, set: { notebookId = $0 }),
             onManage: {}
         )
-        XCTAssertNotNil(headerBtn.body)
+        _ = headerButton.body
     }
 
-    func testTransferExperienceSheetBody() {
-        let state = AppState()
-        let exp = Experience(notebookId: "nb1", name: "Dinner")
-        let sheet = TransferExperienceSheet(experience: exp, onTransfer: { _ in })
+    @Test("Transfer experience sheet body evaluates")
+    func transferExperienceSheetBody() {
+        let state = TestSupport.makeState()
+        let experience = Experience(notebookId: "nb1", name: "Dinner")
+        let sheet = TransferExperienceSheet(experience: experience, onTransfer: { _ in })
             .environmentObject(state)
-        XCTAssertNotNil(sheet.body)
+        _ = sheet.body
     }
 
-    func testNotebookManagerSheetBody() {
-        let state = AppState()
+    @Test("Notebook manager sheet body evaluates")
+    func notebookManagerSheetBody() {
+        let state = TestSupport.makeState()
         let sheet = NotebookManagerSheet()
             .environmentObject(state)
-        XCTAssertNotNil(sheet.body)
+        _ = sheet.body
     }
 }

@@ -46,6 +46,13 @@ public struct GlassInputField: View {
         self.isDisabled = isDisabled
     }
 
+    /// Character-limit rule shared by the field's `onChange` handler and
+    /// tested directly so the truncation behavior stays pinned.
+    static func clamp(_ value: String, to limit: Int?) -> String {
+        guard let limit, value.count > limit else { return value }
+        return String(value.prefix(limit))
+    }
+
     public var body: some View {
         HStack(spacing: 12) {
             if let systemImage, !systemImage.isEmpty {
@@ -67,8 +74,9 @@ public struct GlassInputField: View {
             .autocorrectionDisabled(disablesAutocorrection)
             .disabled(isDisabled)
             .onChange(of: text) { _, newValue in
-                if let characterLimit, newValue.count > characterLimit {
-                    text = String(newValue.prefix(characterLimit))
+                let clamped = GlassInputField.clamp(newValue, to: characterLimit)
+                if clamped != newValue {
+                    text = clamped
                 }
             }
         }

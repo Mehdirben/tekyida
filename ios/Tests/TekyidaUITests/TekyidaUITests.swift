@@ -25,7 +25,7 @@ final class TekyidaUITests: XCTestCase {
                 "Expected the account access screen (email/password fields) when signed out"
             )
         } else {
-            XCTAssertTrue(tabBars.buttons.count >= 3, "Expected the main tab bar with app sections")
+            XCTAssertTrue(tabBars.buttons.count == 4, "Expected the main tab bar with the four app sections (Dashboard, Experiences, Search, Settings)")
         }
     }
 

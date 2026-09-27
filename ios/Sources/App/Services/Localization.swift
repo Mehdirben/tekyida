@@ -16,6 +16,12 @@ enum L10n {
         }
     }
 
+    // Exposed for the EN/FR parity unit tests.
+    static var englishKeys: [String] { Array(en.keys) }
+    static var frenchKeys: [String] { Array(fr.keys) }
+    static func englishValue(_ key: String) -> String? { en[key] }
+    static func frenchValue(_ key: String) -> String? { fr[key] }
+
     private static let en: [String: String] = [
         // Common
         "common.cancel": "Cancel",

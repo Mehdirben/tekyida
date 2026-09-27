@@ -12,7 +12,14 @@ final class ConnectivityMonitor {
 
     private let pathMonitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "com.tekyida.network-monitor")
+    private let retryIntervalNanoseconds: UInt64
     private var retryTask: Task<Void, Never>?
+
+    /// - Parameter retryInterval: seconds between retry ticks; injectable so
+    ///   tests can drive the loop quickly if needed.
+    init(retryInterval: TimeInterval = 30) {
+        retryIntervalNanoseconds = UInt64(retryInterval * 1_000_000_000)
+    }
 
     func start() {
         pathMonitor.pathUpdateHandler = { [weak self] path in
@@ -24,7 +31,7 @@ final class ConnectivityMonitor {
         pathMonitor.start(queue: monitorQueue)
         retryTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                try? await Task.sleep(nanoseconds: retryIntervalNanoseconds)
                 guard let self else { return }
                 // The callback is @MainActor-isolated, so awaiting it hops
                 // to the main actor automatically.
