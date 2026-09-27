@@ -30,6 +30,9 @@ public final class AppState: ObservableObject {
     private let offlineCache = OfflineCache()
     private var pendingMutations: [QueuedMutation] = []
     private var localToServerIds: [String: String] = [:]
+    private var isRefreshing = false
+    private var needsRefreshAgain = false
+    private var mutationGeneration = 0
     private let pathMonitor = NWPathMonitor()
     private let pathMonitorQueue = DispatchQueue(label: "com.tekyida.network-monitor")
     private var retryTask: Task<Void, Never>?
@@ -376,6 +379,7 @@ public final class AppState: ObservableObject {
     }
 
     private func refreshData() async throws {
+        let generationAtStart = mutationGeneration
         let loadedNotebooks: [Notebook] = try await backend.query("notebooks:list")
         var loadedContacts: [Contact] = []
         var loadedExperiences: [Experience] = []
@@ -406,6 +410,7 @@ public final class AppState: ObservableObject {
             throw BackendError.message("Pending offline changes belong to another account. Sign in to that account to sync them.")
         }
 
+        guard generationAtStart == mutationGeneration else { return }
         notebooks = loadedNotebooks
         contacts = loadedContacts
         experiences = loadedExperiences
@@ -613,6 +618,11 @@ public final class AppState: ObservableObject {
     }
 
     private func refreshDataAndReportError() async {
+        if isRefreshing {
+            needsRefreshAgain = true
+            return
+        }
+        isRefreshing = true
         do {
             try await refreshData()
             appError = nil
@@ -625,6 +635,11 @@ public final class AppState: ObservableObject {
             } else {
                 appError = error.localizedDescription
             }
+        }
+        isRefreshing = false
+        if needsRefreshAgain {
+            needsRefreshAgain = false
+            await refreshDataAndReportError()
         }
     }
 
@@ -667,6 +682,7 @@ public final class AppState: ObservableObject {
             }
             do {
                 let result = try await backend.mutation(queued.functionPath, args: resolvedArgs)
+                mutationGeneration += 1
                 if let localId = queued.localCreatedId {
                     let decodedServerId = (try? JSONSerialization.jsonObject(with: result, options: [.fragmentsAllowed])) as? String
                         ?? (try? JSONDecoder().decode(String.self, from: result))
@@ -711,17 +727,19 @@ public final class AppState: ObservableObject {
         if !pendingMutations.isEmpty || !isOnline {
             return try enqueueOfflineMutation(path, args: args)
         }
+        mutationGeneration += 1
+        let createPaths = ["notebooks:create", "contacts:create", "experiences:create", "transactions:create"]
+        let appliedOptimistically = !createPaths.contains(path)
+        if appliedOptimistically {
+            applyOfflineMutation(path, args: args, localCreatedId: nil)
+        }
         do {
             let result = try await backend.mutation(path, args: args)
-            let createPaths = ["notebooks:create", "contacts:create", "experiences:create", "transactions:create"]
-            let createdId: String?
             if createPaths.contains(path) {
-                createdId = (try? JSONSerialization.jsonObject(with: result, options: [.fragmentsAllowed])) as? String
+                let createdId = (try? JSONSerialization.jsonObject(with: result, options: [.fragmentsAllowed])) as? String
                     ?? (try? JSONDecoder().decode(String.self, from: result))
-            } else {
-                createdId = nil
+                applyOfflineMutation(path, args: args, localCreatedId: createdId)
             }
-            applyOfflineMutation(path, args: args, localCreatedId: createdId)
             persistOfflineSnapshot()
             return result
         } catch {
@@ -730,7 +748,12 @@ public final class AppState: ObservableObject {
                 authError = error.localizedDescription
                 throw error
             }
-            guard BackendError.isRetryable(error) else { throw error }
+            guard BackendError.isRetryable(error) else {
+                if appliedOptimistically {
+                    await refreshDataAndReportError()
+                }
+                throw error
+            }
             if BackendError.isConnectivityFailure(error) { isOnline = false }
             return try enqueueOfflineMutation(path, args: args)
         }
