@@ -355,7 +355,7 @@ private struct NotebookReorderView: View {
             }
             .background(
                 GeometryReader { geo in
-                    Color.clear.preference(key: ReorderViewportFrameKey.self, value: geo.frame(in: .window))
+                    Color.clear.preference(key: ReorderViewportFrameKey.self, value: geo.frame(in: .global))
                 }
             )
             .onPreferenceChange(ReorderRowHeightKey.self) { rowHeight = max(rowHeight, $0) }
@@ -587,6 +587,7 @@ private struct LongPressDragRecognizer: UIViewRepresentable {
         var onBegan: () -> Void
         var onChanged: (CGPoint, CGPoint) -> Void
         var onEnded: () -> Void
+        private var initialLocation: CGPoint = .zero
 
         init(
             onBegan: @escaping () -> Void,
@@ -600,11 +601,17 @@ private struct LongPressDragRecognizer: UIViewRepresentable {
         }
 
         @objc func handle(_ recognizer: UILongPressGestureRecognizer) {
+            let location = recognizer.location(in: nil)
             switch recognizer.state {
             case .began:
+                initialLocation = location
                 onBegan()
             case .changed:
-                onChanged(recognizer.translation(in: nil), recognizer.location(in: nil))
+                let translation = CGPoint(
+                    x: location.x - initialLocation.x,
+                    y: location.y - initialLocation.y
+                )
+                onChanged(translation, location)
             case .ended, .cancelled, .failed:
                 onEnded()
             default:
