@@ -335,8 +335,10 @@ private struct NotebookReorderView: View {
     @State private var rowHeight: CGFloat = 0
     @State private var viewportHeight: CGFloat = 0
     @State private var autoScrollDirection: Int = 0
+    @State private var pressStartedAt: Date?
 
     private let spacing: CGFloat = 10
+    private let reorderSpring: Animation = .spring(response: 0.32, dampingFraction: 0.85)
     private var slotHeight: CGFloat { rowHeight + spacing }
 
     var body: some View {
@@ -420,14 +422,21 @@ private struct NotebookReorderView: View {
         .shadow(color: .black.opacity(isDragging ? 0.2 : 0), radius: isDragging ? 14 : 0, y: isDragging ? 6 : 0)
         .offset(y: isDragging ? dragTranslation : shiftOffset(for: index, in: items.wrappedValue, isArchived: isArchived))
         .zIndex(isDragging ? 1 : 0)
-        .animation(.spring(response: 0.28, dampingFraction: 0.8), value: hoveredIndex)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isDragging)
         .gesture(
-            LongPressGesture(minimumDuration: 0.25, maximumDistance: 12)
+            LongPressGesture(minimumDuration: 0.45, maximumDistance: 12)
                 .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .named("reorderViewport")))
                 .onChanged { value in
                     switch value {
+                    case .first(false):
+                        if pressStartedAt == nil {
+                            pressStartedAt = Date()
+                        }
                     case .first(true):
+                        if let pressStartedAt,
+                           Date().timeIntervalSince(pressStartedAt) < 0.3 {
+                            break
+                        }
+                        self.pressStartedAt = nil
                         beginDrag(notebook, at: index, isArchived: isArchived)
                     case .second(true, let drag?):
                         updateDrag(drag, for: notebook.id)
@@ -436,6 +445,7 @@ private struct NotebookReorderView: View {
                     }
                 }
                 .onEnded { _ in
+                    pressStartedAt = nil
                     endDrag(of: notebook.id, items: items)
                 }
         )
@@ -459,10 +469,12 @@ private struct NotebookReorderView: View {
 
     private func beginDrag(_ notebook: Notebook, at index: Int, isArchived: Bool) {
         guard draggingId == nil else { return }
-        draggingId = notebook.id
+        withAnimation(reorderSpring) {
+            draggingId = notebook.id
+            hoveredIndex = index
+        }
         dragIsArchived = isArchived
         dragTranslation = 0
-        hoveredIndex = index
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
@@ -475,7 +487,9 @@ private struct NotebookReorderView: View {
             let projected = source + Int((dragTranslation / slotHeight).rounded())
             let clamped = min(max(projected, 0), items.count - 1)
             if clamped != hoveredIndex {
-                hoveredIndex = clamped
+                withAnimation(reorderSpring) {
+                    hoveredIndex = clamped
+                }
                 UISelectionFeedbackGenerator().selectionChanged()
             }
         }
@@ -488,7 +502,7 @@ private struct NotebookReorderView: View {
         autoScrollDirection = 0
 
         if let source = items.wrappedValue.firstIndex(where: { $0.id == id }), source != hoveredIndex {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            withAnimation(reorderSpring) {
                 items.wrappedValue.move(
                     fromOffsets: IndexSet(integer: source),
                     toOffset: hoveredIndex > source ? hoveredIndex + 1 : hoveredIndex
@@ -500,7 +514,7 @@ private struct NotebookReorderView: View {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             onPersist()
         } else {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            withAnimation(reorderSpring) {
                 draggingId = nil
                 dragTranslation = 0
                 self.hoveredIndex = nil
