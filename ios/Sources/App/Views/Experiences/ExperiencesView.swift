@@ -167,23 +167,25 @@ public struct ExperiencesView: View {
         return VStack(spacing: 12) {
             // Title-Style Section Header
             HStack {
-                Text(tr("experiences.title"))
-                    .font(.title3.bold())
-                    .foregroundColor(.primary)
+                HStack(spacing: 8) {
+                    Text(tr("experiences.title"))
+                        .font(.title3.bold())
+                        .foregroundColor(.primary)
+
+                    if !filtered.isEmpty {
+                        Text("\(filtered.count)")
+                            .font(.caption.bold())
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 4)
+                            .background(Color(uiColor: .secondarySystemFill), in: Capsule())
+                    }
+                }
 
                 Spacer()
 
-                if !filtered.isEmpty {
-                    Text("\(filtered.count)")
-                        .font(.caption.bold())
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 4)
-                        .background(Color(uiColor: .secondarySystemFill), in: Capsule())
-                }
-
                 GlassButton(
-                    tr("experiences.add"),
+                    tr("common.add"),
                     systemImage: "plus",
                     style: .primary,
                     size: .regular,

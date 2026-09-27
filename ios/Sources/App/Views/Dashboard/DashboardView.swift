@@ -105,23 +105,25 @@ public struct DashboardView: View {
         return VStack(spacing: 12) {
             // Title-Style Section Header
             HStack {
-                Text(tr("contacts.title"))
-                    .font(.title3.bold())
-                    .foregroundColor(.primary)
+                HStack(spacing: 8) {
+                    Text(tr("contacts.title"))
+                        .font(.title3.bold())
+                        .foregroundColor(.primary)
+
+                    if !sortedContacts.isEmpty {
+                        Text("\(sortedContacts.count)")
+                            .font(.caption.bold())
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 4)
+                            .background(Color(uiColor: .secondarySystemFill), in: Capsule())
+                    }
+                }
 
                 Spacer()
 
-                if !sortedContacts.isEmpty {
-                    Text("\(sortedContacts.count)")
-                        .font(.caption.bold())
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 4)
-                        .background(Color(uiColor: .secondarySystemFill), in: Capsule())
-                }
-
                 GlassButton(
-                    tr("contacts.add"),
+                    tr("common.add"),
                     systemImage: "person.badge.plus",
                     style: .primary,
                     size: .regular,
