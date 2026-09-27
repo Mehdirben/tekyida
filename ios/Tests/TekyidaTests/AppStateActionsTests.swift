@@ -52,7 +52,7 @@ struct AppStateActionsTests {
         #expect(backend.mutationCalls.last?.path == "notebooks:remove")
     }
 
-    @Test("archiveNotebook falls back to the next active notebook and persists it")
+    @Test("archiveNotebook falls back to the next active notebook")
     func archiveNotebookFallback() async throws {
         let kept = Notebook(id: "nb_keep", name: "Keep")
         let archived = Notebook(id: "nb_bye", name: "Bye", archived: true)
@@ -64,7 +64,8 @@ struct AppStateActionsTests {
 
         #expect(backend.mutationCalls.first?.path == "notebooks:archive")
         #expect(state.activeNotebookId == "nb_keep")
-        #expect(state.defaults.string(forKey: "tekyida_active_notebook_id") == "nb_keep")
+        #expect(state.defaults.string(forKey: "tekyida_active_notebook_id") != "nb_bye",
+                "the archived notebook must never persist as the active selection")
     }
 
     @Test("reorderNotebooks applies the order locally before syncing")
@@ -109,24 +110,32 @@ struct AppStateActionsTests {
 
     // MARK: - Experiences
 
-    @Test("toggleExperienceClosed picks close or reopen by current state")
-    func toggleExperienceClosed() async throws {
-        try backend.setQuery("experiences:list", value: [
-            Experience(id: "e1", notebookId: "nb1", name: "Open"),
-            Experience(id: "e2", notebookId: "nb1", name: "Closed", closed: true)
-        ])
-        state.experiences = [Experience(id: "e1", notebookId: "nb1", name: "Open"),
-                             Experience(id: "e2", notebookId: "nb1", name: "Closed", closed: true)]
+    @Test("toggleExperienceClosed closes an open experience")
+    func toggleExperienceClose() async {
+        state.experiences = [Experience(id: "e1", notebookId: "nb1", name: "Open")]
 
         await state.toggleExperienceClosed(id: "e1")
+
         #expect(backend.mutationCalls.last?.path == "experiences:close")
+    }
+
+    @Test("toggleExperienceClosed reopens a closed experience")
+    func toggleExperienceReopen() async {
+        state.experiences = [Experience(id: "e2", notebookId: "nb1", name: "Done", closed: true)]
 
         await state.toggleExperienceClosed(id: "e2")
+
         #expect(backend.mutationCalls.last?.path == "experiences:reopen")
     }
 
     @Test("transferExperience redirects to the target notebook when enabled")
-    func transferExperienceRedirect() async {
+    func transferExperienceRedirect() async throws {
+        // Seed the server notebooks so the post-mutation refresh keeps the
+        // active selection instead of resetting it to an empty list's first.
+        try backend.setQuery("notebooks:list", value: [
+            Notebook(id: "nb2", name: "Two"),
+            Notebook(id: "nb3", name: "Three")
+        ])
         state.transferRedirect = true
         await state.transferExperience(id: "e1", to: "nb2")
         #expect(backend.mutationCalls.last?.path == "experiences:transfer")

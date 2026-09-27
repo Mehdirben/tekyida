@@ -125,11 +125,15 @@ struct AppStateCoreTests {
         )
         source.userEmail = "User@Tekyida.App"
         source.isAuthenticated = true
-        let notebook = Notebook(id: "nb1", name: "Main")
+        // Fixed epoch dates: the snapshot JSON stores millisecond precision,
+        // so wall-clock `Date()` fixtures would not survive the round trip.
+        let epoch = Date(timeIntervalSince1970: 1_700_000_000)
+        let notebook = Notebook(id: "nb1", name: "Main", createdAt: epoch)
         source.notebooks = [notebook]
-        source.contacts = [Contact(id: "c1", notebookId: "nb1", name: "Alice")]
-        source.experiences = [Experience(id: "e1", notebookId: "nb1", name: "Dinner")]
-        source.transactions = [Transaction(id: "t1", notebookId: "nb1", contactId: "c1", amount: 12)]
+        source.contacts = [Contact(id: "c1", notebookId: "nb1", name: "Alice", createdAt: epoch)]
+        source.experiences = [Experience(id: "e1", notebookId: "nb1", name: "Dinner", createdAt: epoch)]
+        source.transactions = [Transaction(id: "t1", notebookId: "nb1", contactId: "c1", amount: 12,
+                                           date: epoch, createdAt: epoch)]
         source.pendingMutations = [QueuedMutation(
             functionPath: "contacts:create",
             arguments: try JSONSerialization.data(withJSONObject: ["name": "Bob"]),

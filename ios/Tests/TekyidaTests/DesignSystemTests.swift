@@ -63,14 +63,18 @@ struct DesignSystemTests {
         )
         _ = section.body
 
-        let searchRow = SearchResultRow(
-            systemImage: "person.fill",
-            title: "Alice",
-            itemId: "server_1",
-            balance: 10,
-            isMasked: false,
-            onTap: {}
+        // SearchResultRow reads the AppState environment object, so it must be
+        // rendered through a hosting controller (direct body access is fatal).
+        let searchRow = UIHostingController(
+            rootView: SearchResultRow(
+                systemImage: "person.fill",
+                title: "Alice",
+                itemId: "server_1",
+                balance: 10,
+                isMasked: false,
+                onTap: {}
+            ).environmentObject(TestSupport.makeState(backend: MockBackend()))
         )
-        _ = searchRow.body
+        searchRow.loadViewIfNeeded()
     }
 }

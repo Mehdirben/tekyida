@@ -221,6 +221,7 @@ struct AppStateAuthTests {
     func finishSignInSwitchesAccounts() async {
         state.userEmail = "old@tekyida.app"
         state.notebooks = [Notebook(id: "nb1", name: "Old Account Data")]
+        backend.setQueryJSON("users:currentEmail", "\"new@tekyida.app\"")
 
         await state.finishSignIn(accountEmail: "new@tekyida.app")
 

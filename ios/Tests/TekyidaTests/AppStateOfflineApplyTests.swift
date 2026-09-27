@@ -79,8 +79,8 @@ struct AppStateOfflineApplyTests {
 
     @Test("contacts:create/update/remove apply with cascades")
     func contactLifecycle() {
-        state.experiences = [Experience(id: "e1", notebookId: "nb1", contactId: "c1", name: "Trip")]
-        state.transactions = [Transaction(id: "t1", notebookId: "nb1", contactId: "c1", amount: 5)]
+        state.experiences = [Experience(id: "e1", notebookId: "nb1", contactId: "offline_c1", name: "Trip")]
+        state.transactions = [Transaction(id: "t1", notebookId: "nb1", contactId: "offline_c1", amount: 5)]
 
         apply("contacts:create", ["notebookId": "nb1", "name": "Alice", "phone": "123"], localId: "offline_c1")
         #expect(state.contacts.first?.id == "offline_c1")

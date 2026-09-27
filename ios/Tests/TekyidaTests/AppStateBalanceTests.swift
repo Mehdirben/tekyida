@@ -51,6 +51,7 @@ struct AppStateBalanceTests {
         #expect(engine.moneyOwed(for: notebook.id) == state.moneyOwed(for: notebook.id))
         #expect(engine.moneyGiven(for: notebook.id) == state.moneyGiven(for: notebook.id))
         #expect(engine.netBalance(for: notebook.id) == state.netBalance(for: notebook.id))
-        #expect(engine.totalExperiencesBalance(for: notebook.id) == 50)
+        #expect(engine.totalExperiencesBalance(for: notebook.id) == 999,
+                "total experiences balance counts open experiences only (closed experience's 50 is excluded)")
     }
 }
