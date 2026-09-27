@@ -20,19 +20,17 @@ struct AppStateActionWrappersTests {
     /// Yields the main actor until the fire-and-forget task settles.
     private func waitFor(
         _ condition: @MainActor () -> Bool,
-        timeout: TimeInterval = 3,
-        file: StaticString = #filePath,
-        line: UInt = #line
+        timeout: TimeInterval = 3
     ) async {
         let deadline = Date().addingTimeInterval(timeout)
         while !condition() && Date() < deadline {
             await Task.yield()
         }
-        #expect(condition(), "wrapper effect not observed in time", file: file, line: line)
+        #expect(condition(), "wrapper effect not observed in time")
     }
 
-    private func waitForMutation(_ path: String, file: StaticString = #filePath, line: UInt = #line) async {
-        await waitFor({ backend.mutationCalls.contains { $0.path == path } }, file: file, line: line)
+    private func waitForMutation(_ path: String) async {
+        await waitFor { backend.mutationCalls.contains { $0.path == path } }
     }
 
     // MARK: - Notebooks
