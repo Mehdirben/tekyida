@@ -185,6 +185,11 @@ struct AccountAccessView: View {
             .scrollDismissesKeyboard(.immediately)
             .dismissKeyboardOnTap()
         }
+        .overlay(alignment: .topTrailing) {
+            LanguagePillButton()
+                .padding(.top, 8)
+                .padding(.trailing, 20)
+        }
     }
 
     private func submit(_ action: @escaping () async -> Void) {
@@ -194,5 +199,43 @@ struct AccountAccessView: View {
             await action()
             isSubmitting = false
         }
+    }
+}
+
+struct LanguagePillButton: View {
+    @EnvironmentObject private var state: AppState
+
+    var body: some View {
+        FixedGlassMenu {
+            Picker(tr("settings.language"), selection: Binding(
+                get: { state.language },
+                set: { newValue in
+                    UISelectionFeedbackGenerator().selectionChanged()
+                    state.updateLanguage(newValue)
+                }
+            )) {
+                ForEach(AppLanguage.allCases, id: \.self) { language in
+                    Text(language.title).tag(language)
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "globe")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Text(state.language.title)
+                    .font(.subheadline.bold())
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .contentShape(Capsule())
+            .liquidGlassPill()
+        }
+        .tint(.primary)
+        .contentShape(Capsule())
+        .tapFeedback()
+        .accessibilityLabel(tr("settings.language"))
     }
 }
