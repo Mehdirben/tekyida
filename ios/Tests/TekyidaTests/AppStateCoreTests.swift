@@ -193,4 +193,53 @@ struct AppStateCoreTests {
         #expect(restored.activeNotebookId == "nb1", "non-archived selection persists across restarts")
         #expect(restored.isLoading == false)
     }
+
+    @Test("Snapshot restore falls back to the first non-archived notebook")
+    func snapshotRestoreWithoutSavedSelection() throws {
+        backend.hasSession = true
+        let cache = TestSupport.makeTemporaryCache()
+        let defaults = TestSupport.makeIsolatedDefaults()
+        let source = AppState(
+            backend: backend,
+            offlineCache: cache,
+            defaults: defaults.defaults,
+            startSideEffects: false
+        )
+        source.userEmail = "user@tekyida.app"
+        source.isAuthenticated = true
+        let archived = Notebook(id: "arch", name: "Old", archived: true)
+        let live = Notebook(id: "live", name: "Current")
+        source.notebooks = [archived, live]
+        source.persistOfflineSnapshot()
+
+        // Fresh defaults: no saved selection → restore must fall back to the
+        // first non-archived notebook in the snapshot.
+        let freshDefaults = TestSupport.makeIsolatedDefaults()
+        let restored = AppState(
+            backend: backend,
+            offlineCache: cache,
+            defaults: freshDefaults.defaults,
+            startSideEffects: false
+        )
+
+        #expect(restored.activeNotebookId == "live")
+        #expect(restored.notebooks == source.notebooks)
+    }
+
+    @Test("Production initialization with a session spawns the restore task")
+    func productionInitializationWithSession() async {
+        backend.hasSession = true
+        let productionState = AppState(
+            backend: backend,
+            offlineCache: TestSupport.makeTemporaryCache(),
+            defaults: TestSupport.makeIsolatedDefaults().defaults,
+            startSideEffects: true
+        )
+
+        #expect(productionState.isAuthenticated)
+        await TestSupport.waitOnMainActor(until: { !productionState.isLoading }, timeout: 3)
+
+        let notebooksAfterRestore = productionState.notebooks
+        #expect(notebooksAfterRestore.isEmpty, "unseeded backend yields empty lists without errors")
+    }
 }

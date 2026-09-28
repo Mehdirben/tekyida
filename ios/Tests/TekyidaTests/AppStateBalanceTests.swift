@@ -88,5 +88,7 @@ struct AppStateBalanceTests {
         #expect(state.lastTransactionDate(for: aliceId) != nil)
         #expect(state.closedExperiences(for: aliceId).count == 1)
         #expect(state.experienceTransactions(closedId).count == 1)
+        #expect(state.totalExperiencesBalance(for: notebook.id) == 999,
+                "facade matches the engine: open experiences only")
     }
 }

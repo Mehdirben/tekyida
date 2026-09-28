@@ -55,4 +55,14 @@ enum TestSupport {
         state.isOnline = true
         return state
     }
+
+    /// Yields the main actor until the condition holds (for fire-and-forget
+    /// tasks that must settle before assertions run).
+    @MainActor
+    static func waitOnMainActor(until condition: @MainActor () -> Bool, timeout: TimeInterval = 3) async {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !condition() && Date() < deadline {
+            await Task.yield()
+        }
+    }
 }

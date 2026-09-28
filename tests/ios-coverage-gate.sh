@@ -135,6 +135,9 @@ NODE_STATUS=$?
 set -e
 
 if [ "$NODE_STATUS" -ne 0 ] && [ -n "$XCRESULT" ] && [ -d "$XCRESULT" ] && [ -s "$GAP_FILE" ]; then
+  DUMP_FILE="$SCRIPT_DIR/reports/ios/uncovered-lines.txt"
+  mkdir -p "$(dirname "$DUMP_FILE")"
+  : > "$DUMP_FILE"
   echo ''
   echo 'Annotated source per gap file (uncovered lines carry an E marker):'
   while IFS= read -r base; do
@@ -144,10 +147,10 @@ if [ "$NODE_STATUS" -ne 0 ] && [ -n "$XCRESULT" ] && [ -d "$XCRESULT" ] && [ -s 
       # xccov --archive --file requires the absolute, normalized source path
       # recorded in the coverage profile.
       src_path="$(cd "$(dirname "$rel_path")" && pwd)/$(basename "$rel_path")"
-      echo "--- $base ---"
-      xcrun xccov view --archive "$XCRESULT" --file "$src_path" | head -500
+      echo "--- $base ---" | tee -a "$DUMP_FILE"
+      xcrun xccov view --archive "$XCRESULT" --file "$src_path" | head -800 | tee -a "$DUMP_FILE"
     else
-      echo "--- $base: source file not found ---"
+      echo "--- $base: source file not found ---" | tee -a "$DUMP_FILE"
     fi
   done < "$GAP_FILE"
 fi

@@ -77,15 +77,9 @@ extension AppState {
         do {
             _ = try await runMutation("notebooks:archive", args: ["id": id, "archived": archived])
             await refreshAfterMutation()
-            if archived, activeNotebookId == id {
-                let next = activeNotebooksList.first?.id
-                activeNotebookId = next
-                if let next {
-                    defaults.set(next, forKey: activeNotebookKey)
-                } else {
-                    defaults.removeObject(forKey: activeNotebookKey)
-                }
-            }
+            // Active-notebook fallback is handled optimistically by
+            // `applyOfflineMutation("notebooks:archive")` before the refresh,
+            // so the selection never still points at the archived id here.
         } catch { appError = error.localizedDescription }
     }
 
@@ -105,15 +99,8 @@ extension AppState {
         do {
             _ = try await runMutation("notebooks:remove", args: ["id": id])
             await refreshAfterMutation()
-            if activeNotebookId == id {
-                let next = activeNotebooksList.first?.id
-                activeNotebookId = next
-                if let next {
-                    defaults.set(next, forKey: activeNotebookKey)
-                } else {
-                    defaults.removeObject(forKey: activeNotebookKey)
-                }
-            }
+            // Same as archive: the optimistic remove in `applyOfflineMutation`
+            // already moved the selection off the deleted notebook.
         } catch { appError = error.localizedDescription }
     }
 

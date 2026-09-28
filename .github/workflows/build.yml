@@ -301,7 +301,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-coverage-report
-          path: tests/reports/ios/coverage.json
+          path: |
+            tests/reports/ios/coverage.json
+            tests/reports/ios/uncovered-lines.txt
           if-no-files-found: warn
 
       # Compiles the app into an .xcarchive without code signing.

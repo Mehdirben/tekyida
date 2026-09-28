@@ -314,6 +314,26 @@ struct AppStateQueueTests {
         }
     }
 
+    @Test("refreshData walks populated notebooks, contacts, and experiences")
+    func refreshDataWalksPopulatedGraph() async throws {
+        let notebook = Notebook(id: "nb1", name: "Main")
+        let contact = Contact(id: "c1", notebookId: "nb1", name: "Alice")
+        let experience = Experience(id: "e1", notebookId: "nb1", name: "Dinner")
+        try backend.setQuery("notebooks:list", value: [notebook])
+        try backend.setQuery("contacts:list", value: [contact])
+        try backend.setQuery("experiences:list", value: [experience])
+
+        try await state.refreshData()
+
+        #expect(state.notebooks.map(\.id) == ["nb1"])
+        #expect(state.contacts.map(\.id) == ["c1"])
+        #expect(state.experiences.map(\.id) == ["e1"])
+        // Per-notebook and per-contact/experience transaction queries ran.
+        #expect(backend.queryCalls.filter { $0.path == "transactions:list" }.count == 2)
+        let contactArgs = backend.queryCalls.first { $0.path == "contacts:list" }?.args
+        #expect(contactArgs?["notebookId"] as? String == "nb1")
+    }
+
     @Test("refreshData keeps the local email when the server returns none")
     func refreshDataKeepsLocalEmailOnNull() async throws {
         state.userEmail = "local@tekyida.app"
