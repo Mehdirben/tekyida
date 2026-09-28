@@ -216,7 +216,7 @@ if [ "$do_ios" = true ]; then
     xcrun xccov view --report build/TekyidaTests.xcresult
     xcrun xccov view --report --json build/TekyidaTests.xcresult > "$REPORTS_DIR/ios/coverage.json"
     chmod +x "$ROOT_DIR/tests/ios-coverage-gate.sh"
-    "$ROOT_DIR/tests/ios-coverage-gate.sh" "$REPORTS_DIR/ios/coverage.json"
+    "$ROOT_DIR/tests/ios-coverage-gate.sh" "$REPORTS_DIR/ios/coverage.json" "$ROOT_DIR/ios/build/TekyidaTests.xcresult"
     echo "✓ iOS logic coverage gate passed."
     ios_status="PASSED"
   else

@@ -293,7 +293,7 @@ jobs:
           mkdir -p ../tests/reports/ios
           xcrun xccov view --report --json build/TekyidaTests.xcresult > ../tests/reports/ios/coverage.json
           chmod +x ../tests/ios-coverage-gate.sh
-          ../tests/ios-coverage-gate.sh ../tests/reports/ios/coverage.json
+          ../tests/ios-coverage-gate.sh ../tests/reports/ios/coverage.json build/TekyidaTests.xcresult
 
       # Uploads the raw coverage export for PRs/reviews (main only; tests are main-only)
       - name: Upload iOS Coverage Report

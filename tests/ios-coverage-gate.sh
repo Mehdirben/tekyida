@@ -16,13 +16,16 @@
 #   - GlassInputField.swift     (SwiftUI onChange plumbing; its pure clamping
 #                                rule is fully unit-tested via clamp())
 #
-# Usage: ios-coverage-gate.sh <xccov-report.json>
-# ==============================================================================
+# Usage: ios-coverage-gate.sh <xccov-report.json> [xcresult-path]
+# When the gate fails and an xcresult bundle is provided, annotated source
+# (with exact uncovered-line markers) is printed for each gap file so the
+# missing tests can be written without guesswork.
 set -euo pipefail
 
 REPORT="${1:-}"
+XCRESULT="${2:-}"
 if [ -z "$REPORT" ] || [ ! -f "$REPORT" ]; then
-  echo "❌ Usage: $0 <xccov-report.json>"
+  echo "❌ Usage: $0 <xccov-report.json> [xcresult-path]"
   exit 1
 fi
 
@@ -37,6 +40,9 @@ LOGIC_BASENAMES="$(
   } | sort -u
 )"
 
+GAP_FILE="$(mktemp)"
+export GAP_FILE
+set +e
 node - "$REPORT" "$LOGIC_BASENAMES" <<'EOF'
 const fs = require('fs');
 
@@ -80,15 +86,21 @@ if (logicFiles.length === 0) {
   process.exit(1);
 }
 
+const gapFile = process.env.GAP_FILE || '';
 let covered = 0;
 let executable = 0;
 const gaps = [];
+const gapBasenames = [];
 for (const file of logicFiles) {
   covered += file.coveredLines;
   executable += file.executableLines;
   if (file.coveredLines < file.executableLines) {
     gaps.push(`  ✗ ${file.name}: ${file.coveredLines}/${file.executableLines} lines (${(file.lineCoverage * 100).toFixed(2)}%)`);
+    gapBasenames.push(file.name.split('/').pop());
   }
+}
+if (gapFile && gapBasenames.length > 0) {
+  fs.writeFileSync(gapFile, gapBasenames.join('\n'));
 }
 
 const overall = files.reduce((acc, f) => {
@@ -119,3 +131,21 @@ if (covered < executable) {
 }
 console.log('✓ iOS logic coverage gate PASSED (100% of logic lines covered).');
 EOF
+NODE_STATUS=$?
+set -e
+
+if [ "$NODE_STATUS" -ne 0 ] && [ -n "$XCRESULT" ] && [ -d "$XCRESULT" ] && [ -s "$GAP_FILE" ]; then
+  echo ''
+  echo 'Uncovered lines per gap file (E = executable, uncovered):'
+  while IFS= read -r base; do
+    [ -n "$base" ] || continue
+    src_path="$(find "$SCRIPT_DIR/../ios/Sources" -name "$base" -print -quit 2>/dev/null || true)"
+    if [ -n "$src_path" ]; then
+      echo "--- $base ---"
+      xcrun xccov view --file "$src_path" "$XCRESULT" 2>/dev/null \
+        | grep -E '^[[:space:]]*E[[:space:]]*[0-9]+:' || true
+    fi
+  done < "$GAP_FILE"
+fi
+rm -f "$GAP_FILE"
+exit "$NODE_STATUS"
