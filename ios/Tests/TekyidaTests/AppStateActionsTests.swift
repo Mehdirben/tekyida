@@ -220,4 +220,17 @@ struct AppStateActionsTests {
         #expect(state.appError == "Name taken")
         #expect(state.pendingSyncCount == 0)
     }
+
+    @Test("Fatal errors on optimistic updates roll back via refresh")
+    func fatalUpdateErrorRefreshes() async {
+        backend.setMutationError("contacts:update", BackendError.message("Conflict"))
+        state.contacts = [Contact(id: "c1", notebookId: "nb1", name: "Original")]
+
+        await state.updateContact(id: "c1", name: "Changed")
+
+        #expect(state.appError == "Conflict")
+        #expect(state.pendingSyncCount == 0, "fatal updates never enqueue")
+        #expect(backend.queryCalls.map(\.path).contains("notebooks:list"),
+                "optimistically-applied updates roll back through a refresh")
+    }
 }

@@ -233,9 +233,12 @@ struct AppStateQueueTests {
         _ = try state.enqueueOfflineMutation("transactions:create", args: [
             "notebookId": "nb1", "experienceId": experienceId, "amount": 7
         ])
+        // An unrelated queued write must survive every collapse matcher.
+        _ = try state.enqueueOfflineMutation("contacts:update", args: ["id": "srv_other", "name": "Zoe"])
 
         _ = try state.enqueueOfflineMutation("experiences:remove", args: ["id": experienceId])
-        #expect(state.pendingMutations.isEmpty, "queued transaction tied to the experience collapses too")
+        #expect(state.pendingMutations.map(\.functionPath) == ["contacts:update"],
+                "only the unrelated queued write survives the experience collapse")
     }
 
     @Test("Sync remaps the active notebook id from a queued create")
@@ -266,6 +269,30 @@ struct AppStateQueueTests {
         #expect(state.appError == nil)
     }
 
+    @Test("A refresh arriving mid-flight defers instead of interleaving")
+    func refreshArrivingMidFlightDefers() async {
+        // Simulate the mid-flight window deterministically.
+        state.isRefreshing = true
+        await state.refreshDataAndReportError()
+        #expect(state.needsRefreshAgain == true, "the mid-flight call defers to a rerun")
+
+        state.isRefreshing = false
+        await state.refreshDataAndReportError()
+        #expect(state.needsRefreshAgain == false, "the rerun consumed the deferred request")
+        #expect(state.appError == nil)
+    }
+
+    @Test("refreshDataAndReportError surfaces fatal errors with a session")
+    func refreshReportsFatalErrorWithSession() async {
+        backend.hasSession = true
+        backend.setQueryError("notebooks:list", BackendError.message("Token rejected"))
+
+        await state.refreshDataAndReportError()
+
+        #expect(state.isAuthenticated, "fatal refresh errors keep the session")
+        #expect(state.appError == "Token rejected")
+    }
+
     @Test("Sync refuses entries owned by a different account")
     func syncRejectsForeignEntries() async throws {
         state.pendingMutations = [QueuedMutation(
@@ -291,7 +318,8 @@ struct AppStateQueueTests {
         let input: [String: Any] = [
             "contactId": "offline_1",
             "nested": ["experienceId": "offline_2", "keep": "srv_9"],
-            "list": ["offline_1", "plain"]
+            "list": ["offline_1", "plain"],
+            "amount": 50
         ]
         let resolved = state.replaceLocalIds(in: input) as? [String: Any]
 
@@ -300,6 +328,7 @@ struct AppStateQueueTests {
         #expect((resolved?["nested"] as? [String: Any])?["keep"] as? String == "srv_9")
         #expect((resolved?["list"] as? [Any])?.first as? String == "srv_1")
         #expect((resolved?["list"] as? [Any])?.last as? String == "plain")
+        #expect(resolved?["amount"] as? Int == 50, "non-string leaves pass through untouched")
     }
 
     // MARK: - Refresh pipeline

@@ -295,9 +295,10 @@ jobs:
           chmod +x ../tests/ios-coverage-gate.sh
           ../tests/ios-coverage-gate.sh ../tests/reports/ios/coverage.json build/TekyidaTests.xcresult
 
-      # Uploads the raw coverage export for PRs/reviews (main only; tests are main-only)
+      # Uploads the raw coverage export + uncovered-lines evidence.
+      # `always()`: the evidence is needed most when the gate FAILS.
       - name: Upload iOS Coverage Report
-        if: github.ref == 'refs/heads/main'
+        if: always() && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: ios-coverage-report

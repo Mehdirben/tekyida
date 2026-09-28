@@ -94,6 +94,22 @@ struct AppStateAuthTests {
         #expect(!state.isAuthenticated)
     }
 
+    @Test("Email verification is refused while another account's changes are queued")
+    func verifyEmailBlockedByForeignQueue() async {
+        state.pendingMutations = [QueuedMutation(
+            functionPath: "contacts:create",
+            arguments: Data("{}".utf8),
+            localCreatedId: nil,
+            accountEmail: "other@tekyida.app"
+        )]
+
+        await state.verifyEmail(email: "user@tekyida.app", code: "123456")
+
+        #expect(state.authError?.contains("offline changes") == true)
+        #expect(backend.verifyEmailCalls.isEmpty, "the backend must not be contacted")
+        #expect(!state.isAuthenticated)
+    }
+
     @Test("Resend verification errors are surfaced")
     func resendVerificationError() async {
         backend.resendVerificationError = BackendError.message("Too many requests")

@@ -375,4 +375,30 @@ struct ConvexBackendTests {
             return urlError.code == .badURL && !BackendError.isConnectivityFailure(error)
         }
     }
+
+    @Test("mutation posts to the mutation endpoint and returns the raw value")
+    func mutationPostsRawValue() async throws {
+        let recorder = RequestRecorder()
+        URLProtocolStub.handler = { request in
+            recorder.append(request)
+            return .init(status: 200, body: Data(#"{"status":"success","value":"srv_new"}"#.utf8))
+        }
+        let result = try await backend.mutation("contacts:create", args: ["name": "Alice"])
+        #expect(String(data: result, encoding: .utf8) == "\"srv_new\"")
+
+        let sent = try #require(recorder.requests.first)
+        #expect(sent.url?.path.hasSuffix("/api/mutation") == true)
+        #expect(sent.value(forHTTPHeaderField: "Content-Type") == "application/json")
+    }
+
+    @Test("Unhandled HTTP statuses surface a descriptive message")
+    func unhandledStatusSurfacesMessage() async {
+        URLProtocolStub.handler = { _ in .init(status: 404, body: Data()) }
+
+        await #expect {
+            let _: [Notebook] = try await backend.query("notebooks:list", args: [:])
+        } throws: { error in
+            error.localizedDescription == "The server returned HTTP 404."
+        }
+    }
 }
