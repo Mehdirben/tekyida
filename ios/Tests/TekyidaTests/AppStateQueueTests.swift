@@ -314,6 +314,16 @@ struct AppStateQueueTests {
         }
     }
 
+    @Test("refreshData keeps the local email when the server returns none")
+    func refreshDataKeepsLocalEmailOnNull() async throws {
+        state.userEmail = "local@tekyida.app"
+        backend.setQueryJSON("users:currentEmail", "null")
+
+        try await state.refreshData()
+
+        #expect(state.userEmail == "local@tekyida.app", "null server email falls back to the stored one")
+    }
+
     @Test("refreshData rejects pending changes owned by another account")
     func refreshDataRejectsForeignPending() async throws {
         state.pendingMutations = [QueuedMutation(

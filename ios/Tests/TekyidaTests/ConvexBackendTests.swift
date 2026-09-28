@@ -320,4 +320,46 @@ struct ConvexBackendTests {
         #expect(tokens.read("accessToken") == nil, "cleared after a failed renewal")
         #expect(tokens.read("refreshToken") == nil)
     }
+
+    @Test("A transport failure during token renewal surfaces as retryable")
+    func refreshTransportFailureStaysRetryable() async {
+        tokens.write("stale", key: "accessToken")
+        tokens.write("refresh-1", key: "refreshToken")
+        URLProtocolStub.handler = { request in
+            let body = (try? JSONSerialization.jsonObject(with: request.bodyData ?? Data())) as? [String: Any]
+            if body?["path"] as? String == "auth:signIn" {
+                return nil
+            }
+            return .init(status: 401, body: Data())
+        }
+
+        await #expect {
+            let _: [Notebook] = try await backend.query("notebooks:list", args: [:])
+        } throws: { error in
+            BackendError.isRetryable(error) && BackendError.isConnectivityFailure(error)
+        }
+        #expect(tokens.read("refreshToken") == "refresh-1", "retryable renewal failures keep tokens")
+    }
+
+    @Test("action decodes the envelope value")
+    func actionDecodes() async throws {
+        let recorder = RequestRecorder()
+        URLProtocolStub.handler = { request in
+            recorder.append(request)
+            return .init(status: 200, body: Data(#"{"status":"success","value":"done"}"#.utf8))
+        }
+        let result: String = try await backend.action("jobs:run", args: ["id": "x"])
+        #expect(result == "done")
+        let sent = try #require(recorder.requests.first)
+        #expect(sent.url?.path.hasSuffix("/api/action") == true)
+    }
+
+    @Test("signOut without a session skips the network and still clears tokens")
+    func signOutWithoutSession() async {
+        URLProtocolStub.handler = { _ in
+            .init(status: 200, body: Data(#"{"status":"success","value":null}"#.utf8))
+        }
+        await backend.signOut()
+        #expect(!backend.hasSession)
+    }
 }

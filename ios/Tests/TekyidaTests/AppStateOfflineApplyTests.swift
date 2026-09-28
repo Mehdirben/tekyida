@@ -140,6 +140,11 @@ struct AppStateOfflineApplyTests {
         #expect(state.transactions[0].description == nil)
         #expect(state.transactions[0].date == Date(timeIntervalSince1970: 1_700_000_500))
 
+        apply("transactions:update", ["id": "offline_t1", "amount": 8.0])
+        #expect(state.transactions[0].amount == 8.0)
+        #expect(state.transactions[0].date == Date(timeIntervalSince1970: 1_700_000_500),
+                "update without a date must keep the existing date")
+
         apply("transactions:remove", ["id": "offline_t1"])
         #expect(state.transactions.isEmpty)
     }

@@ -136,15 +136,24 @@ set -e
 
 if [ "$NODE_STATUS" -ne 0 ] && [ -n "$XCRESULT" ] && [ -d "$XCRESULT" ] && [ -s "$GAP_FILE" ]; then
   echo ''
-  echo 'Annotated source per gap file (raw xccov output; uncovered lines carry an E marker):'
+  echo 'Annotated source per gap file (uncovered lines carry an E marker):'
+  first_src="$(head -n 1 "$GAP_FILE")"
+  first_path="$(find "$SCRIPT_DIR/../ios/Sources" -name "$first_src" -print -quit 2>/dev/null || true)"
+  if [ -n "$first_path" ]; then
+    echo 'Probing xccov --file invocations (format discovery):'
+    echo '[A] xccov view --file <src> <xcresult>:'
+    xcrun xccov view --file "$first_path" "$XCRESULT" 2>&1 | head -5 || true
+    echo '[B] xccov view --file <xcresult> <src>:'
+    xcrun xccov view --file "$XCRESULT" "$first_path" 2>&1 | head -5 || true
+    echo '[C] xccov view --archive <xcresult> --file <src>:'
+    xcrun xccov view --archive "$XCRESULT" --file "$first_path" 2>&1 | head -5 || true
+  fi
   while IFS= read -r base; do
     [ -n "$base" ] || continue
     src_path="$(find "$SCRIPT_DIR/../ios/Sources" -name "$base" -print -quit 2>/dev/null || true)"
     if [ -n "$src_path" ]; then
       echo "--- $base ---"
-      xcrun xccov view --file "$src_path" "$XCRESULT" | head -500
-    else
-      echo "--- $base: source file not found ---"
+      xcrun xccov view --file "$src_path" "$XCRESULT" 2>/dev/null | head -500 || true
     fi
   done < "$GAP_FILE"
 fi
