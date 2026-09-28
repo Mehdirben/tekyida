@@ -154,6 +154,7 @@ jobs:
             echo "Release $RELEASE_TAG already exists."
           else
             gh release create "$RELEASE_TAG" \
+              --target "$GITHUB_SHA" \
               --repo "${{ github.repository }}" \
               --title "$RELEASE_TITLE" \
               $PRERELEASE_FLAG \
@@ -173,7 +174,7 @@ jobs:
             PREV_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == true) | .tag_name][]' 2>/dev/null | grep -v "$RELEASE_TAG" | sort -t- -k2 -n | tail -n 1 || true)
             [ -z "$PREV_TAG" ] && PREV_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | .tag_name] | first // empty' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
           else
-            PREV_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == false) | .tag_name] | first // empty' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
+            PREV_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == false) | .tag_name][]' 2>/dev/null | grep -v "$RELEASE_TAG" | sort -t- -k2 -n | tail -n 1 || true)
           fi
 
           if [ -n "$PREV_TAG" ]; then
@@ -305,7 +306,7 @@ jobs:
       # `always()`: the evidence is needed most when the gate FAILS.
       - name: Upload iOS Coverage Report
         if: always() && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ios-coverage-report
           path: |
@@ -613,7 +614,7 @@ jobs:
           # Beta selection takes the numeric MAX, not API order: prereleases
           # sharing one created_at timestamp (mass-created series) come back
           # in arbitrary tie-order.
-          LATEST_STABLE_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == false) | .tag_name] | first // empty' 2>/dev/null | head -n 1 || true)
+          LATEST_STABLE_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == false) | .tag_name][]' 2>/dev/null | sort -t- -k2 -n | tail -n 1 || true)
           LATEST_BETA_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == true) | .tag_name][]' 2>/dev/null | sort -t- -k2 -n | tail -n 1 || true)
 
           if [ "$IS_CURRENT_BETA" = "true" ]; then
