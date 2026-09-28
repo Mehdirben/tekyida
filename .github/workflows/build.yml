@@ -168,7 +168,9 @@ jobs:
           # limit, so a channel buried under many releases of the other kind
           # would be missed entirely.
           if [ "$IS_BETA" = "true" ]; then
-            PREV_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == true) | .tag_name] | first // empty' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
+            # Numeric MAX, not API order: prereleases sharing one created_at
+            # timestamp come back in arbitrary tie-order.
+            PREV_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == true) | .tag_name][]' 2>/dev/null | grep -v "$RELEASE_TAG" | sort -t- -k2 -n | tail -n 1 || true)
             [ -z "$PREV_TAG" ] && PREV_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | .tag_name] | first // empty' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
           else
             PREV_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == false) | .tag_name] | first // empty' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
@@ -608,8 +610,11 @@ jobs:
           # Position-independent lookups: filter across ALL release pages so
           # each channel is found no matter how many releases of the other
           # kind sit above it (gh release list filters after its limit).
+          # Beta selection takes the numeric MAX, not API order: prereleases
+          # sharing one created_at timestamp (mass-created series) come back
+          # in arbitrary tie-order.
           LATEST_STABLE_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == false) | .tag_name] | first // empty' 2>/dev/null | head -n 1 || true)
-          LATEST_BETA_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == true) | .tag_name] | first // empty' 2>/dev/null | head -n 1 || true)
+          LATEST_BETA_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == true) | .tag_name][]' 2>/dev/null | sort -t- -k2 -n | tail -n 1 || true)
 
           if [ "$IS_CURRENT_BETA" = "true" ]; then
             LATEST_BETA_TAG="$CURRENT_TAG"
