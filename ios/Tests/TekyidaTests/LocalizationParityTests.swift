@@ -2,7 +2,8 @@ import Testing
 import Foundation
 @testable import Tekyida
 
-@Suite("Localization EN/FR Parity")
+// Serialized: mutates the global `L10n.language` while switching languages.
+@Suite("Localization EN/FR Parity", .serialized)
 @MainActor
 struct LocalizationParityTests {
     private static let formatSpecifiers: NSRegularExpression? = {

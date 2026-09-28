@@ -35,8 +35,17 @@ final class URLProtocolStub: URLProtocol {
         set { lock.withLock { handlerStorage = newValue } }
     }
 
+    private static var transportErrorStorage: Error?
+    /// When set, every request fails with this error instead of reaching the
+    /// handler — used to exercise non-connectivity transport failures.
+    static var transportError: Error? {
+        get { lock.withLock { transportErrorStorage } }
+        set { lock.withLock { transportErrorStorage = newValue } }
+    }
+
     static func reset() {
         handler = nil
+        transportError = nil
     }
 
     /// Ephemeral session wired to this stub for `ConvexBackend(session:)`.
@@ -50,6 +59,10 @@ final class URLProtocolStub: URLProtocol {
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
+        if let transportError = URLProtocolStub.transportError {
+            client?.urlProtocol(self, didFailWithError: transportError)
+            return
+        }
         guard let handler = URLProtocolStub.handler, let url = request.url else {
             client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
             return

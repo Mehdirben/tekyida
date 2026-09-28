@@ -79,6 +79,30 @@ struct AppStateBalanceTests {
         #expect(engine.experienceTransactions("ghost").isEmpty)
     }
 
+    @Test("BalanceEngine sorts multi-element results newest-first")
+    func balanceEngineSortsMultiElementResults() {
+        let older = Date(timeIntervalSince1970: 1_000)
+        let newer = Date(timeIntervalSince1970: 2_000)
+        let alice = Contact(id: "c1", notebookId: "nb", name: "Alice", createdAt: older)
+        let engine = BalanceEngine(
+            contacts: [alice],
+            experiences: [
+                Experience(id: "old-exp", notebookId: "nb", contactId: "c1", name: "First", closed: true, createdAt: older),
+                Experience(id: "new-exp", notebookId: "nb", contactId: "c1", name: "Second", closed: true, createdAt: newer)
+            ],
+            transactions: [
+                Transaction(id: "d1", notebookId: "nb", contactId: "c1", amount: 1, date: older),
+                Transaction(id: "d2", notebookId: "nb", contactId: "c1", amount: 2, date: newer),
+                Transaction(id: "e1", notebookId: "nb", experienceId: "old-exp", amount: 3, date: older),
+                Transaction(id: "e2", notebookId: "nb", experienceId: "old-exp", amount: 4, date: newer)
+            ]
+        )
+
+        #expect(engine.directTransactions(for: "c1").map(\.id) == ["d2", "d1"], "direct newest first")
+        #expect(engine.closedExperiences(for: "c1").map(\.id) == ["new-exp", "old-exp"], "closed experiences newest first")
+        #expect(engine.experienceTransactions("old-exp").map(\.id) == ["e2", "e1"], "experience transactions newest first")
+    }
+
     @Test("AppState balance facades expose the engine helpers")
     func balanceFacades() {
         let aliceId = state.contacts[0].id

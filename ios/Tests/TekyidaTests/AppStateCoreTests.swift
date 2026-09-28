@@ -207,8 +207,10 @@ struct AppStateCoreTests {
         )
         source.userEmail = "user@tekyida.app"
         source.isAuthenticated = true
-        let archived = Notebook(id: "arch", name: "Old", archived: true)
-        let live = Notebook(id: "live", name: "Current")
+        // Fixed epoch dates: the snapshot stores millisecond precision.
+        let epoch = Date(timeIntervalSince1970: 1_700_000_000)
+        let archived = Notebook(id: "arch", name: "Old", archived: true, createdAt: epoch)
+        let live = Notebook(id: "live", name: "Current", createdAt: epoch)
         source.notebooks = [archived, live]
         source.persistOfflineSnapshot()
 

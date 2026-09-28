@@ -362,4 +362,17 @@ struct ConvexBackendTests {
         await backend.signOut()
         #expect(!backend.hasSession)
     }
+
+    @Test("Non-connectivity transport errors propagate unchanged")
+    func nonConnectivityTransportErrorPropagates() async {
+        URLProtocolStub.transportError = URLError(.badURL)
+        defer { URLProtocolStub.transportError = nil }
+
+        await #expect {
+            let _: [Notebook] = try await backend.query("notebooks:list", args: [:])
+        } throws: { error in
+            guard let urlError = error as? URLError else { return false }
+            return urlError.code == .badURL && !BackendError.isConnectivityFailure(error)
+        }
+    }
 }

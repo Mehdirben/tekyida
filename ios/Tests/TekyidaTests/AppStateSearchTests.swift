@@ -80,4 +80,17 @@ struct AppStateSearchTests {
         )
         #expect(results.transactions.count == 1, "amount search uses the absolute two-decimal rendering")
     }
+
+    @Test("Queries that match nothing return empty results")
+    func searchNoMatch() {
+        let results = SearchEngine.run(
+            contacts: [Contact(notebookId: "nb", name: "Amir", phone: "123")],
+            experiences: [Experience(notebookId: "nb", name: "Trip")],
+            transactions: [Transaction(notebookId: "nb", amount: 5, description: "Apple")],
+            notebookId: "nb",
+            query: "zzz"
+        )
+        #expect(results.isEmpty)
+        #expect(results.totalCount == 0)
+    }
 }
