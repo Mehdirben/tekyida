@@ -163,11 +163,15 @@ jobs:
           # Carry forward previous release assets:
           # On Beta: picks the most recent Beta pre-release (or fallback to latest release)
           # On Main: picks the most recent Stable release
+          # Lookups are paginated + filtered across ALL pages: `gh release list
+          # --exclude-pre-releases --limit N` filters client-side AFTER the
+          # limit, so a channel buried under many releases of the other kind
+          # would be missed entirely.
           if [ "$IS_BETA" = "true" ]; then
-            PREV_TAG=$(gh release list --repo "${{ github.repository }}" --limit 10 --json tagName,isPrerelease -q '.[] | select(.isPrerelease == true) | .tagName' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
-            [ -z "$PREV_TAG" ] && PREV_TAG=$(gh release list --repo "${{ github.repository }}" --limit 4 --json tagName -q '.[].tagName' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
+            PREV_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == true) | .tag_name] | first // empty' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
+            [ -z "$PREV_TAG" ] && PREV_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | .tag_name] | first // empty' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
           else
-            PREV_TAG=$(gh release list --repo "${{ github.repository }}" --exclude-pre-releases --limit 4 --json tagName -q '.[].tagName' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
+            PREV_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == false) | .tag_name] | first // empty' 2>/dev/null | grep -v "$RELEASE_TAG" | head -n 1 || true)
           fi
 
           if [ -n "$PREV_TAG" ]; then
@@ -601,8 +605,11 @@ jobs:
           CURRENT_TAG="${{ needs.init-release.outputs.release_tag }}"
           IS_CURRENT_BETA="${{ needs.init-release.outputs.is_beta }}"
 
-          LATEST_STABLE_TAG=$(gh release list --repo "${{ github.repository }}" --exclude-pre-releases --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || true)
-          LATEST_BETA_TAG=$(gh release list --repo "${{ github.repository }}" --limit 10 --json tagName,isPrerelease -q '.[] | select(.isPrerelease == true) | .tagName' 2>/dev/null | head -n 1 || true)
+          # Position-independent lookups: filter across ALL release pages so
+          # each channel is found no matter how many releases of the other
+          # kind sit above it (gh release list filters after its limit).
+          LATEST_STABLE_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == false) | .tag_name] | first // empty' 2>/dev/null | head -n 1 || true)
+          LATEST_BETA_TAG=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '[.[] | select(.prerelease == true) | .tag_name] | first // empty' 2>/dev/null | head -n 1 || true)
 
           if [ "$IS_CURRENT_BETA" = "true" ]; then
             LATEST_BETA_TAG="$CURRENT_TAG"
@@ -610,15 +617,34 @@ jobs:
             LATEST_STABLE_TAG="$CURRENT_TAG"
           fi
 
+          # Beta channel serves whichever build is NEWEST across channels
+          # (tags are build-N / beta-N; run numbers are comparable).
+          BETA_SERVE_TAG="$LATEST_STABLE_TAG"
+          stable_n=$(printf '%s' "$LATEST_STABLE_TAG" | grep -oE '[0-9]+' | tail -n 1)
+          beta_n=$(printf '%s' "$LATEST_BETA_TAG" | grep -oE '[0-9]+' | tail -n 1)
+          stable_n="${stable_n:-0}"
+          beta_n="${beta_n:-0}"
+          if [ -n "$LATEST_BETA_TAG" ] && [ "$beta_n" -gt "$stable_n" ]; then
+            BETA_SERVE_TAG="$LATEST_BETA_TAG"
+          fi
+
           echo "Target Stable Tag: $LATEST_STABLE_TAG"
-          echo "Target Beta Tag:   $LATEST_BETA_TAG"
+          echo "Target Beta Tag:   $LATEST_BETA_TAG (beta feed serves: $BETA_SERVE_TAG)"
 
           mkdir -p assets-stable assets-beta
           if [ -n "$LATEST_STABLE_TAG" ]; then
             gh release download "$LATEST_STABLE_TAG" --repo "${{ github.repository }}" --pattern "Tekyida.*" --pattern "apps*.json" --dir assets-stable || true
           fi
-          if [ -n "$LATEST_BETA_TAG" ]; then
-            gh release download "$LATEST_BETA_TAG" --repo "${{ github.repository }}" --pattern "Tekyida.*" --pattern "apps*.json" --dir assets-beta || true
+          if [ -n "$BETA_SERVE_TAG" ] && [ "$BETA_SERVE_TAG" != "$LATEST_STABLE_TAG" ]; then
+            gh release download "$BETA_SERVE_TAG" --repo "${{ github.repository }}" --pattern "Tekyida.*" --pattern "apps*.json" --dir assets-beta || true
+          fi
+
+          # iOS beta channel: mirror stable's IPA AND feed metadata when stable
+          # is the newer build, so the beta feed keeps real size/date instead
+          # of placeholders. (APK channel keeps its original fallback below.)
+          if [ "$BETA_SERVE_TAG" = "$LATEST_STABLE_TAG" ]; then
+            [ -f assets-stable/Tekyida.ipa ] && cp assets-stable/Tekyida.ipa assets-beta/Tekyida.ipa
+            [ -f assets-stable/apps.json ] && cp assets-stable/apps.json assets-beta/apps.json
           fi
 
           # Fallback between channels if one channel has not produced assets yet
@@ -635,7 +661,7 @@ jobs:
           if [ -f assets-beta/apps.json ]; then
             cp assets-beta/apps.json site-pages/ios/beta/apps.json
           fi
-          python3 distribution/sidestore/format_sources.py "${{ github.repository }}" "${{ github.run_number }}" "$LATEST_STABLE_TAG" "$LATEST_BETA_TAG" 
+          python3 distribution/sidestore/format_sources.py "${{ github.repository }}" "${{ github.run_number }}" "$LATEST_STABLE_TAG" "$BETA_SERVE_TAG"
 
           # 3. Setup Android F-Droid: STABLE Channel
           # Place APK into repo/ and app icon into metadata/ (NEVER put icon.png into repo/)

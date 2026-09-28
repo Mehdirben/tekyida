@@ -9,6 +9,7 @@ import json
 import os
 import plistlib
 import sys
+from datetime import datetime, timezone
 
 def get_marketing_version():
     plist_path = 'ios/Sources/App/Info.plist'
@@ -34,15 +35,22 @@ def format_feed(feed_file, feed_name, feed_id, app_name, release_tag, default_ve
     versions = app_meta.get('versions') or []
     download_url = f"https://github.com/{repo}/releases/download/{release_tag}/Tekyida.ipa" if release_tag else ""
 
-    if versions and release_tag:
-        versions[0]['downloadURL'] = download_url
-        versions[0]['version'] = default_ver
-        versions[0]['buildVersion'] = str(run_number)
-    elif not versions:
+    if not release_tag:
+        # Never blank out a working download URL: side-store clients report
+        # "invalid URL / data corrupted" on empty downloadURL values.
+        print(f"WARNING: no release tag for {feed_file}; keeping existing download URLs", file=sys.stderr)
+
+    if versions:
+        if release_tag:
+            versions[0]['downloadURL'] = download_url
+            versions[0]['version'] = default_ver
+            versions[0]['buildVersion'] = str(run_number)
+    else:
+        now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
         versions = [{
             'version': default_ver,
             'buildVersion': str(run_number),
-            'date': '2026-09-25T00:00:00Z',
+            'date': now,
             'minOSVersion': '17.0',
             'localizedDescription': desc,
             'downloadURL': download_url,
