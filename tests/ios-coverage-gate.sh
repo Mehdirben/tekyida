@@ -136,14 +136,15 @@ set -e
 
 if [ "$NODE_STATUS" -ne 0 ] && [ -n "$XCRESULT" ] && [ -d "$XCRESULT" ] && [ -s "$GAP_FILE" ]; then
   echo ''
-  echo 'Uncovered lines per gap file (E = executable, uncovered):'
+  echo 'Annotated source per gap file (raw xccov output; uncovered lines carry an E marker):'
   while IFS= read -r base; do
     [ -n "$base" ] || continue
     src_path="$(find "$SCRIPT_DIR/../ios/Sources" -name "$base" -print -quit 2>/dev/null || true)"
     if [ -n "$src_path" ]; then
       echo "--- $base ---"
-      xcrun xccov view --file "$src_path" "$XCRESULT" 2>/dev/null \
-        | grep -E '^[[:space:]]*E[[:space:]]*[0-9]+:' || true
+      xcrun xccov view --file "$src_path" "$XCRESULT" | head -500
+    else
+      echo "--- $base: source file not found ---"
     fi
   done < "$GAP_FILE"
 fi
