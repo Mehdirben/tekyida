@@ -49,7 +49,10 @@ echo "  • iOS targeted:      $do_ios"
 echo ""
 
 # Auto-install dependencies if missing and target active
-if [ "$do_backend" = true ] && [ ! -d "$ROOT_DIR/backend/node_modules" ]; then
+# Note: frontend needs backend deps installed too, because the frontend compile
+# graph imports backend/convex (frontend/tsconfig.json "@/convex/*" alias), and
+# "convex/server" can only resolve from backend/node_modules.
+if { [ "$do_backend" = true ] || [ "$do_frontend" = true ]; } && [ ! -d "$ROOT_DIR/backend/node_modules" ]; then
   echo "ℹ Backend node_modules not found. Installing dependencies..."
   npm ci --prefix "$ROOT_DIR/backend"
 fi
