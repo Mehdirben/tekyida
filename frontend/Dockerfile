@@ -10,9 +10,14 @@ WORKDIR /app/frontend
 COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm install
 
+WORKDIR /app/backend
+COPY backend/package.json backend/package-lock.json* ./
+RUN npm install
+
 FROM base AS builder
 WORKDIR /app
 COPY --from=dependencies /app/frontend/node_modules ./frontend/node_modules
+COPY --from=dependencies /app/backend/node_modules ./backend/node_modules
 COPY frontend/ ./frontend
 COPY backend/convex/ ./backend/convex
 

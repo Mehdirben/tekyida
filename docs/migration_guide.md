@@ -157,8 +157,11 @@ In your Dokploy Dashboard, open the Tekyida Frontend Application and configure:
 | Field in Dokploy | Setting |
 |---|---|
 | **Docker File** | `frontend/Dockerfile` |
-| **Docker Context Path** | `frontend` |
+| **Docker Context Path** | `.` |
 | **Port** | `3000` |
+
+> [!IMPORTANT]
+> The Docker Context Path must be `.` (repository root) — it cannot be `frontend` or left empty. The Dockerfile copies `frontend/` and `backend/convex/` relative to the repository root (`frontend/tsconfig.json` maps `@/convex/*` to `../backend/convex/*`), and an empty Dokploy context path falls back to the Dockerfile's own folder instead of the repository root.
 
 ### Environment & Build Time Arguments
 In Dokploy's **Environment** tab and **Build Time Arguments** tab, set:
